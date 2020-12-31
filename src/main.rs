@@ -45,10 +45,12 @@ struct CGProblem {
 }
 
 struct CGIterable {
+    a: M,
+    b: V,
     x: V,
     r: V,
-    rs: f64,
-    rsprev: f64,
+    rs: S,
+    rsprev: S,
     p: V,
     ap: Option<V>,
 }
@@ -59,34 +61,41 @@ impl CGIterable {
             None => ArrayBase::zeros(p.a.shape()[1]),
             Some(init_x) => init_x,
         };
-        let r = p.b - p.a.dot(&x);
-        let rs = r.dot(&r); 
-        let p = r.clone();
-        
+        let r = p.b.clone() - p.a.dot(&x).view();
+        let rs = r.dot(&r);
+        let cgi_p = r.clone();
+
         CGIterable {
+            a: p.a,
+            b: p.b,
             x: x,
             r: r,
             rs: rs,
             rsprev: 0.,
-            p: p,
-            ap: None
+            p: cgi_p,
+            ap: None,
         }
     }
-
 }
 
 impl StreamingIterator for CGIterable {
     type Item = CGIterable;
     fn advance(&mut self) {
-        // TODO: implement
+        let ap = self.a.dot(&self.p);
+        let alpha = self.rs / self.p.dot(&ap);
+        self.x = &self.x + &(alpha * &self.p);
+        self.r = &self.r - &(alpha * &ap);
+        self.rsprev = self.rs;
+        self.rs = self.r.dot(&self.r);
+        self.p = &self.r + &((&self.r / self.rsprev) * &self.p);
+        self.ap = Some(ap);
     }
     fn get(&self) -> Option<&Self::Item> {
         Some(self)
     }
 }
 
-fn main() {
-    fib_demo();
+fn cg_demo() {
     let a = arr2(&[[1.0, 0.5, 0.0], [0.5, 1.0, 0.0], [0.0, 0.5, 1.0]]);
     let b = arr1(&[0., 1., 0.]);
     let p = CGProblem {
@@ -94,8 +103,17 @@ fn main() {
         b: b,
         x0: None,
     };
-    let mut cg_iter = CGIterable::conjugate_gradient(p).take(5);
+    let mut cg_iter = CGIterable::conjugate_gradient(p).take(10);
     while let Some(cgi) = cg_iter.next() {
-        println!("x is {}", cgi.x);
+        println!(
+            "x is {:.4}, residual is {:.5}",
+            cgi.x,
+            cgi.a.dot(&cgi.x) - &cgi.b
+        );
     }
+}
+
+fn main() {
+    fib_demo();
+    cg_demo();
 }
