@@ -8,9 +8,11 @@ struct FibonnacciIterable<T> {
 
 impl FibonnacciIterable<f64> {
     fn start(first: f64, second: f64) -> FibonnacciIterable<f64> {
-        FibonnacciIterable::<f64>{s0: first, s1: second}
+        FibonnacciIterable::<f64> {
+            s0: first,
+            s1: second,
+        }
     }
-    
 }
 
 impl Iterator for FibonnacciIterable<f64> {
@@ -55,7 +57,7 @@ impl CGIterable {
     fn conjugate_gradient(p: CGProblem) -> CGIterable {
         let x = match p.x0 {
             None => ArrayBase::zeros(p.a.shape()[1]),
-            Some(init_x) => init_x
+            Some(init_x) => init_x,
         };
         let r = p.b - p.a.dot(&x);
         let rs = r.dot(&r); 
@@ -79,20 +81,21 @@ impl StreamingIterator for CGIterable {
         // TODO: implement
     }
     fn get(&self) -> Option<&Self::Item> {
-      Some(self)
+        Some(self)
     }
 }
 
 fn main() {
     fib_demo();
-    let a = arr2(&[[1.0, 0.5, 0.0],
-                   [0.5, 1.0, 0.0],
-                   [0.0, 0.5, 1.0]]);
+    let a = arr2(&[[1.0, 0.5, 0.0], [0.5, 1.0, 0.0], [0.0, 0.5, 1.0]]);
     let b = arr1(&[0., 1., 0.]);
-    let p = CGProblem {a: a, b: b, x0: None};
+    let p = CGProblem {
+        a: a,
+        b: b,
+        x0: None,
+    };
     let mut cg_iter = CGIterable::conjugate_gradient(p).take(5);
     while let Some(cgi) = cg_iter.next() {
         println!("x is {}", cgi.x);
     }
-    
 }
