@@ -1,3 +1,6 @@
+//! # iterative-methods
+//! A demonstration of the use of StreamingIterators and their adapters to implement iterative algorithms.
+
 use ndarray::*;
 use streaming_iterator::*;
 
@@ -26,6 +29,7 @@ impl Iterator for FibonnacciIterable<f64> {
     }
 }
 
+/// Demostrate usage of fibonacci sequence as an Iterator.
 fn fib_demo() {
     let fib = FibonnacciIterable::start(0.0, 1.0);
 
@@ -38,12 +42,14 @@ type S = f64;
 type M = Array2<S>;
 type V = Array1<S>;
 
-struct CGProblem {
+/// A linear system to be solved iteratively, with an optional initial solution.
+struct LinearSystem {
     a: M,
     b: V,
     x0: Option<V>,
 }
 
+/// The state of a conjugate gradient algorithm
 struct CGIterable {
     a: M,
     b: V,
@@ -56,7 +62,8 @@ struct CGIterable {
 }
 
 impl CGIterable {
-    fn conjugate_gradient(p: CGProblem) -> CGIterable {
+    /// Convert a LinearSystem problem into a StreamingIterator of conjugate gradient solutions
+    pub fn conjugate_gradient(p: LinearSystem) -> CGIterable {
         let x = match p.x0 {
             None => ArrayBase::zeros(p.a.shape()[1]),
             Some(init_x) => init_x,
@@ -95,10 +102,11 @@ impl StreamingIterator for CGIterable {
     }
 }
 
+/// Demonstrate usage and convergence of conjugate gradient as a streaming-iterator.
 fn cg_demo() {
     let a = arr2(&[[1.0, 0.5, 0.0], [0.5, 1.0, 0.0], [0.0, 0.5, 1.0]]);
     let b = arr1(&[0., 1., 0.]);
-    let p = CGProblem {
+    let p = LinearSystem {
         a: a,
         b: b,
         x0: None,
@@ -113,6 +121,7 @@ fn cg_demo() {
     }
 }
 
+/// Call the different demos.
 fn main() {
     fib_demo();
     cg_demo();
