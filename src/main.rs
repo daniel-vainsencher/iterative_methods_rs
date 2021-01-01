@@ -21,11 +21,10 @@ impl FibonnacciIterable<f64> {
 impl Iterator for FibonnacciIterable<f64> {
     type Item = f64;
     fn next(&mut self) -> Option<Self::Item> {
-        let out = Some(self.s0);
-        let n = self.s0 + self.s1;
+        let out = self.s0;
         self.s0 = self.s1;
-        self.s1 = n;
-        out
+        self.s1 = self.s0 + out;
+        Some(out)
     }
 }
 
@@ -33,8 +32,8 @@ impl Iterator for FibonnacciIterable<f64> {
 fn fib_demo() {
     let fib = FibonnacciIterable::start(0.0, 1.0);
 
-    for n in fib.take(5) {
-        println!("fib: {}", n)
+    for (i, n) in fib.enumerate().take(10) {
+        println!("fib {} is {}", i, n)
     }
 }
 
