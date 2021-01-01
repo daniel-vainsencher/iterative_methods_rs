@@ -48,7 +48,7 @@ struct LinearSystem {
     x0: Option<V>,
 }
 
-/// The state of a conjugate gradient algorithm
+/// The state of a conjugate gradient algorithm.
 struct CGIterable {
     a: M,
     b: V,
@@ -61,19 +61,19 @@ struct CGIterable {
 }
 
 impl CGIterable {
-    /// Convert a LinearSystem problem into a StreamingIterator of conjugate gradient solutions
-    pub fn conjugate_gradient(p: LinearSystem) -> CGIterable {
-        let x = match p.x0 {
-            None => ArrayBase::zeros(p.a.shape()[1]),
+    /// Convert a LinearSystem problem into a StreamingIterator of conjugate gradient solutions.
+    pub fn conjugate_gradient(problem: LinearSystem) -> CGIterable {
+        let x = match problem.x0 {
+            None => ArrayBase::zeros(problem.a.shape()[1]),
             Some(init_x) => init_x,
         };
-        let r = p.b.clone() - p.a.dot(&x).view();
+        let r = problem.b.clone() - problem.a.dot(&x).view();
         let rs = r.dot(&r);
         let cgi_p = r.clone();
 
         CGIterable {
-            a: p.a,
-            b: p.b,
+            a: problem.a,
+            b: problem.b,
             x: x,
             r: r,
             rs: rs,
@@ -113,9 +113,10 @@ fn cg_demo() {
     let mut cg_iter = CGIterable::conjugate_gradient(p).take(10);
     while let Some(cgi) = cg_iter.next() {
         println!(
-            "x is {:.4}, residual is {:.5}",
+            "||Ax - b ||_2 = {:.5}, for x = {:.4}, and Ax - b = {:.5}",
+            cgi.rsprev.sqrt(),
             cgi.x,
-            cgi.a.dot(&cgi.x) - &cgi.b
+            cgi.a.dot(&cgi.x) - &cgi.b,
         );
     }
 }
