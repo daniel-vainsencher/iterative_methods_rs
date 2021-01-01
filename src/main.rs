@@ -3,6 +3,7 @@
 
 use ndarray::*;
 use streaming_iterator::*;
+use std::time::{Duration, Instant};
 
 /// State of Fibonacci iterator.
 struct FibonnacciIterable<T> {
@@ -189,6 +190,45 @@ fn cg_demo() {
         );
     });
     while let Some(_cgi) = cg_print_iter.next() {}
+}
+
+/// Time every call to `advance` on the underlying
+/// StreamingIterator. The goal is that our get returns a pair that is
+/// approximately (Duration, &I::Item), but the types are not lining
+/// up just yet.
+struct TimedIterable<I> {
+    it: I,
+    last_duration: Duration,
+}
+
+fn time<I, T>(it: I) -> TimedIterable<I>
+where
+    I: Sized + StreamingIterator<Item = T>,
+    T: Sized,
+
+{
+    TimedIterable { it: it, last_duration: Duration::from_secs(0)}
+}
+
+impl<I> StreamingIterator for TimedIterable<I>
+where
+    I: StreamingIterator,
+{
+    type Item = (Duration, I::Item);
+    
+    fn advance(&mut self) {
+        let before = Instant::now();
+        self.it.advance();
+        self.last_duration = before.elapsed();
+    }
+    
+    fn get(&self) -> Option<&Self::Item> {
+        if let Some(n) = self.it.get() {
+            Some(&(self.last_duration, n.clone()))
+        } else {
+            None
+        }
+    }
 }
 
 /// Call the different demos.
