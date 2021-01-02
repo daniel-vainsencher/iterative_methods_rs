@@ -1,4 +1,4 @@
-"[Iterative methods done right (because life is to short to write
+"[Iterative methods done right (because life is too short to write
 for-loops](http://lostella.github.io/2018/07/25/iterative-methods-done-right.html)"
 (we refer to it as IM below) shows how to write and compose the
 building blocks of iterative methods, by modeling them as Julia
