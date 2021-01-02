@@ -2,8 +2,8 @@
 //! A demonstration of the use of StreamingIterators and their adapters to implement iterative algorithms.
 
 use ndarray::*;
-use streaming_iterator::*;
 use std::time::{Duration, Instant};
+use streaming_iterator::*;
 
 /// State of Fibonacci iterator.
 struct FibonnacciIterable<T> {
@@ -42,8 +42,8 @@ fn fib_demo() {
 }
 
 type S = f64;
-type M = Array2<S>;
-type V = Array1<S>;
+type M = ArcArray2<S>;
+type V = ArcArray1<S>;
 
 /// A linear system to be solved iteratively, with an optional initial solution.
 struct LinearSystem {
@@ -53,6 +53,7 @@ struct LinearSystem {
 }
 
 /// The state of a conjugate gradient algorithm.
+#[derive(Clone)]
 struct CGIterable {
     a: M,
     b: V,
@@ -92,13 +93,13 @@ impl StreamingIterator for CGIterable {
     type Item = CGIterable;
     /// Implementation of conjugate gradient iteration
     fn advance(&mut self) {
-        let ap = self.a.dot(&self.p);
+        let ap = self.a.dot(&self.p).into_shared();
         let alpha = self.rs / self.p.dot(&ap);
-        self.x = &self.x + &(alpha * &self.p);
-        self.r = &self.r - &(alpha * &ap);
+        self.x += &(alpha * &self.p);
+        self.r -= &(alpha * &ap);
         self.rsprev = self.rs;
         self.rs = self.r.dot(&self.r);
-        self.p = &self.r + &((&self.r / self.rsprev) * &self.p);
+        self.p = (&self.r + &((&self.r / self.rsprev) * &self.p)).into_shared();
         self.ap = Some(ap);
     }
     fn get(&self) -> Option<&Self::Item> {
@@ -161,8 +162,8 @@ where
 
 /// Demonstrate usage and convergence of conjugate gradient as a streaming-iterator.
 fn cg_demo() {
-    let a = arr2(&[[1.0, 0.5, 0.0], [0.5, 1.0, 0.0], [0.0, 0.5, 1.0]]);
-    let b = arr1(&[0., 1., 0.]);
+    let a = rcarr2(&[[1.0, 0.5, 0.0], [0.5, 1.0, 0.0], [0.0, 0.5, 1.0]]);
+    let b = rcarr1(&[0., 1., 0.]);
     let p = LinearSystem {
         a: a,
         b: b,
@@ -175,18 +176,21 @@ fn cg_demo() {
         // algorithm internals, requiring all state to be exposed and
         // not just the result.
         .take_while(|cgi| cgi.rsprev.sqrt() > 1e-6);
-    // Because tee is not part of the StreamingIterator trait, it
-    // cannot be chained as in the above. Note the side effect is
-    // applied exactly to every x produced above, the sequencce of
-    // which is not affected at all. This is just like applying a side
-    // effect inside the while loop, except we can compose multiple
-    // tee, each with its own effect.
-    let mut cg_print_iter = tee(cg_iter, |cgi| {
+    // Because time, tee are not part of the StreamingIterator trait,
+    // they cannot be chained as in the above. Note the side effect of
+    // tee is applied exactly to every x produced above, the sequence
+    // of which is not affected at all. This is just like applying a
+    // side effect inside the while loop, except we can compose
+    // multiple tee, each with its own effect.
+    // TODO can this be fixed? see iterutils crate.
+    let timed_cg_iter = time(cg_iter);
+    let mut cg_print_iter = tee(timed_cg_iter, |TimedResult { result, duration }| {
         println!(
-            "||Ax - b ||_2 = {:.5}, for x = {:.4}, and Ax - b = {:.5}",
-            cgi.rsprev.sqrt(),
-            cgi.x,
-            cgi.a.dot(&cgi.x) - &cgi.b,
+            "||Ax - b ||_2 = {:.5}, for x = {:.4}, and Ax - b = {:.5}; iteration duration {}μs",
+            result.rsprev.sqrt(),
+            result.x,
+            result.a.dot(&result.x) - &result.b,
+            duration.as_nanos(),
         );
     });
     while let Some(_cgi) = cg_print_iter.next() {}
@@ -196,37 +200,50 @@ fn cg_demo() {
 /// StreamingIterator. The goal is that our get returns a pair that is
 /// approximately (Duration, &I::Item), but the types are not lining
 /// up just yet.
-struct TimedIterable<I> {
+struct TimedIterable<I, T>
+where
+    I: StreamingIterator<Item = T>,
+{
     it: I,
-    last_duration: Duration,
+    last: Option<TimedResult<T>>,
 }
 
-fn time<I, T>(it: I) -> TimedIterable<I>
+struct TimedResult<T> {
+    result: T,
+    duration: Duration,
+}
+
+fn time<I, T>(it: I) -> TimedIterable<I, T>
 where
     I: Sized + StreamingIterator<Item = T>,
     T: Sized,
-
 {
-    TimedIterable { it: it, last_duration: Duration::from_secs(0)}
+    TimedIterable { it: it, last: None }
 }
 
-impl<I> StreamingIterator for TimedIterable<I>
+impl<I, T> StreamingIterator for TimedIterable<I, T>
 where
-    I: StreamingIterator,
+    I: StreamingIterator<Item = T>,
+    T: Sized + Clone,
 {
-    type Item = (Duration, I::Item);
-    
+    type Item = TimedResult<T>;
+
     fn advance(&mut self) {
         let before = Instant::now();
         self.it.advance();
-        self.last_duration = before.elapsed();
+        self.last = match self.it.get() {
+            Some(n) => Some(TimedResult {
+                duration: before.elapsed(),
+                result: n.clone(),
+            }),
+            None => None,
+        }
     }
-    
+
     fn get(&self) -> Option<&Self::Item> {
-        if let Some(n) = self.it.get() {
-            Some(&(self.last_duration, n.clone()))
-        } else {
-            None
+        match &self.last {
+            Some(tr) => Some(&tr),
+            None => None,
         }
     }
 }
