@@ -45,7 +45,7 @@ type S = f64;
 type M = ArcArray2<S>;
 type V = ArcArray1<S>;
 
-/// A linear system, ax+b=0, to be solved iteratively, with an optional initial solution.
+/// A linear system, ax-b=0, to be solved iteratively, with an optional initial solution.
 struct LinearSystem {
     a: M,
     b: V,
