@@ -1,0 +1,23 @@
+- [X] 0.1 IM parity
+  - [X] timing adaptor
+- [ ] 0.5: publishable post
+  - [ ] Code
+    - [ ] Functionality going beyond IM?
+      - candidates:
+	- structured logging and analysis via serde
+	- expanded sampling (exponential from start and end, weighted reservoir)
+	- expand trait:
+	  - cost function?
+	  - solution extraction function?
+	- adaptor for quantifying convergence rates? a shim around that for testing performance?
+	- support for frame based profiling?
+    - [ ] Can we add impl-style adaptors from outside the streaming-iterator crate?
+  - [ ] Decide format and focus
+    - [ ] Side post walking through the process of exploring an algorithm using the adaptors?
+  - [ ] Fill out content
+- [ ] 0.8 publish post, get feedback.
+  - [ ] Clean up repo
+  - [ ] Publish. reddit? ndarray/ml hangouts?
+  - [ ] Apply feedback
+- [ ] 1.0 decision point
+  - [ ] Decide whether this is a single post repo or we expand on the project.
