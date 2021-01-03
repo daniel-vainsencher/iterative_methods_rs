@@ -30,7 +30,7 @@ impl Iterator for FibonnacciIterable<f64> {
     }
 }
 
-/// Demostrate usage of fibonacci sequence as an Iterator.
+/// Demonstrate usage of fibonacci sequence as an Iterator.
 fn fib_demo() {
     let fib = FibonnacciIterable::start(0.0, 1.0);
 
