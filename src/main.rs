@@ -160,43 +160,6 @@ where
     }
 }
 
-struct StepBy<I> {
-    it: I,
-    step: usize,
-    first_take: bool,
-}
-
-fn new<I, T>(it: I, step: usize) -> StepBy<I> 
-where 
-    I: Sized + StreamingIterator<Item = T>,
-{
-    assert!(step != 0);
-    StepBy { it, step: step - 1, first_take: true }
-}
-
-
-impl<I> StreamingIterator for StepBy<I>
-where
-    I: StreamingIterator,
-{
-    type Item = I::Item;
-
-    #[inline]
-    fn advance(&mut self) {
-        if self.first_take {
-            self.first_take = false;
-            self.it.advance();
-        } else {
-            self.it.nth(self.step);
-        }
-    }
-
-    #[inline]
-    fn get(&self) -> Option<&I::Item> {
-            self.it.get()
-    }
-}
-
 /// Demonstrate usage and convergence of conjugate gradient as a streaming-iterator.
 fn cg_demo() {
     let a = rcarr2(&[[1.0, 0.5, 0.0], [0.5, 1.0, 0.0], [0.0, 0.5, 1.0]]);
@@ -285,6 +248,45 @@ where
     }
 }
 
+// StepBy wraps a StreamingIterator; a 'step' is specified
+// and only the items located every 'step' are returned.
+// Iterator indices begin at 0, thus step -> step - 1 in new()
+struct StepBy<I> {
+    it: I,
+    step: usize,
+    first_take: bool,
+}
+
+fn new<I, T>(it: I, step: usize) -> StepBy<I> 
+where 
+    I: Sized + StreamingIterator<Item = T>,
+{
+    assert!(step != 0);
+    StepBy { it, step: step - 1, first_take: true }
+}
+
+
+impl<I> StreamingIterator for StepBy<I>
+where
+    I: StreamingIterator,
+{
+    type Item = I::Item;
+
+    #[inline]
+    fn advance(&mut self) {
+        if self.first_take {
+            self.first_take = false;
+            self.it.advance();
+        } else {
+            self.it.nth(self.step);
+        }
+    }
+
+    #[inline]
+    fn get(&self) -> Option<&I::Item> {
+            self.it.get()
+    }
+}
 
 
 /// Call the different demos.
