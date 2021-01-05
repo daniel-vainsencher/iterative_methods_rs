@@ -160,6 +160,47 @@ where
     }
 }
 
+// CHANGE iter --> it, etc to match local notation
+
+struct StepBy<I> {
+    iter: I,
+    step: usize,
+    first_take: bool,
+}
+
+// adjust this to be more like fn tee signature
+
+fn new<I, T>(iter: I, step: usize) -> StepBy<I> 
+where 
+    I: Sized + StreamingIterator<Item = T>,
+{
+    assert!(step != 0);
+    StepBy { iter, step: step - 1, first_take: true }
+}
+
+
+impl<I> StreamingIterator for StepBy<I>
+where
+    I: StreamingIterator,
+{
+    type Item = I::Item;
+
+    #[inline]
+    fn advance(&mut self) {
+        if self.first_take {
+            self.first_take = false;
+            self.iter.advance();
+        } else {
+            self.iter.nth(self.step);
+        }
+    }
+
+    #[inline]
+    fn get(&self) -> Option<&I::Item> {
+            self.iter.get()
+    }
+}
+
 /// Demonstrate usage and convergence of conjugate gradient as a streaming-iterator.
 fn cg_demo() {
     let a = rcarr2(&[[1.0, 0.5, 0.0], [0.5, 1.0, 0.0], [0.0, 0.5, 1.0]]);
@@ -247,6 +288,8 @@ where
         }
     }
 }
+
+
 
 /// Call the different demos.
 fn main() {
