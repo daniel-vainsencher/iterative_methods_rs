@@ -160,22 +160,18 @@ where
     }
 }
 
-// CHANGE iter --> it, etc to match local notation
-
 struct StepBy<I> {
-    iter: I,
+    it: I,
     step: usize,
     first_take: bool,
 }
 
-// adjust this to be more like fn tee signature
-
-fn new<I, T>(iter: I, step: usize) -> StepBy<I> 
+fn new<I, T>(it: I, step: usize) -> StepBy<I> 
 where 
     I: Sized + StreamingIterator<Item = T>,
 {
     assert!(step != 0);
-    StepBy { iter, step: step - 1, first_take: true }
+    StepBy { it, step: step - 1, first_take: true }
 }
 
 
@@ -189,15 +185,15 @@ where
     fn advance(&mut self) {
         if self.first_take {
             self.first_take = false;
-            self.iter.advance();
+            self.it.advance();
         } else {
-            self.iter.nth(self.step);
+            self.it.nth(self.step);
         }
     }
 
     #[inline]
     fn get(&self) -> Option<&I::Item> {
-            self.iter.get()
+            self.it.get()
     }
 }
 
