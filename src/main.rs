@@ -183,7 +183,8 @@ fn cg_demo() {
     // side effect inside the while loop, except we can compose
     // multiple tee, each with its own effect.
     // TODO can this be fixed? see iterutils crate.
-    let timed_cg_iter = time(cg_iter);
+    let step_by_cg_iter = step_by(cg_iter, 4);
+    let timed_cg_iter = time(step_by_cg_iter);
     let mut cg_print_iter = tee(timed_cg_iter, |TimedResult { result, duration }| {
         println!(
             "||Ax - b ||_2 = {:.5}, for x = {:.4}, and Ax - b = {:.5}; iteration duration {}μs",
@@ -248,8 +249,56 @@ where
     }
 }
 
+/// Adapt StreamingIterator to only return values every 'step' number of times.
+///
+/// This is a StreamingIterator version of Iterator::step_by
+///(https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.step_by) 
+///
+/// The iterator adaptor step_by(it, step) wraps a StreamingIterator. A
+/// 'step' is specified and only the items located every 'step' are returned. 
+///
+///Iterator indices begin at 0, thus step_by() converts step -> step - 1
+struct StepBy<I> {
+    it: I,
+    step: usize,
+    first_take: bool,
+}
+
+fn step_by<I, T>(it: I, step: usize) -> StepBy<I> 
+where 
+    I: Sized + StreamingIterator<Item = T>,
+{
+    assert!(step != 0);
+    StepBy { it, step: step - 1, first_take: true }
+}
+
+
+impl<I> StreamingIterator for StepBy<I>
+where
+    I: StreamingIterator,
+{
+    type Item = I::Item;
+
+    #[inline]
+    fn advance(&mut self) {
+        if self.first_take {
+            self.first_take = false;
+            self.it.advance();
+        } else {
+            self.it.nth(self.step);
+        }
+    }
+
+    #[inline]
+    fn get(&self) -> Option<&I::Item> {
+            self.it.get()
+    }
+}
+
 /// Call the different demos.
 fn main() {
+    println!("\n fib_demo:\n");
     fib_demo();
+    println!("\n cg_demo: \n");
     cg_demo();
 }
