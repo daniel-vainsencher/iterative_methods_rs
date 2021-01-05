@@ -183,42 +183,6 @@ fn cg_demo() {
     // side effect inside the while loop, except we can compose
     // multiple tee, each with its own effect.
     // TODO can this be fixed? see iterutils crate.
-    let timed_cg_iter = time(cg_iter);
-    let mut cg_print_iter = tee(timed_cg_iter, |TimedResult { result, duration }| {
-        println!(
-            "||Ax - b ||_2 = {:.5}, for x = {:.4}, and Ax - b = {:.5}; iteration duration {}μs",
-            result.rsprev.sqrt(),
-            result.x,
-            result.a.dot(&result.x) - &result.b,
-            duration.as_nanos(),
-        );
-    });
-    while let Some(_cgi) = cg_print_iter.next() {}
-}
-
-/// Demonstrate usage and convergence of conjugate gradient as a streaming-iterator.
-fn step_by_cg_demo() {
-    let a = rcarr2(&[[1.0, 0.5, 0.0], [0.5, 1.0, 0.0], [0.0, 0.5, 1.0]]);
-    let b = rcarr1(&[0., 1., 0.]);
-    let p = LinearSystem {
-        a: a,
-        b: b,
-        x0: None,
-    };
-    let cg_iter = CGIterable::conjugate_gradient(p)
-        // Upper bound the number of iterations
-        .take(20)
-        // Apply a quality based stopping condition; this relies on
-        // algorithm internals, requiring all state to be exposed and
-        // not just the result.
-        .take_while(|cgi| cgi.rsprev.sqrt() > 1e-6);
-    // Because time, tee are not part of the StreamingIterator trait,
-    // they cannot be chained as in the above. Note the side effect of
-    // tee is applied exactly to every x produced above, the sequence
-    // of which is not affected at all. This is just like applying a
-    // side effect inside the while loop, except we can compose
-    // multiple tee, each with its own effect.
-    // TODO can this be fixed? see iterutils crate.
     let step_by_cg_iter = step_by(cg_iter, 4);
     let timed_cg_iter = time(step_by_cg_iter);
     let mut cg_print_iter = tee(timed_cg_iter, |TimedResult { result, duration }| {
@@ -285,10 +249,15 @@ where
     }
 }
 
-// The iterator adaptor StepBy wraps a StreamingIterator; 
-// a 'step' is specified and only the items located every 
-// 'step' are returned. Iterator indices begin at 0, thus 
-// step -> step - 1 in new()
+/// Adapt StreamingIterator to only return values every 'step' number of times.
+///
+/// This is a StreamingIterator version of Iterator::step_by
+///(https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.step_by) 
+///
+/// The iterator adaptor step_by(it, step) wraps a StreamingIterator. A
+/// 'step' is specified and only the items located every 'step' are returned. 
+///
+///Iterator indices begin at 0, thus step_by() converts step -> step - 1
 struct StepBy<I> {
     it: I,
     step: usize,
@@ -332,6 +301,4 @@ fn main() {
     fib_demo();
     println!("\n cg_demo: \n");
     cg_demo();
-    println!("\n cg_demo with step_by adaptor: \n");
-    step_by_cg_demo();
 }
