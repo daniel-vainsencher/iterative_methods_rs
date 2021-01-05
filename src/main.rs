@@ -183,7 +183,8 @@ fn cg_demo() {
     // side effect inside the while loop, except we can compose
     // multiple tee, each with its own effect.
     // TODO can this be fixed? see iterutils crate.
-    let timed_cg_iter = time(cg_iter);
+    let step_by_cg_iter = step_by(cg_iter, 4);
+    let timed_cg_iter = time(step_by_cg_iter);
     let mut cg_print_iter = tee(timed_cg_iter, |TimedResult { result, duration }| {
         println!(
             "||Ax - b ||_2 = {:.5}, for x = {:.4}, and Ax - b = {:.5}; iteration duration {}μs",
@@ -248,16 +249,17 @@ where
     }
 }
 
-// StepBy wraps a StreamingIterator; a 'step' is specified
-// and only the items located every 'step' are returned.
-// Iterator indices begin at 0, thus step -> step - 1 in new()
+// The iterator adaptor StepBy wraps a StreamingIterator; 
+// a 'step' is specified and only the items located every 
+// 'step' are returned. Iterator indices begin at 0, thus 
+// step -> step - 1 in new()
 struct StepBy<I> {
     it: I,
     step: usize,
     first_take: bool,
 }
 
-fn new<I, T>(it: I, step: usize) -> StepBy<I> 
+fn step_by<I, T>(it: I, step: usize) -> StepBy<I> 
 where 
     I: Sized + StreamingIterator<Item = T>,
 {
@@ -288,9 +290,39 @@ where
     }
 }
 
+/// Demonstrate usage and convergence of conjugate gradient as a streaming-iterator
+// with the adaptor StepBy.
+// fn cg_demo_step_by() {
+//     let a = rcarr2(&[[1.0, 0.5, 0.0], [0.5, 1.0, 0.0], [0.0, 0.5, 1.0]]);
+//     let b = rcarr1(&[0., 1., 0.]);
+//     let p = LinearSystem {
+//         a: a,
+//         b: b,
+//         x0: None,
+//     };
+//     let cg_iter = CGIterable::conjugate_gradient(p)
+//         // Upper bound the number of iterations
+//         .take(20);
+//     // Because step_by is not part of the StreamingIterator trait,
+//     // they cannot be chained as in the above. See the note for tee, time above.
+//     let step_by_cg_iter = step_by(cg_iter, 4);
+//     let mut cg_print_iter = tee(step_by_cg_iter, |TimedResult { result, duration }| {
+//         println!(
+//             "||Ax - b ||_2 = {:.5}, for x = {:.4}, and Ax - b = {:.5}; iteration duration {}μs",
+//             result.rsprev.sqrt(),
+//             result.x,
+//             result.a.dot(&result.x) - &result.b,
+//             duration.as_nanos(),
+//         );
+//     });
+//     while let Some(_cgi) = cg_print_iter.next() {}
+// }
+
 
 /// Call the different demos.
 fn main() {
     fib_demo();
     cg_demo();
+    // println!("\n cg_demo_step_by \n");
+    // cg_demo_step_by();
 }
