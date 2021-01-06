@@ -252,10 +252,10 @@ where
 /// Adapt StreamingIterator to only return values every 'step' number of times.
 ///
 /// This is a StreamingIterator version of Iterator::step_by
-///(https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.step_by) 
+///(https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.step_by)
 ///
 /// The iterator adaptor step_by(it, step) wraps a StreamingIterator. A
-/// 'step' is specified and only the items located every 'step' are returned. 
+/// 'step' is specified and only the items located every 'step' are returned.
 ///
 ///Iterator indices begin at 0, thus step_by() converts step -> step - 1
 struct StepBy<I> {
@@ -264,14 +264,17 @@ struct StepBy<I> {
     first_take: bool,
 }
 
-fn step_by<I, T>(it: I, step: usize) -> StepBy<I> 
-where 
+fn step_by<I, T>(it: I, step: usize) -> StepBy<I>
+where
     I: Sized + StreamingIterator<Item = T>,
 {
     assert!(step != 0);
-    StepBy { it, step: step - 1, first_take: true }
+    StepBy {
+        it,
+        step: step - 1,
+        first_take: true,
+    }
 }
-
 
 impl<I> StreamingIterator for StepBy<I>
 where
@@ -291,7 +294,7 @@ where
 
     #[inline]
     fn get(&self) -> Option<&I::Item> {
-            self.it.get()
+        self.it.get()
     }
 }
 
