@@ -304,46 +304,40 @@ fn main() {
     fib_demo();
     println!("\n cg_demo: \n");
     cg_demo();
-    cg_step_by_test();
+    // cg_step_by_test();
 }
 
-/// Test step_by adaptor for conjugate gradient as a streaming-iterator.
-fn cg_step_by_test() {
-    // Define Linear System
-    let a = rcarr2(&[[1.0, 0.5, 0.0], [0.5, 1.0, 0.0], [0.0, 0.5, 1.0]]);
-    let b = rcarr1(&[0., 1., 0.]);
-    let p = LinearSystem {
-        a: a,
-        b: b,
-        x0: None,
-    };
-    // Define Vec of results for all iterations and for the sample defined by step_by:
-    let mut full_results = Vec::new();
-    // let mut sample_results = Vec::new(); 
-    fn save_cg_iterations(linear_system: LinearSystem, step: usize, results: &mut Vec<f64>) {
-        // let cg_iter = CGIterable::conjugate_gradient(p)
-        // .take(20);
-        // let mut step_by_cg_iter = step_by(cg_iter, 5);
-        // while let Some(_cgi) = step_by_cg_iter.next() {
-        //     full_results.push(_cgi.rsprev.sqrt())
+// Unit Tests Module
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn cg_step_by_test() {
+        // Define Linear System
+        let a = rcarr2(&[[1.0, 0.5, 0.0], [0.5, 1.0, 0.0], [0.0, 0.5, 1.0]]);
+        let b = rcarr1(&[0., 1., 0.]);
+        let linear_system = LinearSystem {
+            a: a,
+            b: b,
+            x0: None,
+        };
+        // create an iterator
+        let mut full_iter = CGIterable::conjugate_gradient(linear_system).take(20);
+        // clone the iterator and adapt it to only return values every 'step' iterates
+        let sample_iter = full_iter.clone();
+        let step = 5;
+        let mut sample_iter = step_by(sample_iter, step);
 
-        let cg_iter = CGIterable::conjugate_gradient(linear_system)
-        .take(20);
-        let mut step_by_cg_iter = step_by(cg_iter, step);
-        while let Some(_cgi) = step_by_cg_iter.next() {
-            results.push(_cgi.rsprev.sqrt())
-        } 
+        // It is asserted that the rsprev values of the sample iterator are
+        // equal to the appropriate iterates of the full iterator
+        for index in 0..20 {
+            if let Some(_full) = full_iter.next() {
+                if index % step == 0 {
+                    if let Some(_sample) = sample_iter.next() {
+                        assert_eq!(_full.rsprev, _sample.rsprev);
+                    };
+                }
+            };
+        }
     }
-    
-    save_cg_iterations(p, 1, &mut full_results);
-    println!("\n Full results: \n {:?}", full_results);
-    // println!("\n Sampled results: \n {:?}", sample_results);
 }
-
-// Unit Tests Module   
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     #[test]
-
-// }
