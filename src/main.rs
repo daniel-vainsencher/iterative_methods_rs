@@ -252,10 +252,10 @@ where
 /// Adapt StreamingIterator to only return values every 'step' number of times.
 ///
 /// This is a StreamingIterator version of Iterator::step_by
-///(https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.step_by) 
+///(https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.step_by)
 ///
 /// The iterator adaptor step_by(it, step) wraps a StreamingIterator. A
-/// 'step' is specified and only the items located every 'step' are returned. 
+/// 'step' is specified and only the items located every 'step' are returned.
 ///
 ///Iterator indices begin at 0, thus step_by() converts step -> step - 1
 struct StepBy<I> {
@@ -264,14 +264,17 @@ struct StepBy<I> {
     first_take: bool,
 }
 
-fn step_by<I, T>(it: I, step: usize) -> StepBy<I> 
-where 
+fn step_by<I, T>(it: I, step: usize) -> StepBy<I>
+where
     I: Sized + StreamingIterator<Item = T>,
 {
     assert!(step != 0);
-    StepBy { it, step: step - 1, first_take: true }
+    StepBy {
+        it,
+        step: step - 1,
+        first_take: true,
+    }
 }
-
 
 impl<I> StreamingIterator for StepBy<I>
 where
@@ -291,7 +294,7 @@ where
 
     #[inline]
     fn get(&self) -> Option<&I::Item> {
-            self.it.get()
+        self.it.get()
     }
 }
 
@@ -301,4 +304,46 @@ fn main() {
     fib_demo();
     println!("\n cg_demo: \n");
     cg_demo();
+    cg_step_by_test();
 }
+
+/// Test step_by adaptor for conjugate gradient as a streaming-iterator.
+fn cg_step_by_test() {
+    // Define Linear System
+    let a = rcarr2(&[[1.0, 0.5, 0.0], [0.5, 1.0, 0.0], [0.0, 0.5, 1.0]]);
+    let b = rcarr1(&[0., 1., 0.]);
+    let p = LinearSystem {
+        a: a,
+        b: b,
+        x0: None,
+    };
+    // Define Vec of results for all iterations and for the sample defined by step_by:
+    let mut full_results = Vec::new();
+    // let mut sample_results = Vec::new(); 
+    fn save_cg_iterations(linear_system: LinearSystem, step: usize, results: &mut Vec<f64>) {
+        // let cg_iter = CGIterable::conjugate_gradient(p)
+        // .take(20);
+        // let mut step_by_cg_iter = step_by(cg_iter, 5);
+        // while let Some(_cgi) = step_by_cg_iter.next() {
+        //     full_results.push(_cgi.rsprev.sqrt())
+
+        let cg_iter = CGIterable::conjugate_gradient(linear_system)
+        .take(20);
+        let mut step_by_cg_iter = step_by(cg_iter, step);
+        while let Some(_cgi) = step_by_cg_iter.next() {
+            results.push(_cgi.rsprev.sqrt())
+        } 
+    }
+    
+    save_cg_iterations(p, 1, &mut full_results);
+    println!("\n Full results: \n {:?}", full_results);
+    // println!("\n Sampled results: \n {:?}", sample_results);
+}
+
+// Unit Tests Module   
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//     #[test]
+
+// }
