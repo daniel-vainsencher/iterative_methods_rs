@@ -75,14 +75,15 @@ Rust seems promising for many reasons.
 
 ## The simplest thing and how it fails
 
-In simple cases, Rust iterators will do great. We even have some nice
-little adaptors pre-made, like `enumerate` with annotates our state
-with its location in the stream, and `take` which stops after the
-given iteration number:
+In simple cases, Rust iterators will do. We even have some nice little
+adaptors pre-made, like `enumerate` with annotates our state with its
+location in the stream, and `take` which stops after the given
+iteration number:
 
     for (i, state) in convert_problem_to_iterator(problem).enumerate().take(4) {
         println!("Iteration {} has state {}", i, state);
     }
+
 
 # TODO here
 * rework the fib example, can we actually output the state instead of
