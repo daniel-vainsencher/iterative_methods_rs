@@ -4,6 +4,7 @@
 use ndarray::*;
 use std::time::{Duration, Instant};
 use streaming_iterator::*;
+use std::collections::HashMap;
 
 /// State of Fibonacci iterator.
 struct FibonnacciIterable<T> {
@@ -298,6 +299,53 @@ where
     }
 }
 
+// Weighted Reservoir Sampling
+#[derive(Debug)]
+#[derive(Clone)]
+struct ReservoirSampleIterator<I, T> {
+    it: I,
+    reservoir: HashMap<String, T>,
+    reservoir_size: usize,
+    // the keys are floats converted to strings
+    minimum_key: Option<String>,
+    // the float version is used for comparison
+    minimum_key_float: Option<f64>,
+}
+
+// Create a ReservoirSampleIterator
+fn reservoir_sample<I, T>(it: I, reservoir_size: usize) -> ReservoirSampleIterator<I, T> 
+where
+    I: Sized + StreamingIterator<Item = T>,
+    T: Clone,
+{
+    let res: HashMap<String, T> = HashMap::new();
+    ReservoirSampleIterator {
+        it,
+        reservoir: res,
+        reservoir_size: reservoir_size,
+        minimum_key: None,
+        minimum_key_float: None,
+    }
+}
+
+// FILL IN CODE HERE
+// impl<I> StreamingIterator for ReservoirSampleIterator<I>
+// where
+//     I: StreamingIterator,
+// {
+//     type Item = I::Item;
+
+//     #[inline]
+//     fn advance(&mut self) {
+//         // FILL IN HERE
+//     }
+
+//     #[inline]
+//     fn get() -> Option<&I::Item> {
+//         self.it.get()
+//     }
+// }
+
 /// Call the different demos.
 fn main() {
     println!("\n fib_demo:\n");
@@ -340,4 +388,13 @@ mod tests {
             };
         }
     }
+
+    #[test]
+    fn reservoir_struct_test() {
+        let v = vec![2, 1, 2, 3, 2, 3];
+        let iter = convert(v.iter()); 
+        let iter = reservoir_sample(iter, 2);
+        println!("{:?}", iter.reservoir);
+    }
+
 }
