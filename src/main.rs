@@ -2,9 +2,9 @@
 //! A demonstration of the use of StreamingIterators and their adapters to implement iterative algorithms.
 
 use ndarray::*;
+use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use streaming_iterator::*;
-use std::collections::HashMap;
 
 /// State of Fibonacci iterator.
 struct FibonnacciIterable<T> {
@@ -300,8 +300,7 @@ where
 }
 
 // Weighted Reservoir Sampling
-#[derive(Debug)]
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 struct ReservoirSampleIterator<I, T> {
     it: I,
     reservoir: HashMap<String, T>,
@@ -313,7 +312,7 @@ struct ReservoirSampleIterator<I, T> {
 }
 
 // Create a ReservoirSampleIterator
-fn reservoir_sample<I, T>(it: I, reservoir_size: usize) -> ReservoirSampleIterator<I, T> 
+fn reservoir_sample<I, T>(it: I, reservoir_size: usize) -> ReservoirSampleIterator<I, T>
 where
     I: Sized + StreamingIterator<Item = T>,
     T: Clone,
@@ -392,9 +391,8 @@ mod tests {
     #[test]
     fn reservoir_struct_test() {
         let v = vec![2, 1, 2, 3, 2, 3];
-        let iter = convert(v.iter()); 
+        let iter = convert(v.iter());
         let iter = reservoir_sample(iter, 2);
         println!("{:?}", iter.reservoir);
     }
-
 }
