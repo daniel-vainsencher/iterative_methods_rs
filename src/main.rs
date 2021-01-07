@@ -5,6 +5,7 @@ use ndarray::*;
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use streaming_iterator::*;
+use std::collections::HashMap;
 
 /// State of Fibonacci iterator.
 struct FibonnacciIterable<T> {
