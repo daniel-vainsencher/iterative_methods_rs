@@ -2,6 +2,7 @@
 //! A demonstration of the use of StreamingIterators and their adapters to implement iterative algorithms.
 
 use ndarray::*;
+use std::cmp::PartialEq;
 use std::time::{Duration, Instant};
 use streaming_iterator::*;
 
@@ -298,6 +299,118 @@ where
     }
 }
 
+// Weighted Reservoir Sampling
+
+#[derive(Debug, Clone, PartialEq)]
+struct Sample<U> {
+    value: U,
+    weight: f64,
+}
+
+fn new_sample<U>(value: U, weight: f64) -> Sample<U>
+where
+    U: Clone,
+{
+    Sample {
+        value: value,
+        weight: weight,
+    }
+}
+
+#[derive(Debug, Clone)]
+struct ReservoirSampleIterator<I, T> {
+    it: I,
+    reservoir: Vec<T>,
+    reservoir_size: usize,
+    // total weight -- change this to generic type
+    w_sum: f64,
+    // The type of the oracles needs to be changed
+    // they are only vecs for the purpose of testing
+    // They should be something like iterators so that
+    // both random and determinant sequences can be produced
+    // for deployment and for testing
+    oracle1: Vec<f64>,
+    oracle2: Vec<usize>,
+}
+
+// Create a ReservoirSampleIterator
+fn reservoir_sample<I, T>(
+    it: I,
+    reservoir_size: usize,
+    oracle1: Vec<f64>,
+    oracle2: Vec<usize>,
+) -> ReservoirSampleIterator<I, T>
+where
+    I: Sized + StreamingIterator<Item = T>,
+    T: Clone,
+{
+    let res: Vec<T> = Vec::new();
+    ReservoirSampleIterator {
+        it,
+        reservoir: res,
+        reservoir_size: reservoir_size,
+        w_sum: 0.0,
+        oracle1: oracle1,
+        oracle2: oracle2,
+    }
+}
+
+impl<I, U> StreamingIterator for ReservoirSampleIterator<I, Sample<U>>
+where
+    U: Clone,
+    I: StreamingIterator<Item = Sample<U>>,
+{
+    // type Item = I::Item;
+    type Item = Sample<U>;
+
+    #[inline]
+    fn advance(&mut self) {
+        if self.reservoir.len() < self.reservoir_size {
+            self.it.advance();
+            if let Some(sample) = self.it.get() {
+                let cloned_sample = sample.clone();
+                self.reservoir.push(cloned_sample);
+                self.w_sum += sample.weight;
+            }
+        } else {
+            // will this skip a sample?
+            if let Some(sample) = self.it.next() {
+                // remove clones in next 2 lines
+                let mut oracle1_iter = self.oracle1.iter().clone();
+                let mut oracle2_iter = self.oracle2.iter().clone();
+                self.w_sum += sample.weight;
+                let p = &(sample.weight / self.w_sum);
+                if let Some(j) = oracle1_iter.next() {
+                    if j < p {
+                        if let Some(h) = oracle2_iter.next() {
+                            let sample_struct = sample.clone();
+                            self.reservoir.insert(*h, sample_struct);
+                        };
+                    }
+                };
+            }
+        }
+    }
+
+    // let mut oracle1_iter = rs_iter.oracle1.iter();
+    // let mut oracle2_iter = rs_iter.oracle2.iter();
+    // rs_iter.w_sum += sample.weight;
+    // let p = &(sample.weight / self.w_sum);
+    // if let Some(j) = oracle1_iter.next() {
+    // if j < p {
+    //     if let Some(h) = oracle2_iter.next() {
+    //         let sample_struct = *sample;
+    //         self.reservoir.insert(*h, sample_struct);
+    //     };
+    // }
+    // };
+
+    #[inline]
+    fn get(&self) -> Option<&I::Item> {
+        self.it.get()
+    }
+}
+
 /// Call the different demos.
 fn main() {
     println!("\n fib_demo:\n");
@@ -322,5 +435,41 @@ mod tests {
             assert_eq!(*element, _index * 3);
             _index = _index + 1;
         }
+    }
+
+    // Tests for the ReservoirSampleIterator adaptor
+    #[test]
+    fn test_sample_struct() {
+        let samp = new_sample(String::from("hi"), 1.0);
+        assert_eq!(samp.value, String::from("hi"));
+        assert_eq!(samp.weight, 1.0);
+    }
+
+    #[test]
+    fn fill_reservoir_test() {
+        // think of v as the vec of weights, so samples are just weights
+        let v: Vec<Sample<f64>> = vec![new_sample(0.5, 1.), new_sample(0.2, 2.)];
+        let v_copy = v.clone();
+        let iter = convert(v);
+        let oracle1 = vec![0.1, 0.6, 0.4, 0.3, 0.5];
+        let oracle2 = vec![0, 1, 2, 3, 4];
+        let mut iter = reservoir_sample(iter, 2, oracle1, oracle2);
+        for _element in v_copy {
+            iter.advance();
+        }
+        assert_eq!(
+            iter.reservoir[0],
+            Sample {
+                value: 0.5f64,
+                weight: 1.0f64
+            }
+        );
+        assert_eq!(
+            iter.reservoir[1],
+            Sample {
+                value: 0.2f64,
+                weight: 2.0f64
+            }
+        );
     }
 }
