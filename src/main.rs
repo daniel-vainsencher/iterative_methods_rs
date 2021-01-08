@@ -329,6 +329,10 @@ struct ReservoirSampleIterator<I, T> {
     // They should be something like iterators so that
     // both random and determinant sequences can be produced
     // for deployment and for testing
+    // Oracle1 is used to generate random numbers in (0,1) and is used
+    // to decide whether to add a sample to the reservoir
+    // Oracle2 is used to generate random usize that are used as indices
+    // to randomly select which element of the reservoir is replaced.
     oracle1: Vec<f64>,
     oracle2: Vec<usize>,
 }
