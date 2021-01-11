@@ -306,37 +306,20 @@ fn main() {
     cg_demo();
 }
 
-// Unit Tests Module
+/// Unit Tests Module
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[test]
-    fn cg_step_by_test() {
-        // Define Linear System
-        let a = rcarr2(&[[1.0, 0.5, 0.0], [0.5, 1.0, 0.0], [0.0, 0.5, 1.0]]);
-        let b = rcarr1(&[0., 1., 0.]);
-        let linear_system = LinearSystem {
-            a: a,
-            b: b,
-            x0: None,
-        };
-        // create an iterator
-        let mut full_iter = CGIterable::conjugate_gradient(linear_system).take(20);
-        // clone the iterator and adapt it to only return values every 'step' iterates
-        let sample_iter = full_iter.clone();
-        let step = 5;
-        let mut sample_iter = step_by(sample_iter, step);
 
-        // It is asserted that the rsprev values of the sample iterator are
-        // equal to the appropriate iterates of the full iterator
-        for index in 0..20 {
-            if let Some(_full) = full_iter.next() {
-                if index % step == 0 {
-                    if let Some(_sample) = sample_iter.next() {
-                        assert_eq!(_full.rsprev, _sample.rsprev);
-                    };
-                }
-            };
+    #[test]
+    fn step_by_test() {
+        let v = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+        let iter = convert(v);
+        let mut iter = step_by(iter, 3);
+        let mut _index = 0i64;
+        while let Some(element) = iter.next() {
+            assert_eq!(*element, _index * 3);
+            _index = _index + 1;
         }
     }
 }
