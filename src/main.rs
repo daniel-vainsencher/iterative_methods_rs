@@ -398,24 +398,41 @@ where
         }
     }
 
-    // let mut oracle1_iter = rs_iter.oracle1.iter();
-    // let mut oracle2_iter = rs_iter.oracle2.iter();
-    // rs_iter.w_sum += datum.weight;
-    // let p = &(datum.weight / self.w_sum);
-    // if let Some(j) = oracle1_iter.next() {
-    // if j < p {
-    //     if let Some(h) = oracle2_iter.next() {
-    //         let datum_struct = *datum;
-    //         self.reservoir.insert(*h, datum_struct);
-    //     };
-    // }
-    // };
-
     #[inline]
     fn get(&self) -> Option<&I::Item> {
         self.it.get()
     }
 }
+
+fn collect_seeded_values() {
+    /// Generate the sequence of j, p values that will be used in tests
+    /// of ReservoirSamplingIterator.
+    let mut prng = Pcg64::seed_from_u64(1);
+    let mut seeded_values: Vec<WeightedDatum<f64>> = Vec::new();
+    for _i in 0..10 {
+        let j = prng.gen();
+        let h = prng.gen_range(0..10) as f64;
+        let wd: WeightedDatum<f64> = new_datum(j, h);
+        seeded_values.push(wd);
+    }
+    println!("{:#?}", seeded_values);
+}
+
+fn generate_stream_for_wrs() {
+    /// Generate the sequence of values, weights for the
+    /// ReservoirSamplingIteratorthat will be used in tests.
+    let mut prng = Pcg64::seed_from_u64(2);
+    let mut seeded_values: Vec<WeightedDatum<f64>> = Vec::new();
+    for _i in 0..10 {
+        let val = prng.gen();
+        let wei = prng.gen_range(0..10) as f64;
+        let wd: WeightedDatum<f64> = new_datum(val, wei);
+        seeded_values.push(wd);
+    }
+    println!("{:#?}", seeded_values);
+}
+
+fn wrs_demo() {}
 
 /// Call the different demos.
 fn main() {
@@ -423,6 +440,8 @@ fn main() {
     fib_demo();
     println!("\n cg_demo: \n");
     cg_demo();
+    println!("\n collect_seeded_values: \n");
+    collect_seeded_values();
 }
 
 // Unit Tests Module
@@ -443,7 +462,7 @@ mod tests {
         }
     }
 
-    // Tests for the ReservoirSampleIterator adaptor
+    /// Tests for the ReservoirSampleIterator adaptor
     #[test]
     fn test_datum_struct() {
         let samp = new_datum(String::from("hi"), 1.0);
@@ -453,12 +472,10 @@ mod tests {
 
     #[test]
     fn fill_reservoir_test() {
-        // think of v as the vec of weights, so samples are just weights
+        // v is the data stream.
         let v: Vec<WeightedDatum<f64>> = vec![new_datum(0.5, 1.), new_datum(0.2, 2.)];
         let v_copy = v.clone();
         let iter = convert(v);
-        let oracle1 = vec![0.1, 0.6, 0.4, 0.3, 0.5];
-        let oracle2 = vec![0, 1, 2, 3, 4];
         let mut iter = reservoir_sample(iter, 2, None);
         for _element in v_copy {
             iter.advance();
