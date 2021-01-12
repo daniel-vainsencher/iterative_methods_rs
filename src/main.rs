@@ -299,35 +299,46 @@ where
     }
 }
 
-// Weighted Reservoir Sampling
+/// Weighted Sampling
+/// The WeightedDatum struct wraps the values of a data set to include
+/// a weight for each datum. Currently, the main motivation for this
+/// is to use it for Weighted Reservoir Sampling.
 
+// Switch type of weight to Option<f64>
 #[derive(Debug, Clone, PartialEq)]
-struct Sample<U> {
+struct WeightedDatum<U> {
     value: U,
     weight: f64,
 }
 
-fn new_sample<U>(value: U, weight: f64) -> Sample<U>
+fn new_datum<U>(value: U, weight: f64) -> WeightedDatum<U>
 where
     U: Clone,
 {
-    Sample {
+    WeightedDatum {
         value: value,
         weight: weight,
     }
 }
 
+/// Weighted Reservoir Sampling
+/// The weighted reservoir sampling algorithm of M. T. Chao is implemented.
+/// See https://en.wikipedia.org/wiki/Reservoir_sampling#Weighted_random_sampling
+/// or for the original paper, https://doi.org/10.1093/biomet/69.3.653.
+
+/// Future work might include implementing paralellized batch processing:
+/// https://dl.acm.org/doi/10.1145/3350755.3400287
 #[derive(Debug, Clone)]
 struct ReservoirSampleIterator<I, T> {
     it: I,
     reservoir: Vec<T>,
-    reservoir_size: usize,
+    capacity: usize,
     // total weight -- change this to generic type
     w_sum: f64,
     // The type of the oracles needs to be changed
     // they are only vecs for the purpose of testing
     // They should be something like iterators so that
-    // both random and determinant sequences can be produced
+    // both random and deterministic sequences can be produced
     // for deployment and for testing
     // Oracle1 is used to generate random numbers in (0,1) and is used
     // to decide whether to add a sample to the reservoir
@@ -340,7 +351,7 @@ struct ReservoirSampleIterator<I, T> {
 // Create a ReservoirSampleIterator
 fn reservoir_sample<I, T>(
     it: I,
-    reservoir_size: usize,
+    capacity: usize,
     oracle1: Vec<f64>,
     oracle2: Vec<usize>,
 ) -> ReservoirSampleIterator<I, T>
@@ -352,43 +363,43 @@ where
     ReservoirSampleIterator {
         it,
         reservoir: res,
-        reservoir_size: reservoir_size,
+        capacity: capacity,
         w_sum: 0.0,
         oracle1: oracle1,
         oracle2: oracle2,
     }
 }
 
-impl<I, U> StreamingIterator for ReservoirSampleIterator<I, Sample<U>>
+impl<I, U> StreamingIterator for ReservoirSampleIterator<I, WeightedDatum<U>>
 where
     U: Clone,
-    I: StreamingIterator<Item = Sample<U>>,
+    I: StreamingIterator<Item = WeightedDatum<U>>,
 {
     // type Item = I::Item;
-    type Item = Sample<U>;
+    type Item = WeightedDatum<U>;
 
     #[inline]
     fn advance(&mut self) {
-        if self.reservoir.len() < self.reservoir_size {
+        if self.reservoir.len() < self.capacity {
             self.it.advance();
-            if let Some(sample) = self.it.get() {
-                let cloned_sample = sample.clone();
-                self.reservoir.push(cloned_sample);
-                self.w_sum += sample.weight;
+            if let Some(datum) = self.it.get() {
+                let cloned_datum = datum.clone();
+                self.reservoir.push(cloned_datum);
+                self.w_sum += datum.weight;
             }
         } else {
-            // will this skip a sample?
-            if let Some(sample) = self.it.next() {
+            // will this skip a datum?
+            if let Some(datum) = self.it.next() {
                 // remove clones in next 2 lines
                 let mut oracle1_iter = self.oracle1.iter().clone();
                 let mut oracle2_iter = self.oracle2.iter().clone();
-                self.w_sum += sample.weight;
-                let p = &(sample.weight / self.w_sum);
+                self.w_sum += datum.weight;
+                let p = &(datum.weight / self.w_sum);
                 if let Some(j) = oracle1_iter.next() {
                     if j < p {
                         if let Some(h) = oracle2_iter.next() {
-                            let sample_struct = sample.clone();
-                            self.reservoir.insert(*h, sample_struct);
+                            let datum_struct = datum.clone();
+                            self.reservoir[*h] = datum_struct;
                         };
                     }
                 };
@@ -398,13 +409,13 @@ where
 
     // let mut oracle1_iter = rs_iter.oracle1.iter();
     // let mut oracle2_iter = rs_iter.oracle2.iter();
-    // rs_iter.w_sum += sample.weight;
-    // let p = &(sample.weight / self.w_sum);
+    // rs_iter.w_sum += datum.weight;
+    // let p = &(datum.weight / self.w_sum);
     // if let Some(j) = oracle1_iter.next() {
     // if j < p {
     //     if let Some(h) = oracle2_iter.next() {
-    //         let sample_struct = *sample;
-    //         self.reservoir.insert(*h, sample_struct);
+    //         let datum_struct = *datum;
+    //         self.reservoir.insert(*h, datum_struct);
     //     };
     // }
     // };
@@ -443,8 +454,8 @@ mod tests {
 
     // Tests for the ReservoirSampleIterator adaptor
     #[test]
-    fn test_sample_struct() {
-        let samp = new_sample(String::from("hi"), 1.0);
+    fn test_datum_struct() {
+        let samp = new_datum(String::from("hi"), 1.0);
         assert_eq!(samp.value, String::from("hi"));
         assert_eq!(samp.weight, 1.0);
     }
@@ -452,7 +463,7 @@ mod tests {
     #[test]
     fn fill_reservoir_test() {
         // think of v as the vec of weights, so samples are just weights
-        let v: Vec<Sample<f64>> = vec![new_sample(0.5, 1.), new_sample(0.2, 2.)];
+        let v: Vec<WeightedDatum<f64>> = vec![new_datum(0.5, 1.), new_datum(0.2, 2.)];
         let v_copy = v.clone();
         let iter = convert(v);
         let oracle1 = vec![0.1, 0.6, 0.4, 0.3, 0.5];
@@ -463,14 +474,14 @@ mod tests {
         }
         assert_eq!(
             iter.reservoir[0],
-            Sample {
+            WeightedDatum {
                 value: 0.5f64,
                 weight: 1.0f64
             }
         );
         assert_eq!(
             iter.reservoir[1],
-            Sample {
+            WeightedDatum {
                 value: 0.2f64,
                 weight: 2.0f64
             }
