@@ -2,6 +2,8 @@
 //! A demonstration of the use of StreamingIterators and their adapters to implement iterative algorithms.
 
 use ndarray::*;
+use rand::{Rng, SeedableRng};
+use rand_pcg::Pcg64;
 use std::cmp::PartialEq;
 use std::time::{Duration, Instant};
 use streaming_iterator::*;
@@ -335,38 +337,32 @@ struct ReservoirSampleIterator<I, T> {
     capacity: usize,
     // total weight -- change this to generic type
     w_sum: f64,
-    // The type of the oracles needs to be changed
-    // they are only vecs for the purpose of testing
-    // They should be something like iterators so that
-    // both random and deterministic sequences can be produced
-    // for deployment and for testing
-    // Oracle1 is used to generate random numbers in (0,1) and is used
-    // to decide whether to add a sample to the reservoir
-    // Oracle2 is used to generate random usize that are used as indices
-    // to randomly select which element of the reservoir is replaced.
-    oracle1: Vec<f64>,
-    oracle2: Vec<usize>,
+    /// The oracle is currently Pcg64, which allows seeded rng. This should be
+    /// extended to generic type bound by traits for implementing seeding.
+    oracle: Pcg64,
 }
 
 // Create a ReservoirSampleIterator
 fn reservoir_sample<I, T>(
     it: I,
     capacity: usize,
-    oracle1: Vec<f64>,
-    oracle2: Vec<usize>,
+    custom_oracle: Option<Pcg64>,
 ) -> ReservoirSampleIterator<I, T>
 where
     I: Sized + StreamingIterator<Item = T>,
     T: Clone,
 {
+    let oracle = match custom_oracle {
+        Some(oracle) => oracle,
+        None => Pcg64::seed_from_u64(1),
+    };
     let res: Vec<T> = Vec::new();
     ReservoirSampleIterator {
         it,
         reservoir: res,
         capacity: capacity,
         w_sum: 0.0,
-        oracle1: oracle1,
-        oracle2: oracle2,
+        oracle: oracle,
     }
 }
 
@@ -390,18 +386,13 @@ where
         } else {
             // will this skip a datum?
             if let Some(datum) = self.it.next() {
-                // remove clones in next 2 lines
-                let mut oracle1_iter = self.oracle1.iter().clone();
-                let mut oracle2_iter = self.oracle2.iter().clone();
                 self.w_sum += datum.weight;
                 let p = &(datum.weight / self.w_sum);
-                if let Some(j) = oracle1_iter.next() {
-                    if j < p {
-                        if let Some(h) = oracle2_iter.next() {
-                            let datum_struct = datum.clone();
-                            self.reservoir[*h] = datum_struct;
-                        };
-                    }
+                let j: f64 = self.oracle.gen();
+                if j < *p {
+                    let h = self.oracle.gen_range(0..self.capacity) as usize;
+                    let datum_struct = datum.clone();
+                    self.reservoir[h] = datum_struct;
                 };
             }
         }
@@ -468,7 +459,7 @@ mod tests {
         let iter = convert(v);
         let oracle1 = vec![0.1, 0.6, 0.4, 0.3, 0.5];
         let oracle2 = vec![0, 1, 2, 3, 4];
-        let mut iter = reservoir_sample(iter, 2, oracle1, oracle2);
+        let mut iter = reservoir_sample(iter, 2, None);
         for _element in v_copy {
             iter.advance();
         }
