@@ -298,6 +298,166 @@ where
     }
 }
 
+/// Weighted Sampling
+/// The WeightedDatum struct wraps the values of a data set to include
+/// a weight for each datum. Currently, the main motivation for this
+/// is to use it for Weighted Reservoir Sampling.
+
+// Switch type of weight to Option<f64>
+#[derive(Debug, Clone, PartialEq)]
+struct WeightedDatum<U> {
+    value: U,
+    weight: f64,
+}
+
+fn new_datum<U>(value: U, weight: f64) -> WeightedDatum<U>
+where
+    U: Clone,
+{
+    WeightedDatum {
+        value: value,
+        weight: weight,
+    }
+}
+
+/// Weighted Reservoir Sampling
+/// The weighted reservoir sampling algorithm of M. T. Chao is implemented.
+/// See https://en.wikipedia.org/wiki/Reservoir_sampling#Weighted_random_sampling
+/// or for the original paper, https://doi.org/10.1093/biomet/69.3.653.
+
+/// Future work might include implementing paralellized batch processing:
+/// https://dl.acm.org/doi/10.1145/3350755.3400287
+#[derive(Debug, Clone)]
+struct ReservoirSampleIterator<I, T> {
+    it: I,
+    reservoir: Vec<T>,
+    capacity: usize,
+    // total weight -- change this to generic type
+    w_sum: f64,
+    /// The oracle is currently Pcg64, which allows seeded rng. This should be
+    /// extended to generic type bound by traits for implementing seeding.
+    oracle: Pcg64,
+}
+
+// Create a ReservoirSampleIterator
+fn reservoir_iterator<I, T>(
+    it: I,
+    capacity: usize,
+    custom_oracle: Option<Pcg64>,
+) -> ReservoirSampleIterator<I, T>
+where
+    I: Sized + StreamingIterator<Item = T>,
+    T: Clone,
+{
+    let oracle = match custom_oracle {
+        Some(oracle) => oracle,
+        None => Pcg64::seed_from_u64(1),
+    };
+    let res: Vec<T> = Vec::new();
+    ReservoirSampleIterator {
+        it,
+        reservoir: res,
+        capacity: capacity,
+        w_sum: 0.0,
+        oracle: oracle,
+    }
+}
+
+impl<I, U> StreamingIterator for ReservoirSampleIterator<I, WeightedDatum<U>>
+where
+    U: Clone,
+    I: StreamingIterator<Item = WeightedDatum<U>>,
+{
+    // type Item = I::Item;
+    type Item = WeightedDatum<U>;
+
+    #[inline]
+    fn advance(&mut self) {
+        if self.reservoir.len() < self.capacity {
+            self.it.advance();
+            if let Some(datum) = self.it.get() {
+                let cloned_datum = datum.clone();
+                self.reservoir.push(cloned_datum);
+                self.w_sum += datum.weight;
+            }
+        } else {
+            // will this skip a datum?
+            if let Some(datum) = self.it.next() {
+                self.w_sum += datum.weight;
+                let p = &(datum.weight / self.w_sum);
+                let j: f64 = self.oracle.gen();
+                if j < *p {
+                    let h = self.oracle.gen_range(0..self.capacity) as usize;
+                    let datum_struct = datum.clone();
+                    self.reservoir[h] = datum_struct;
+                };
+            }
+        }
+    }
+
+    #[inline]
+    fn get(&self) -> Option<&Self::Item> {
+        // Revise this -- we need to be able to get all of the elements of the reservoir
+        self.it.get()
+    }
+}
+
+impl<I, U> ReservoirSampleIterator<I, WeightedDatum<U>> {
+    #[inline]
+    fn get_reservoir(&self) -> Option<&Vec<WeightedDatum<U>>> {
+        Some(&self.reservoir)
+    }
+}
+
+/// Utility function to generate a sequence of (float, int as float)
+/// values wrapped in a WeightedDatum struct that will be used in tests
+/// of ReservoirSamplingIterator.
+fn generate_seeded_values(num_values: usize, int_range_bound: usize) -> Vec<WeightedDatum<f64>> {
+    let mut prng = Pcg64::seed_from_u64(1);
+    let mut seeded_values: Vec<WeightedDatum<f64>> = Vec::new();
+    for _i in 0..num_values {
+        let afloat = prng.gen();
+        let anint = prng.gen_range(0..int_range_bound) as f64;
+        let wd: WeightedDatum<f64> = new_datum(afloat, anint);
+        seeded_values.push(wd);
+    }
+    seeded_values
+}
+
+fn wrs_demo() {
+    let mut seeded_values = generate_seeded_values(6, 2);
+    let mut stream: Vec<WeightedDatum<f64>> = Vec::new();
+    for _i in 0..4 {
+        if let Some(wd) = seeded_values.pop() {
+            stream.push(wd);
+        };
+    }
+    let random_base_and_index = seeded_values;
+    println!("Stream: \n {:#?} \n", stream);
+    println!("Random Numbers for Alg \n {:#?} \n ", random_base_and_index);
+
+    let stream = convert(stream);
+    let mut stream = reservoir_iterator(stream, 2, None);
+    println!("Reservoir - initially empty: \n {:#?} \n", stream.reservoir);
+    let mut _index = 0i64;
+    while let Some(_item) = stream.next() {
+        // println!("Next item: {:?} \n", _item);
+        if _index == 1 {
+            println!(
+                "Reservoir filled with the first items from the stream: {:#?} \n",
+                stream.reservoir
+            );
+        }
+        _index = _index + 1;
+    }
+    if let Some(reservoir) = stream.get_reservoir() {
+        println!(
+            "Reservoir at the end of the iteration: \n {:#?} \n",
+            reservoir
+        );
+    };
+}
+
 /// Call the different demos.
 fn main() {
     println!("\n fib_demo:\n");
@@ -306,13 +466,12 @@ fn main() {
     cg_demo();
 }
 
-// Unit Tests Module
+/// Unit Tests Module
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    // Test the step_by adaptor
     fn step_by_test() {
         let v = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
         let iter = convert(v);
