@@ -448,10 +448,12 @@ fn wrs_demo() {
         println!("Reservoir_{}: {:#?} \n", _index, stream.reservoir);
         _index = _index + 1;
     }
-    println!(
-        "The reservoir at the end of the iteration is: \n {:#?} \n",
-        stream.reservoir
-    );
+    if let Some(reservoir) = stream.get_reservoir() {
+        println!(
+            "The reservoir at the end of the iteration is: \n {:#?} \n",
+            reservoir
+        );
+    };
 }
 
 /// Call the different demos.
