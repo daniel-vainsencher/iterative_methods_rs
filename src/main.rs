@@ -306,13 +306,12 @@ fn main() {
     cg_demo();
 }
 
-// Unit Tests Module
+/// Unit Tests Module
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    // Test the step_by adaptor
     fn step_by_test() {
         let v = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
         let iter = convert(v);
