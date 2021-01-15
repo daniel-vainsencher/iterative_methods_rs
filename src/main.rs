@@ -2,6 +2,9 @@
 //! A demonstration of the use of StreamingIterators and their adapters to implement iterative algorithms.
 
 use ndarray::*;
+use rand::{Rng, SeedableRng};
+use rand_pcg::Pcg64;
+use std::cmp::PartialEq;
 use std::time::{Duration, Instant};
 use streaming_iterator::*;
 
@@ -464,6 +467,7 @@ fn main() {
     fib_demo();
     println!("\n cg_demo: \n");
     cg_demo();
+    wrs_demo();
 }
 
 /// Unit Tests Module
@@ -481,5 +485,44 @@ mod tests {
             assert_eq!(*element, _index * 3);
             _index = _index + 1;
         }
+    }
+
+    /// Tests for the ReservoirSampleIterator adaptor
+    #[test]
+    fn test_datum_struct() {
+        let samp = new_datum(String::from("hi"), 1.0);
+        assert_eq!(samp.value, String::from("hi"));
+        assert_eq!(samp.weight, 1.0);
+    }
+
+    #[test]
+    fn fill_reservoir_test() {
+        // v is the data stream.
+        let v: Vec<WeightedDatum<f64>> = vec![new_datum(0.5, 1.), new_datum(0.2, 2.)];
+        let v_copy = v.clone();
+        let iter = convert(v);
+        let mut iter = reservoir_iterator(iter, 2, None);
+        for _element in v_copy {
+            iter.advance();
+        }
+        assert_eq!(
+            iter.reservoir[0],
+            WeightedDatum {
+                value: 0.5f64,
+                weight: 1.0f64
+            }
+        );
+        assert_eq!(
+            iter.reservoir[1],
+            WeightedDatum {
+                value: 0.2f64,
+                weight: 2.0f64
+            }
+        );
+    }
+
+    #[test]
+    fn get_reservoir_test() {
+        // write test
     }
 }

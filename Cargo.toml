@@ -9,3 +9,5 @@ edition = "2018"
 [dependencies]
 ndarray = "0.14.0"
 streaming-iterator = "0.1.0"
+rand = "0.8.0"
+rand_pcg = "0.3.0"
