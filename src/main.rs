@@ -404,35 +404,31 @@ where
     }
 }
 
-fn collect_seeded_values() {
-    /// Generate the sequence of j, p values that will be used in tests
+fn generate_seeded_values(num_values: usize, int_range_bound: usize) -> Vec<WeightedDatum<f64>> {
+    /// Utility function to generate a sequence of (float, int as float)
+    /// values wrapped in a WeightedDatum struct that will be used in tests
     /// of ReservoirSamplingIterator.
     let mut prng = Pcg64::seed_from_u64(1);
     let mut seeded_values: Vec<WeightedDatum<f64>> = Vec::new();
-    for _i in 0..10 {
-        let j = prng.gen();
-        let h = prng.gen_range(0..10) as f64;
-        let wd: WeightedDatum<f64> = new_datum(j, h);
+    for _i in 0..num_values {
+        let afloat = prng.gen();
+        let anint = prng.gen_range(0..int_range_bound) as f64;
+        let wd: WeightedDatum<f64> = new_datum(afloat, anint);
         seeded_values.push(wd);
     }
-    println!("{:#?}", seeded_values);
+    seeded_values
 }
 
-fn generate_stream_for_wrs() {
-    /// Generate the sequence of values, weights for the
-    /// ReservoirSamplingIteratorthat will be used in tests.
-    let mut prng = Pcg64::seed_from_u64(2);
-    let mut seeded_values: Vec<WeightedDatum<f64>> = Vec::new();
-    for _i in 0..10 {
-        let val = prng.gen();
-        let wei = prng.gen_range(0..10) as f64;
-        let wd: WeightedDatum<f64> = new_datum(val, wei);
-        seeded_values.push(wd);
+fn wrs_demo() {
+    let mut seeded_values = generate_seeded_values(8, 2);
+    let mut stream: Vec<WeightedDatum<f64>> = Vec::new();
+    for _i in 0..4 {
+        if let Some(wd) = seeded_values.pop() {
+            stream.push(wd);
+        };
     }
-    println!("{:#?}", seeded_values);
+    println!("{:#?}", stream);
 }
-
-fn wrs_demo() {}
 
 /// Call the different demos.
 fn main() {
@@ -440,8 +436,11 @@ fn main() {
     fib_demo();
     println!("\n cg_demo: \n");
     cg_demo();
-    println!("\n collect_seeded_values: \n");
-    collect_seeded_values();
+    println!("\n seeded_values: \n");
+    let seeded_values = generate_seeded_values(4, 2);
+    println!("{:#?}", seeded_values);
+    println!("Weighted Reservoir Sampling Demo");
+    wrs_demo();
 }
 
 // Unit Tests Module
