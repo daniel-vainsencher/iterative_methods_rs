@@ -343,7 +343,7 @@ struct ReservoirSampleIterator<I, T> {
 }
 
 // Create a ReservoirSampleIterator
-fn reservoir_sample<I, T>(
+fn reservoir_iterator<I, T>(
     it: I,
     capacity: usize,
     custom_oracle: Option<Pcg64>,
@@ -401,7 +401,7 @@ where
     #[inline]
     fn get(&self) -> Option<&Self::Item> {
         // Revise this -- we need to be able to get all of the elements of the reservoir
-        Some(&self.reservoir[0])
+        self.it.get()
     }
 }
 
@@ -428,14 +428,30 @@ fn generate_seeded_values(num_values: usize, int_range_bound: usize) -> Vec<Weig
 }
 
 fn wrs_demo() {
-    let mut seeded_values = generate_seeded_values(8, 2);
+    let mut seeded_values = generate_seeded_values(6, 2);
     let mut stream: Vec<WeightedDatum<f64>> = Vec::new();
     for _i in 0..4 {
         if let Some(wd) = seeded_values.pop() {
             stream.push(wd);
         };
     }
-    println!("{:#?}", stream);
+    let random_base_and_index = seeded_values;
+    println!("Stream: \n {:#?} \n", stream);
+    println!("Random Numbers for Alg \n {:#?} \n ", random_base_and_index);
+
+    let stream = convert(stream);
+    let mut stream = reservoir_iterator(stream, 2, None);
+    println!("Initial Reservoir: \n {:#?} \n", stream.reservoir);
+    let mut _index = 0i64;
+    while let Some(item) = stream.next() {
+        println!("Next item: {:?} \n", item);
+        println!("Reservoir_{}: {:#?} \n", _index, stream.reservoir);
+        _index = _index + 1;
+    }
+    println!(
+        "The reservoir at the end of the iteration is: \n {:#?} \n",
+        stream.reservoir
+    );
 }
 
 /// Call the different demos.
@@ -444,10 +460,6 @@ fn main() {
     fib_demo();
     println!("\n cg_demo: \n");
     cg_demo();
-    println!("\n seeded_values: \n");
-    let seeded_values = generate_seeded_values(4, 2);
-    println!("{:#?}", seeded_values);
-    println!("Weighted Reservoir Sampling Demo");
     wrs_demo();
 }
 
@@ -483,7 +495,7 @@ mod tests {
         let v: Vec<WeightedDatum<f64>> = vec![new_datum(0.5, 1.), new_datum(0.2, 2.)];
         let v_copy = v.clone();
         let iter = convert(v);
-        let mut iter = reservoir_sample(iter, 2, None);
+        let mut iter = reservoir_iterator(iter, 2, None);
         for _element in v_copy {
             iter.advance();
         }
