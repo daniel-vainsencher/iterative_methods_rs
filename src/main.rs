@@ -325,10 +325,11 @@ where
 
 /// Weighted Reservoir Sampling
 /// The weighted reservoir sampling algorithm of M. T. Chao is implemented.
-/// See https://en.wikipedia.org/wiki/Reservoir_sampling#Weighted_random_sampling
-/// or for the original paper, https://doi.org/10.1093/biomet/69.3.653.
+/// See https://en.wikipedia.org/wiki/Reservoir_sampling#Weighted_random_sampling,
+/// https://arxiv.org/abs/1910.11069, or for the original paper,
+/// https://doi.org/10.1093/biomet/69.3.653.
 
-/// Future work might include implementing paralellized batch processing:
+/// Future work might include implementing parallellized batch processing:
 /// https://dl.acm.org/doi/10.1145/3350755.3400287
 #[derive(Debug, Clone)]
 struct ReservoirSampleIterator<I, T> {
