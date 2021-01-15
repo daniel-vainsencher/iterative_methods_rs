@@ -441,16 +441,21 @@ fn wrs_demo() {
 
     let stream = convert(stream);
     let mut stream = reservoir_iterator(stream, 2, None);
-    println!("Initial Reservoir: \n {:#?} \n", stream.reservoir);
+    println!("Reservoir - initially empty: \n {:#?} \n", stream.reservoir);
     let mut _index = 0i64;
-    while let Some(item) = stream.next() {
-        println!("Next item: {:?} \n", item);
-        println!("Reservoir_{}: {:#?} \n", _index, stream.reservoir);
+    while let Some(_item) = stream.next() {
+        // println!("Next item: {:?} \n", _item);
+        if _index == 1 {
+            println!(
+                "Reservoir filled with the first items from the stream: {:#?} \n",
+                stream.reservoir
+            );
+        }
         _index = _index + 1;
     }
     if let Some(reservoir) = stream.get_reservoir() {
         println!(
-            "The reservoir at the end of the iteration is: \n {:#?} \n",
+            "Reservoir at the end of the iteration: \n {:#?} \n",
             reservoir
         );
     };
