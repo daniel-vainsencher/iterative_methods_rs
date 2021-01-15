@@ -399,15 +399,23 @@ where
     }
 
     #[inline]
-    fn get(&self) -> Option<&I::Item> {
-        self.it.get()
+    fn get(&self) -> Option<&Self::Item> {
+        // Revise this -- we need to be able to get all of the elements of the reservoir
+        Some(&self.reservoir[0])
     }
 }
 
+impl<I, U> ReservoirSampleIterator<I, WeightedDatum<U>> {
+    #[inline]
+    fn get_reservoir(&self) -> Option<&Vec<WeightedDatum<U>>> {
+        Some(&self.reservoir)
+    }
+}
+
+/// Utility function to generate a sequence of (float, int as float)
+/// values wrapped in a WeightedDatum struct that will be used in tests
+/// of ReservoirSamplingIterator.
 fn generate_seeded_values(num_values: usize, int_range_bound: usize) -> Vec<WeightedDatum<f64>> {
-    /// Utility function to generate a sequence of (float, int as float)
-    /// values wrapped in a WeightedDatum struct that will be used in tests
-    /// of ReservoirSamplingIterator.
     let mut prng = Pcg64::seed_from_u64(1);
     let mut seeded_values: Vec<WeightedDatum<f64>> = Vec::new();
     for _i in 0..num_values {
@@ -493,5 +501,10 @@ mod tests {
                 weight: 2.0f64
             }
         );
+    }
+
+    #[test]
+    fn get_reservoir_test() {
+        // write test
     }
 }
