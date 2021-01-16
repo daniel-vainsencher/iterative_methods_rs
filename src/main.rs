@@ -80,9 +80,9 @@ impl CGIterable {
         CGIterable {
             a: problem.a,
             b: problem.b,
-            x: x,
-            r: r,
-            rs: rs,
+            x,
+            r,
+            rs,
             rsprev: 0.,
             p: cgi_p,
             ap: None,
@@ -167,16 +167,21 @@ fn solve_approximately(p: LinearSystem) -> V {
 }
 
 fn make_3x3_psd_system_1() -> LinearSystem {
-    make_3x3_psd_system(rcarr2(&[[1., 2., -1.], [0., 1., 0.], [0., 0., 1.]]))
+    make_3x3_psd_system(
+        rcarr2(&[[1., 2., -1.], [0., 1., 0.], [0., 0., 1.]]),
+        rcarr1(&[0., 1., 0.]),
+    )
 }
 
 fn make_3x3_psd_system_2() -> LinearSystem {
-    make_3x3_psd_system(rcarr2(&[[1.0, 0.5, 0.0], [0.5, 1.0, 0.0], [0.0, 0.5, 1.0]]))
+    make_3x3_psd_system(
+        rcarr2(&[[1.0, 0.5, 0.0], [0.5, 1.0, 0.0], [0.0, 0.5, 1.0]]),
+        rcarr1(&[0., 1., 0.]),
+    )
 }
 
-fn make_3x3_psd_system(m: M) -> LinearSystem {
+fn make_3x3_psd_system(m: M, b: V) -> LinearSystem {
     let a = (m.t().dot(&m)).to_shared();
-    let b = rcarr1(&[0., 1., 0.]);
     LinearSystem {
         a: a,
         b: b,
