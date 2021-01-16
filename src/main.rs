@@ -46,6 +46,7 @@ type M = ArcArray2<S>;
 type V = ArcArray1<S>;
 
 /// A linear system, ax-b=0, to be solved iteratively, with an optional initial solution.
+#[derive(Clone, Debug)]
 struct LinearSystem {
     a: M,
     b: V,
@@ -160,15 +161,33 @@ where
     }
 }
 
-/// Demonstrate usage and convergence of conjugate gradient as a streaming-iterator.
-fn cg_demo() {
-    let a = rcarr2(&[[1.0, 0.5, 0.0], [0.5, 1.0, 0.0], [0.0, 0.5, 1.0]]);
+fn solve_approximately(p: LinearSystem) -> V {
+    let mut solution = CGIterable::conjugate_gradient(p).take(200);
+    solution.nth(50).unwrap().x.clone()
+}
+
+fn make_3x3_psd_system_1() -> LinearSystem {
+    make_3x3_psd_system(rcarr2(&[[1., 2., -1.], [0., 1., 0.], [0., 0., 1.]]))
+}
+
+fn make_3x3_psd_system_2() -> LinearSystem {
+    make_3x3_psd_system(rcarr2(&[[1.0, 0.5, 0.0], [0.5, 1.0, 0.0], [0.0, 0.5, 1.0]]))
+}
+
+fn make_3x3_psd_system(m: M) -> LinearSystem {
+    let a = (m.t().dot(&m)).to_shared();
     let b = rcarr1(&[0., 1., 0.]);
-    let p = LinearSystem {
+    LinearSystem {
         a: a,
         b: b,
         x0: None,
-    };
+    }
+}
+
+/// Demonstrate usage and convergence of conjugate gradient as a streaming-iterator.
+fn cg_demo() {
+    let p = make_3x3_psd_system_2();
+    println!("a: {}", &p.a);
     let cg_iter = CGIterable::conjugate_gradient(p)
         // Upper bound the number of iterations
         .take(20)
@@ -186,9 +205,11 @@ fn cg_demo() {
     let step_by_cg_iter = step_by(cg_iter, 4);
     let timed_cg_iter = time(step_by_cg_iter);
     let mut cg_print_iter = tee(timed_cg_iter, |TimedResult { result, duration }| {
+        let res = result.a.dot(&result.x) - &result.b;
+        let res_norm = res.dot(&res);
         println!(
             "||Ax - b ||_2 = {:.5}, for x = {:.4}, and Ax - b = {:.5}; iteration duration {}μs",
-            result.rsprev.sqrt(),
+            res_norm,
             result.x,
             result.a.dot(&result.x) - &result.b,
             duration.as_nanos(),
@@ -310,6 +331,18 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn cg_simple_test() {
+        let p = make_3x3_psd_system_1();
+        println!("Problem is: {:?}", p);
+        let x = solve_approximately(p.clone());
+        let r = p.a.dot(&x) - p.b;
+        println!("Residual is: {}", r);
+        let res_norm = r.dot(&r);
+        println!("Residual norm is: {}", res_norm);
+        assert!(res_norm < 1e-3);
+    }
 
     #[test]
     fn step_by_test() {
