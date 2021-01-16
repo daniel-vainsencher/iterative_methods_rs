@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 ndarray = "0.14.0"
 streaming-iterator = "0.1.0"
+quickcheck = "1.0.1"

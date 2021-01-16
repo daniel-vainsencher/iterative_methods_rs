@@ -1,5 +1,7 @@
 //! # iterative-methods
 //! A demonstration of the use of StreamingIterators and their adapters to implement iterative algorithms.
+#[cfg(test)]
+extern crate quickcheck;
 
 use ndarray::*;
 use std::time::{Duration, Instant};
@@ -335,6 +337,36 @@ fn main() {
 /// Unit Tests Module
 #[cfg(test)]
 mod tests {
+    use quickcheck::{quickcheck, TestResult};
+    quickcheck! {
+        fn prop(xs: Vec<f64>) -> TestResult {
+            // TODO(daniel): replace by test of squareness
+            if xs.len() != 9 {
+                return TestResult::discard();
+            }
+            let v = rcarr1(&xs).reshape((3, 3));
+            println!("v.sum(): {}", v.sum());
+            let b = rcarr1(&[1.,2.,3.]);
+            let p = make_3x3_psd_system(v, b);
+            if !p.a.scalar_sum().abs().is_finite() {
+                // If a is too weird, we really want to discard, but
+                // for the current check seems to discard everything;
+                // for exploration making that fail prints the matrix.
+                //return TestResult::discard()
+                return TestResult::from_bool(false)
+            }
+            let x = solve_approximately(p.clone());
+            let res = p.a.dot(&x) - &p.b;
+            let res_norm = res.dot(&res);
+            println!("a: {}", p.a);
+            println!("b: {}", p.b);
+            println!("x: {}", x);
+
+            //TestResult::from_bool(res_norm < 1e-3)
+            TestResult::from_bool(false)
+        }
+    }
+
     use super::*;
 
     #[test]
