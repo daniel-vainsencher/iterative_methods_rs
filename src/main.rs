@@ -177,7 +177,7 @@ fn make_3x3_psd_system_1() -> LinearSystem {
 
 fn make_3x3_psd_system_2() -> LinearSystem {
     make_3x3_psd_system(
-        rcarr2(&[[1.0, 0.5, 0.0], [0.5, 1.0, 0.0], [0.0, 0.5, 1.0]]),
+        rcarr2(&[[1.0, 0.5, 0.0], [0.5, 1.0, 0.5], [0.0, 0.5, 1.0]]),
         rcarr1(&[0., 1., 0.]),
     )
 }
@@ -384,7 +384,7 @@ mod tests {
     #[test]
     fn cg_simple_passed() {
         let p = LinearSystem {
-            a: rcarr2(&[[1.0, 0.5, 0.0], [0.5, 1.0, 0.0], [0.0, 0.5, 1.0]]),
+            a: rcarr2(&[[1.0, 0.5, 0.0], [0.5, 1.0, 0.5], [0.0, 0.5, 1.0]]),
             b: rcarr1(&[0.0, 1., 0.]),
             x0: None,
         };
