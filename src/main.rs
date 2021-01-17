@@ -382,6 +382,23 @@ mod tests {
     }
 
     #[test]
+    fn cg_simple_passed() {
+        let p = LinearSystem {
+            a: rcarr2(&[[1.0, 0.5, 0.0], [0.5, 1.0, 0.0], [0.0, 0.5, 1.0]]),
+            b: rcarr1(&[0.0, 1., 0.]),
+            x0: None,
+        };
+
+        println!("Problem is: {:?}", p);
+        let x = solve_approximately(p.clone());
+        let r = p.a.dot(&x) - p.b;
+        println!("Residual is: {}", r);
+        let res_norm = r.dot(&r);
+        println!("Residual norm is: {}", res_norm);
+        assert!(res_norm < 1e-3);
+    }
+
+    #[test]
     fn step_by_test() {
         let v = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
         let iter = convert(v);
