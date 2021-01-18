@@ -385,28 +385,19 @@ where
                 self.it.advance();
                 if let Some(datum) = self.it.get() {
                     let cloned_datum = datum.clone();
-                    println!(
-                        "Item added to reservoir since reservoir not full: \n {:#?} \n",
-                        cloned_datum
-                    );
                     self.reservoir.push(cloned_datum);
                     self.weight_sum += datum.weight;
                 }
             }
         } else {
             if let Some(datum) = self.it.next() {
-                println!("Item to possibly add: \n {:#?} \n", datum);
                 self.weight_sum += datum.weight;
                 let p = &(datum.weight / self.weight_sum);
                 let j: f64 = self.oracle.gen();
-                println!("random float: {}, probability: {}", j, p);
                 if j < *p {
                     let h = self.oracle.gen_range(0..self.capacity) as usize;
-                    println!("Random index: {}", h);
                     let datum_struct = datum.clone();
-                    println!("WeightedDatum to add: {:#?}", datum_struct);
                     self.reservoir[h] = datum_struct;
-                    println!("Updated Reservoir: {:#?}", self.reservoir);
                 };
             }
         }
@@ -453,22 +444,18 @@ fn wrs_demo() {
     let stream = convert(stream);
     let mut stream = reservoir_iterable(stream, 2, None);
     println!("Reservoir - initially empty: \n {:#?} \n", stream.reservoir);
-    let mut _index = 0i64;
+    let mut _index = 0usize;
     while let Some(reservoir) = stream.next() {
-        // println!("Next item: {:?} \n", _item);
         if _index == 0 {
             println!(
                 "Reservoir filled with the first items from the stream: {:#?} \n",
                 reservoir
             );
+        } else {
+            println!("Reservoir: {:#?} \n", reservoir);
         }
-        println!("{:?}", _index);
         _index = _index + 1;
     }
-    println!(
-        "Reservoir at the end of the iteration: \n {:#?} \n",
-        stream.get()
-    );
 }
 
 /// Call the different demos.
@@ -477,6 +464,7 @@ fn main() {
     fib_demo();
     println!("\n cg_demo: \n");
     cg_demo();
+    println!("\n Weighted Reservoir Sampling Demo:\n");
     wrs_demo();
 }
 
