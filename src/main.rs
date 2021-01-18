@@ -85,7 +85,7 @@ impl CGIterable {
             x,
             r,
             rs,
-            rsprev: 0.,
+            rsprev: 1.,
             p: cgi_p,
             ap: None,
         }
@@ -98,9 +98,6 @@ impl StreamingIterator for CGIterable {
     fn advance(&mut self) {
         let ap = self.a.dot(&self.p).into_shared();
         let alpha = self.rs / self.p.dot(&ap);
-        if !alpha.is_normal() {
-            return;
-        }
         self.x += &(alpha * &self.p);
         self.r -= &(alpha * &ap);
         self.rsprev = self.rs;
@@ -109,7 +106,11 @@ impl StreamingIterator for CGIterable {
         self.ap = Some(ap);
     }
     fn get(&self) -> Option<&Self::Item> {
-        Some(self)
+        if (!self.rsprev.is_normal()) || self.rsprev.abs() <= std::f64::MIN * 10. {
+            None
+        } else {
+            Some(self)
+        }
     }
 }
 
