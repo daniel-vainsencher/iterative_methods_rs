@@ -398,7 +398,7 @@ mod tests {
         println!("Residual is: {}", r);
         let res_norm = r.dot(&r);
         println!("Residual norm is: {}", res_norm);
-        assert!(res_norm < 1e-3);
+        assert!(res_norm < 1e-10);
     }
 
     #[test]
@@ -410,12 +410,13 @@ mod tests {
         };
 
         println!("Problem is: {:?}", p);
+        show_progress(p.clone());
         let x = solve_approximately(p.clone());
         let r = p.a.dot(&x) - p.b;
         println!("Residual is: {}", r);
         let res_norm = r.dot(&r);
         println!("Residual norm is: {}", res_norm);
-        assert!(res_norm < 1e-3);
+        assert!(res_norm < 1e-10);
     }
 
     #[test]
