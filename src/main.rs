@@ -102,7 +102,7 @@ impl StreamingIterator for CGIterable {
         self.r -= &(alpha * &ap);
         self.rsprev = self.rs;
         self.rs = self.r.dot(&self.r);
-        self.p = (&self.r + &((&self.r / self.rsprev) * &self.p)).into_shared();
+        self.p = (&self.r + &(&self.rs / self.rsprev * &self.p)).into_shared();
         self.ap = Some(ap);
     }
     fn get(&self) -> Option<&Self::Item> {
