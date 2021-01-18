@@ -98,6 +98,9 @@ impl StreamingIterator for CGIterable {
     fn advance(&mut self) {
         let ap = self.a.dot(&self.p).into_shared();
         let alpha = self.rs / self.p.dot(&ap);
+        if !alpha.is_normal() {
+            return;
+        }
         self.x += &(alpha * &self.p);
         self.r -= &(alpha * &ap);
         self.rsprev = self.rs;
