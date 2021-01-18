@@ -168,6 +168,22 @@ fn solve_approximately(p: LinearSystem) -> V {
     solution.nth(50).unwrap().x.clone()
 }
 
+fn show_progress(p: LinearSystem) {
+    let cg_iter = CGIterable::conjugate_gradient(p).take(50);
+    //.take_while(|cgi| cgi.rsprev.sqrt() > 1e-6);
+    let mut cg_print_iter = tee(cg_iter, |result| {
+        let res = result.a.dot(&result.x) - &result.b;
+        let res_norm = res.dot(&res);
+        println!(
+            "||Ax - b ||_2 = {:.5}, for x = {:.4}, and Ax - b = {:.5}",
+            res_norm,
+            result.x,
+            result.a.dot(&result.x) - &result.b,
+        );
+    });
+    while let Some(_cgi) = cg_print_iter.next() {}
+}
+
 fn make_3x3_psd_system_1() -> LinearSystem {
     make_3x3_psd_system(
         rcarr2(&[[1., 2., -1.], [0., 1., 0.], [0., 0., 1.]]),
@@ -373,6 +389,7 @@ mod tests {
     fn cg_simple_test() {
         let p = make_3x3_psd_system_1();
         println!("Problem is: {:?}", p);
+        show_progress(p.clone());
         let x = solve_approximately(p.clone());
         let r = p.a.dot(&x) - p.b;
         println!("Residual is: {}", r);
