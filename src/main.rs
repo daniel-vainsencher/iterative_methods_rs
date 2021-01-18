@@ -332,68 +332,81 @@ where
 /// Future work might include implementing parallellized batch processing:
 /// https://dl.acm.org/doi/10.1145/3350755.3400287
 #[derive(Debug, Clone)]
-struct ReservoirSampleIterator<I, T> {
+struct ReservoirIterable<I, U> {
+    /// The iterator, it, is the stream of data from which a reservoir
+    /// sample is drawn.
+    /// The items of the iterator must be of type WeightedDatum.
     it: I,
-    reservoir: Vec<T>,
+    reservoir: Vec<WeightedDatum<U>>,
     capacity: usize,
     // total weight -- change this to generic type
-    w_sum: f64,
+    weight_sum: f64,
     /// The oracle is currently Pcg64, which allows seeded rng. This should be
     /// extended to generic type bound by traits for implementing seeding.
     oracle: Pcg64,
 }
 
-// Create a ReservoirSampleIterator
-fn reservoir_iterator<I, T>(
+// Create a ReservoirIterable
+fn reservoir_iterable<I, T>(
     it: I,
     capacity: usize,
     custom_oracle: Option<Pcg64>,
-) -> ReservoirSampleIterator<I, T>
+) -> ReservoirIterable<I, T>
 where
-    I: Sized + StreamingIterator<Item = T>,
+    I: Sized + StreamingIterator<Item = WeightedDatum<T>>,
     T: Clone,
 {
     let oracle = match custom_oracle {
         Some(oracle) => oracle,
         None => Pcg64::seed_from_u64(1),
     };
-    let res: Vec<T> = Vec::new();
-    ReservoirSampleIterator {
+    let res: Vec<WeightedDatum<T>> = Vec::new();
+    ReservoirIterable {
         it,
         reservoir: res,
         capacity: capacity,
-        w_sum: 0.0,
+        weight_sum: 0.0,
         oracle: oracle,
     }
 }
 
-impl<I, U> StreamingIterator for ReservoirSampleIterator<I, WeightedDatum<U>>
+impl<I, T> StreamingIterator for ReservoirIterable<I, T>
 where
-    U: Clone,
-    I: StreamingIterator<Item = WeightedDatum<U>>,
+    T: Clone + std::fmt::Debug,
+    I: StreamingIterator<Item = WeightedDatum<T>>,
 {
     // type Item = I::Item;
-    type Item = WeightedDatum<U>;
+    type Item = Vec<WeightedDatum<T>>;
 
     #[inline]
     fn advance(&mut self) {
         if self.reservoir.len() < self.capacity {
-            self.it.advance();
-            if let Some(datum) = self.it.get() {
-                let cloned_datum = datum.clone();
-                self.reservoir.push(cloned_datum);
-                self.w_sum += datum.weight;
+            for _index in 0..self.capacity {
+                self.it.advance();
+                if let Some(datum) = self.it.get() {
+                    let cloned_datum = datum.clone();
+                    println!(
+                        "Item added to reservoir since reservoir not full: \n {:#?} \n",
+                        cloned_datum
+                    );
+                    self.reservoir.push(cloned_datum);
+                    self.weight_sum += datum.weight;
+                }
             }
         } else {
-            // will this skip a datum?
             if let Some(datum) = self.it.next() {
-                self.w_sum += datum.weight;
-                let p = &(datum.weight / self.w_sum);
+                println!("Item to possibly add: \n {:#?} \n", datum);
+                self.weight_sum += datum.weight;
+                let p = &(datum.weight / self.weight_sum);
                 let j: f64 = self.oracle.gen();
+                println!("random float: {}, probability: {}", j, p);
                 if j < *p {
                     let h = self.oracle.gen_range(0..self.capacity) as usize;
+                    println!("Random index: {}", h);
                     let datum_struct = datum.clone();
+                    println!("WeightedDatum to add: {:#?}", datum_struct);
                     self.reservoir[h] = datum_struct;
+                    println!("Updated Reservoir: {:#?}", self.reservoir);
                 };
             }
         }
@@ -402,14 +415,11 @@ where
     #[inline]
     fn get(&self) -> Option<&Self::Item> {
         // Revise this -- we need to be able to get all of the elements of the reservoir
-        self.it.get()
-    }
-}
-
-impl<I, U> ReservoirSampleIterator<I, WeightedDatum<U>> {
-    #[inline]
-    fn get_reservoir(&self) -> Option<&Vec<WeightedDatum<U>>> {
-        Some(&self.reservoir)
+        if let Some(_wd) = &self.it.get() {
+            Some(&self.reservoir)
+        } else {
+            None
+        }
     }
 }
 
@@ -436,30 +446,29 @@ fn wrs_demo() {
             stream.push(wd);
         };
     }
-    let random_base_and_index = seeded_values;
+    let probability_and_index = seeded_values;
     println!("Stream: \n {:#?} \n", stream);
-    println!("Random Numbers for Alg \n {:#?} \n ", random_base_and_index);
+    println!("Random Numbers for Alg \n {:#?} \n ", probability_and_index);
 
     let stream = convert(stream);
-    let mut stream = reservoir_iterator(stream, 2, None);
+    let mut stream = reservoir_iterable(stream, 2, None);
     println!("Reservoir - initially empty: \n {:#?} \n", stream.reservoir);
     let mut _index = 0i64;
-    while let Some(_item) = stream.next() {
+    while let Some(reservoir) = stream.next() {
         // println!("Next item: {:?} \n", _item);
-        if _index == 1 {
+        if _index == 0 {
             println!(
                 "Reservoir filled with the first items from the stream: {:#?} \n",
-                stream.reservoir
+                reservoir
             );
         }
+        println!("{:?}", _index);
         _index = _index + 1;
     }
-    if let Some(reservoir) = stream.get_reservoir() {
-        println!(
-            "Reservoir at the end of the iteration: \n {:#?} \n",
-            reservoir
-        );
-    };
+    println!(
+        "Reservoir at the end of the iteration: \n {:#?} \n",
+        stream.get()
+    );
 }
 
 /// Call the different demos.
@@ -488,7 +497,7 @@ mod tests {
         }
     }
 
-    /// Tests for the ReservoirSampleIterator adaptor
+    /// Tests for the ReservoirSampleIterable adaptor
     #[test]
     fn test_datum_struct() {
         let samp = new_datum(String::from("hi"), 1.0);
@@ -502,7 +511,7 @@ mod tests {
         let v: Vec<WeightedDatum<f64>> = vec![new_datum(0.5, 1.), new_datum(0.2, 2.)];
         let v_copy = v.clone();
         let iter = convert(v);
-        let mut iter = reservoir_iterator(iter, 2, None);
+        let mut iter = reservoir_iterable(iter, 2, None);
         for _element in v_copy {
             iter.advance();
         }
