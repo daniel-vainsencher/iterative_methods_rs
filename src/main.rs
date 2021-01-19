@@ -169,7 +169,7 @@ where
 
 fn solve_approximately(p: LinearSystem) -> V {
     let mut solution = CGIterable::conjugate_gradient(p).take(200);
-    solution.nth(50).unwrap().x.clone()
+    last(solution.map(|s| s.x.clone()))
 }
 
 fn show_progress(p: LinearSystem) {
@@ -261,6 +261,17 @@ struct TimedResult<T> {
     result: T,
     duration: Duration,
 }
+
+fn last<I, T>(it: I) -> T
+where
+    I: StreamingIterator<Item = T>,
+    T: Sized + Clone,
+{
+    let last_some = it.fold(None, |acc, i| { Some((*i).clone())} );
+    let last_item = last_some.expect("StreamingIterator last expects at least one non-None element.").clone();
+    last_item
+}
+
 
 fn time<I, T>(it: I) -> TimedIterable<I, T>
 where
@@ -388,6 +399,21 @@ mod tests {
     }
 
     use super::*;
+
+    #[test]
+    fn test_last() {
+        let v = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+        let mut iter = convert(v.clone());
+        assert!(last(iter) == 9);
+    }
+
+    #[test]
+    #[should_panic(expected = "StreamingIterator last expects at least one non-None element.")]
+    fn test_last_fail() {
+        let v : Vec<u32> = vec![];
+        let mut iter = convert(v.clone());
+        last(iter);
+    }
 
     #[test]
     fn cg_simple_test() {
