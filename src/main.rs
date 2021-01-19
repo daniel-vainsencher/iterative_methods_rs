@@ -323,8 +323,19 @@ where
     }
 }
 
-/// Weighted Reservoir Sampling
 /// The weighted reservoir sampling algorithm of M. T. Chao is implemented.
+/// `ReservoirIterable` wraps a `StreamingIterator`, `I`, whose items must be of type `WeightedDatum` and
+/// produces a `StreamingIterator` whose items are samples of size `capacity`
+/// from the stream of `I`. (This is not the capacity of the `Vec` which holds the `reservoir`;
+/// Rather, the length of the `reservoir` is normally referred to as its `capacity`.)
+/// To produce a `reservoir` of length `capacity` on the first call, the
+/// first call of the `advance` method automatically advances the input
+/// iterator `capacity` steps. Subsequent calls of `advance` on `ReservoirIterator`
+/// advance `I` one step and will at most replace a single element of the `reservoir`.
+
+/// The random oracle is of type `Pcg64` by default, which allows seeded rng. This should be
+/// extended to generic type bound by traits for implementing seeding.
+
 /// See https://en.wikipedia.org/wiki/Reservoir_sampling#Weighted_random_sampling,
 /// https://arxiv.org/abs/1910.11069, or for the original paper,
 /// https://doi.org/10.1093/biomet/69.3.653.
@@ -333,16 +344,10 @@ where
 /// https://dl.acm.org/doi/10.1145/3350755.3400287
 #[derive(Debug, Clone)]
 struct ReservoirIterable<I, U> {
-    /// The iterator, it, is the stream of data from which a reservoir
-    /// sample is drawn.
-    /// The items of the iterator must be of type WeightedDatum.
     it: I,
     reservoir: Vec<WeightedDatum<U>>,
     capacity: usize,
-    // total weight -- change this to generic type
     weight_sum: f64,
-    /// The oracle is currently Pcg64, which allows seeded rng. This should be
-    /// extended to generic type bound by traits for implementing seeding.
     oracle: Pcg64,
 }
 
@@ -358,7 +363,7 @@ where
 {
     let oracle = match custom_oracle {
         Some(oracle) => oracle,
-        None => Pcg64::seed_from_u64(1),
+        None => Pcg64::from_entropy(),
     };
     let res: Vec<WeightedDatum<T>> = Vec::new();
     ReservoirIterable {
@@ -375,12 +380,11 @@ where
     T: Clone + std::fmt::Debug,
     I: StreamingIterator<Item = WeightedDatum<T>>,
 {
-    // type Item = I::Item;
     type Item = Vec<WeightedDatum<T>>;
 
     #[inline]
     fn advance(&mut self) {
-        if self.reservoir.len() < self.capacity {
+        while self.reservoir.len() < self.capacity {
             for _index in 0..self.capacity {
                 self.it.advance();
                 if let Some(datum) = self.it.get() {
@@ -389,17 +393,16 @@ where
                     self.weight_sum += datum.weight;
                 }
             }
-        } else {
-            if let Some(datum) = self.it.next() {
-                self.weight_sum += datum.weight;
-                let p = &(datum.weight / self.weight_sum);
-                let j: f64 = self.oracle.gen();
-                if j < *p {
-                    let h = self.oracle.gen_range(0..self.capacity) as usize;
-                    let datum_struct = datum.clone();
-                    self.reservoir[h] = datum_struct;
-                };
-            }
+        }
+        if let Some(datum) = self.it.next() {
+            self.weight_sum += datum.weight;
+            let p = &(datum.weight / self.weight_sum);
+            let j: f64 = self.oracle.gen();
+            if j < *p {
+                let h = self.oracle.gen_range(0..self.capacity) as usize;
+                let datum_struct = datum.clone();
+                self.reservoir[h] = datum_struct;
+            };
         }
     }
 
@@ -416,7 +419,7 @@ where
 
 /// Utility function to generate a sequence of (float, int as float)
 /// values wrapped in a WeightedDatum struct that will be used in tests
-/// of ReservoirSamplingIterator.
+/// of ReservoirIterable.
 fn generate_seeded_values(num_values: usize, int_range_bound: usize) -> Vec<WeightedDatum<f64>> {
     let mut prng = Pcg64::seed_from_u64(1);
     let mut seeded_values: Vec<WeightedDatum<f64>> = Vec::new();
@@ -442,7 +445,7 @@ fn wrs_demo() {
     println!("Random Numbers for Alg \n {:#?} \n ", probability_and_index);
 
     let stream = convert(stream);
-    let mut stream = reservoir_iterable(stream, 2, None);
+    let mut stream = reservoir_iterable(stream, 2, Some(Pcg64::seed_from_u64(1)));
     println!("Reservoir - initially empty: \n {:#?} \n", stream.reservoir);
     let mut _index = 0usize;
     while let Some(reservoir) = stream.next() {
