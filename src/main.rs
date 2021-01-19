@@ -371,12 +371,13 @@ fn main() {
 mod tests {
     use quickcheck::{quickcheck, TestResult};
     quickcheck! {
-        fn prop(xs: Vec<f64>) -> TestResult {
+        fn prop(xs: Vec<u16>) -> TestResult {
             // TODO(daniel): replace by test of squareness
             if xs.len() != 9 {
                 return TestResult::discard();
             }
             let v = rcarr1(&xs).reshape((3, 3));
+            let v = v.map(|i| *i as f64).into_shared();
             println!("v.sum(): {}", v.sum());
             let b = rcarr1(&[1.,2.,3.]);
             let p = make_3x3_psd_system(v, b);
