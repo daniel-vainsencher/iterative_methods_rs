@@ -179,7 +179,8 @@ fn show_progress(p: LinearSystem) {
         let res = result.a.dot(&result.x) - &result.b;
         let res_norm = res.dot(&res);
         println!(
-            "||Ax - b ||_2 = {:.5}, for x = {:.4}, and Ax - b = {:.5}",
+            "rs = {:.10}, ||Ax - b ||_2 = {:.5}, for x = {:.4}, and Ax - b = {:.5}",
+            result.rs,
             res_norm,
             result.x,
             result.a.dot(&result.x) - &result.b,
@@ -203,7 +204,7 @@ fn make_3x3_psd_system_2() -> LinearSystem {
 }
 
 fn make_3x3_psd_system(m: M, b: V) -> LinearSystem {
-    let a = (m.t().dot(&m)).to_shared();
+    let a = (m.t().dot(&m)).into_shared();
     LinearSystem {
         a: a,
         b: b,
@@ -229,7 +230,7 @@ fn cg_demo() {
     // side effect inside the while loop, except we can compose
     // multiple tee, each with its own effect.
     // TODO can this be fixed? see iterutils crate.
-    let step_by_cg_iter = step_by(cg_iter, 4);
+    let step_by_cg_iter = step_by(cg_iter, 2);
     let timed_cg_iter = time(step_by_cg_iter);
     let mut cg_print_iter = tee(timed_cg_iter, |TimedResult { result, duration }| {
         let res = result.a.dot(&result.x) - &result.b;
