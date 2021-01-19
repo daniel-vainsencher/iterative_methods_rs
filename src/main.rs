@@ -408,7 +408,6 @@ where
 
     #[inline]
     fn get(&self) -> Option<&Self::Item> {
-        // Revise this -- we need to be able to get all of the elements of the reservoir
         if let Some(_wd) = &self.it.get() {
             Some(&self.reservoir)
         } else {
