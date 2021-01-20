@@ -441,7 +441,7 @@ fn wrs_demo() {
     }
     let probability_and_index = seeded_values;
     println!("Stream: \n {:#?} \n", stream);
-    println!("Random Numbers for Alg \n {:#?} \n ", probability_and_index);
+    println!("Random Numbers for Alg: \n (The values are used as the probabilities and the weights as indices.) \n {:#?} \n ", probability_and_index);
 
     let stream = convert(stream);
     let mut stream = reservoir_iterable(stream, 2, Some(Pcg64::seed_from_u64(1)));
@@ -487,7 +487,7 @@ mod tests {
         }
     }
 
-    /// Tests for the ReservoirSampleIterable adaptor
+    /// Tests for the ReservoirIterable adaptor
     #[test]
     fn test_datum_struct() {
         let samp = new_datum(String::from("hi"), 1.0);
@@ -495,6 +495,7 @@ mod tests {
         assert_eq!(samp.weight, 1.0);
     }
 
+    /// This test asserts that the reservoir is filled with the correct items.
     #[test]
     fn fill_reservoir_test() {
         // v is the data stream.
@@ -521,8 +522,113 @@ mod tests {
         );
     }
 
+    /// utility function for testing ReservoirIterable
+    fn generate_stream_with_constant_probability(
+        stream_length: usize,
+        capacity: usize,
+        probability: f64,
+    ) -> Vec<WeightedDatum<String>> {
+        let mut stream: Vec<WeightedDatum<String>> = Vec::new();
+        let mut weights = vec![1f64];
+        // initialize stream
+        stream.push(WeightedDatum {
+            value: String::from("initial value"),
+            weight: weights[0],
+        });
+        for _index in 0..stream_length {
+            let new_weight = {
+                let temp: f64 = weights.iter().sum();
+                let temp = temp * probability / (1.0f64 - probability);
+                temp
+            };
+            weights.push(new_weight);
+            match _index {
+                x if x < capacity => stream.push(WeightedDatum {
+                    value: String::from("initial value"),
+                    weight: new_weight,
+                }),
+                x if x >= capacity => stream.push(WeightedDatum {
+                    value: String::from("final value"),
+                    weight: new_weight,
+                }),
+                _ => stream.push(WeightedDatum {
+                    value: String::from("final value"),
+                    weight: new_weight,
+                }),
+            }
+        }
+        stream
+    }
+
+    /// This test asserts that no replacements are made to the initial
+    /// reservoir when the subsequent items in the stream have
+    /// probabilities of being inserted close to 0.
     #[test]
-    fn get_reservoir_test() {
-        // write test
+    fn wrs_no_replacement_test() {
+        let stream_length = 100usize;
+        // reservoir capacity:
+        let capacity = 10usize;
+        // We create a stream whose probabilities are all 0.001:
+        let stream_vec = generate_stream_with_constant_probability(stream_length, capacity, 0.001);
+        let stream = convert(stream_vec);
+        let mut wrs_iter = reservoir_iterable(stream, capacity, None);
+        let mut _index: usize = 0;
+        while let Some(reservoir) = wrs_iter.next() {
+            match _index {
+                0 => {
+                    for datum in reservoir {
+                        let value: &String = &datum.value;
+                        // Assert that the elements in the reservoir have value: "initial value"
+                        assert_eq!(value, "initial value");
+                    }
+                }
+                // This condition should be stream_length - 1
+                99 => {
+                    for datum in reservoir {
+                        let value: &String = &datum.value;
+                        // Assert that the elements in the final reservoir have value: "final value"
+                        assert_eq!(value, "initial value");
+                    }
+                }
+                _ => {}
+            }
+            _index = _index + 1;
+        }
+    }
+
+    /// This test asserts that all items of the initial reservoir will be
+    /// replaced by the end of the streaming processes. It does so by using
+    /// a stream in which the probability of replacement is close to 1.
+    #[test]
+    fn wrs_complete_replacement_test() {
+        let stream_length = 100usize;
+        // reservoir capacity:
+        let capacity = 10usize;
+        // We create a stream whose probabilities are all 0.999:
+        let stream_vec = generate_stream_with_constant_probability(stream_length, capacity, 0.999);
+        let stream = convert(stream_vec);
+        let mut wrs_iter = reservoir_iterable(stream, capacity, None);
+        let mut _index: usize = 0;
+        while let Some(reservoir) = wrs_iter.next() {
+            match _index {
+                0 => {
+                    for datum in reservoir {
+                        let value: &String = &datum.value;
+                        // Assert that the elements in the reservoir have value: "initial value"
+                        assert_eq!(value, "initial value");
+                    }
+                }
+                // This condition should be stream_length - 1
+                99 => {
+                    for datum in reservoir {
+                        let value: &String = &datum.value;
+                        // Assert that the elements in the final reservoir have value: "final value"
+                        assert_eq!(value, "final value");
+                    }
+                }
+                _ => {}
+            }
+            _index = _index + 1;
+        }
     }
 }
