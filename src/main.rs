@@ -2,7 +2,7 @@
 //! A demonstration of the use of StreamingIterators and their adapters to implement iterative algorithms.
 #[cfg(test)]
 extern crate quickcheck;
-
+extern crate ndarray_linalg;
 use ndarray::*;
 use std::time::{Duration, Instant};
 use streaming_iterator::*;
@@ -369,24 +369,21 @@ fn main() {
 /// Unit Tests Module
 #[cfg(test)]
 mod tests {
+    use ndarray::*;
+    use ndarray_linalg::*;
     use quickcheck::{quickcheck, TestResult};
     quickcheck! {
-        fn prop(xs: Vec<u16>) -> TestResult {
-            // TODO(daniel): replace by test of squareness
-            if xs.len() != 9 {
+        fn prop(vs: Vec<u16>, b: Vec<u16>) -> TestResult {
+            // Currently require dimension 3
+            if b.len().pow(2) != vs.len() || b.len() != 3 {
                 return TestResult::discard();
             }
-            let v = rcarr1(&xs).reshape((3, 3));
-            let v = v.map(|i| *i as f64).into_shared();
-            println!("v.sum(): {}", v.sum());
-            let b = rcarr1(&[1.,2.,3.]);
-            let p = make_3x3_psd_system(v, b);
-            if !p.a.scalar_sum().abs().is_finite() {
-                // If a is too weird, we really want to discard, but
-                // for the current check seems to discard everything;
-                // for exploration making that fail prints the matrix.
-                //return TestResult::discard()
-                return TestResult::from_bool(false)
+            let vs = rcarr1(&vs).reshape((3, 3)).map(|i| *i as f64).into_shared();
+            let b = rcarr1(&b).map(|i| *i as f64).into_shared();
+            let p = make_3x3_psd_system(vs, b);
+            let eigvals = p.a.eigvals().expect("Failed to decompose p.a");
+            if eigvals.iter().all(|eig| eig.re > 0. && eig.im.abs() < 1e-14) {
+                return TestResult::discard();
             }
             let x = solve_approximately(p.clone());
             let res = p.a.dot(&x) - &p.b;
