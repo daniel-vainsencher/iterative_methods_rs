@@ -168,7 +168,7 @@ where
 }
 
 fn solve_approximately(p: LinearSystem) -> V {
-    let mut solution = CGIterable::conjugate_gradient(p).take(200);
+    let solution = CGIterable::conjugate_gradient(p).take(200);
     last(solution.map(|s| s.x.clone()))
 }
 
@@ -268,7 +268,7 @@ where
     I: StreamingIterator<Item = T>,
     T: Sized + Clone,
 {
-    let last_some = it.fold(None, |acc, i| { Some((*i).clone())} );
+    let last_some = it.fold(None, |_acc, i| { Some((*i).clone())} );
     let last_item = last_some.expect("StreamingIterator last expects at least one non-None element.").clone();
     last_item
 }
@@ -392,8 +392,7 @@ mod tests {
             println!("b: {}", p.b);
             println!("x: {}", x);
 
-            //TestResult::from_bool(res_norm < 1e-3)
-            TestResult::from_bool(false)
+            TestResult::from_bool(res_norm < 1e-3)
         }
     }
 
@@ -402,7 +401,7 @@ mod tests {
     #[test]
     fn test_last() {
         let v = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-        let mut iter = convert(v.clone());
+        let iter = convert(v.clone());
         assert!(last(iter) == 9);
     }
 
@@ -410,8 +409,7 @@ mod tests {
     #[should_panic(expected = "StreamingIterator last expects at least one non-None element.")]
     fn test_last_fail() {
         let v : Vec<u32> = vec![];
-        let mut iter = convert(v.clone());
-        last(iter);
+        last(convert(v.clone()));
     }
 
     #[test]
