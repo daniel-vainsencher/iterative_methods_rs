@@ -536,26 +536,17 @@ mod tests {
             weight: weights[0],
         });
         for _index in 0..stream_length {
-            let new_weight = {
-                let temp: f64 = weights.iter().sum();
-                let temp = temp * probability / (1.0f64 - probability);
-                temp
-            };
+            let new_weight: f64 =
+                weights.iter().sum::<f64>() * probability / (1.0f64 - probability);
             weights.push(new_weight);
-            match _index {
-                x if x < capacity => stream.push(WeightedDatum {
-                    value: String::from("initial value"),
-                    weight: new_weight,
-                }),
-                x if x >= capacity => stream.push(WeightedDatum {
-                    value: String::from("final value"),
-                    weight: new_weight,
-                }),
-                _ => stream.push(WeightedDatum {
-                    value: String::from("final value"),
-                    weight: new_weight,
-                }),
-            }
+            let label = match _index {
+                x if x < capacity => String::from("initial value"),
+                _ => String::from("final value"),
+            };
+            stream.push(WeightedDatum {
+                value: label,
+                weight: new_weight,
+            });
         }
         stream
     }
@@ -576,19 +567,19 @@ mod tests {
         while let Some(reservoir) = wrs_iter.next() {
             match _index {
                 0 => {
-                    for datum in reservoir {
-                        let value: &String = &datum.value;
-                        // Assert that the elements in the reservoir have value: "initial value"
-                        assert_eq!(value, "initial value");
-                    }
+                    // Assert that the elements in the initial reservoir have value: "initial value".
+                    assert_eq!(
+                        reservoir.iter().all(|datum| datum.value == "initial value"),
+                        true
+                    );
                 }
                 // This condition should be stream_length - 1
-                99 => {
-                    for datum in reservoir {
-                        let value: &String = &datum.value;
-                        // Assert that the elements in the final reservoir have value: "final value"
-                        assert_eq!(value, "initial value");
-                    }
+                x if x == (stream_length - 1) => {
+                    // Assert that the elements in the final reservoir still have value: "initial value" -- they have not been replaced.
+                    assert_eq!(
+                        reservoir.iter().all(|datum| datum.value == "initial value"),
+                        true
+                    );
                 }
                 _ => {}
             }
@@ -612,19 +603,18 @@ mod tests {
         while let Some(reservoir) = wrs_iter.next() {
             match _index {
                 0 => {
-                    for datum in reservoir {
-                        let value: &String = &datum.value;
-                        // Assert that the elements in the reservoir have value: "initial value"
-                        assert_eq!(value, "initial value");
-                    }
+                    // Assert that the elements in the initial reservoir have value: "initial value".
+                    assert_eq!(
+                        reservoir.iter().all(|datum| datum.value == "initial value"),
+                        true
+                    );
                 }
-                // This condition should be stream_length - 1
-                99 => {
-                    for datum in reservoir {
-                        let value: &String = &datum.value;
-                        // Assert that the elements in the final reservoir have value: "final value"
-                        assert_eq!(value, "final value");
-                    }
+                x if x == (stream_length - 1) => {
+                    // Assert that the elements in the final reservoir now all have value: "final value" -- they have been replaced.
+                    assert_eq!(
+                        reservoir.iter().all(|datum| datum.value == "final value"),
+                        true
+                    );
                 }
                 _ => {}
             }
