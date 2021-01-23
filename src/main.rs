@@ -1,8 +1,8 @@
 //! # iterative-methods
 //! A demonstration of the use of StreamingIterators and their adapters to implement iterative algorithms.
+extern crate ndarray_linalg;
 #[cfg(test)]
 extern crate quickcheck;
-extern crate ndarray_linalg;
 use ndarray::*;
 use std::time::{Duration, Instant};
 use streaming_iterator::*;
@@ -268,11 +268,12 @@ where
     I: StreamingIterator<Item = T>,
     T: Sized + Clone,
 {
-    let last_some = it.fold(None, |_acc, i| { Some((*i).clone())} );
-    let last_item = last_some.expect("StreamingIterator last expects at least one non-None element.").clone();
+    let last_some = it.fold(None, |_acc, i| Some((*i).clone()));
+    let last_item = last_some
+        .expect("StreamingIterator last expects at least one non-None element.")
+        .clone();
     last_item
 }
-
 
 fn time<I, T>(it: I) -> TimedIterable<I, T>
 where
@@ -408,7 +409,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "StreamingIterator last expects at least one non-None element.")]
     fn test_last_fail() {
-        let v : Vec<u32> = vec![];
+        let v: Vec<u32> = vec![];
         last(convert(v.clone()));
     }
 
