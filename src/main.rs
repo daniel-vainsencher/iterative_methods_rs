@@ -4,6 +4,9 @@
 extern crate quickcheck;
 extern crate ndarray_linalg;
 use ndarray::*;
+use rand::{Rng, SeedableRng};
+use rand_pcg::Pcg64;
+use std::cmp::PartialEq;
 use std::time::{Duration, Instant};
 use streaming_iterator::*;
 
@@ -358,12 +361,173 @@ where
     }
 }
 
+/// Weighted Sampling
+/// The WeightedDatum struct wraps the values of a data set to include
+/// a weight for each datum. Currently, the main motivation for this
+/// is to use it for Weighted Reservoir Sampling.
+
+// Switch type of weight to Option<f64>
+#[derive(Debug, Clone, PartialEq)]
+struct WeightedDatum<U> {
+    value: U,
+    weight: f64,
+}
+
+fn new_datum<U>(value: U, weight: f64) -> WeightedDatum<U>
+where
+    U: Clone,
+{
+    WeightedDatum {
+        value: value,
+        weight: weight,
+    }
+}
+
+/// The weighted reservoir sampling algorithm of M. T. Chao is implemented.
+/// `ReservoirIterable` wraps a `StreamingIterator`, `I`, whose items must be of type `WeightedDatum` and
+/// produces a `StreamingIterator` whose items are samples of size `capacity`
+/// from the stream of `I`. (This is not the capacity of the `Vec` which holds the `reservoir`;
+/// Rather, the length of the `reservoir` is normally referred to as its `capacity`.)
+/// To produce a `reservoir` of length `capacity` on the first call, the
+/// first call of the `advance` method automatically advances the input
+/// iterator `capacity` steps. Subsequent calls of `advance` on `ReservoirIterator`
+/// advance `I` one step and will at most replace a single element of the `reservoir`.
+
+/// The random oracle is of type `Pcg64` by default, which allows seeded rng. This should be
+/// extended to generic type bound by traits for implementing seeding.
+
+/// See https://en.wikipedia.org/wiki/Reservoir_sampling#Weighted_random_sampling,
+/// https://arxiv.org/abs/1910.11069, or for the original paper,
+/// https://doi.org/10.1093/biomet/69.3.653.
+
+/// Future work might include implementing parallellized batch processing:
+/// https://dl.acm.org/doi/10.1145/3350755.3400287
+#[derive(Debug, Clone)]
+struct ReservoirIterable<I, U> {
+    it: I,
+    reservoir: Vec<WeightedDatum<U>>,
+    capacity: usize,
+    weight_sum: f64,
+    oracle: Pcg64,
+}
+
+// Create a ReservoirIterable
+fn reservoir_iterable<I, T>(
+    it: I,
+    capacity: usize,
+    custom_oracle: Option<Pcg64>,
+) -> ReservoirIterable<I, T>
+where
+    I: Sized + StreamingIterator<Item = WeightedDatum<T>>,
+    T: Clone,
+{
+    let oracle = match custom_oracle {
+        Some(oracle) => oracle,
+        None => Pcg64::from_entropy(),
+    };
+    let res: Vec<WeightedDatum<T>> = Vec::new();
+    ReservoirIterable {
+        it,
+        reservoir: res,
+        capacity: capacity,
+        weight_sum: 0.0,
+        oracle: oracle,
+    }
+}
+
+impl<I, T> StreamingIterator for ReservoirIterable<I, T>
+where
+    T: Clone + std::fmt::Debug,
+    I: StreamingIterator<Item = WeightedDatum<T>>,
+{
+    type Item = Vec<WeightedDatum<T>>;
+
+    #[inline]
+    fn advance(&mut self) {
+        while self.reservoir.len() < self.capacity {
+            for _index in 0..self.capacity {
+                self.it.advance();
+                if let Some(datum) = self.it.get() {
+                    let cloned_datum = datum.clone();
+                    self.reservoir.push(cloned_datum);
+                    self.weight_sum += datum.weight;
+                }
+            }
+        }
+        if let Some(datum) = self.it.next() {
+            self.weight_sum += datum.weight;
+            let p = &(datum.weight / self.weight_sum);
+            let j: f64 = self.oracle.gen();
+            if j < *p {
+                let h = self.oracle.gen_range(0..self.capacity) as usize;
+                let datum_struct = datum.clone();
+                self.reservoir[h] = datum_struct;
+            };
+        }
+    }
+
+    #[inline]
+    fn get(&self) -> Option<&Self::Item> {
+        if let Some(_wd) = &self.it.get() {
+            Some(&self.reservoir)
+        } else {
+            None
+        }
+    }
+}
+
+/// Utility function to generate a sequence of (float, int as float)
+/// values wrapped in a WeightedDatum struct that will be used in tests
+/// of ReservoirIterable.
+fn generate_seeded_values(num_values: usize, int_range_bound: usize) -> Vec<WeightedDatum<f64>> {
+    let mut prng = Pcg64::seed_from_u64(1);
+    let mut seeded_values: Vec<WeightedDatum<f64>> = Vec::new();
+    for _i in 0..num_values {
+        let afloat = prng.gen();
+        let anint = prng.gen_range(0..int_range_bound) as f64;
+        let wd: WeightedDatum<f64> = new_datum(afloat, anint);
+        seeded_values.push(wd);
+    }
+    seeded_values
+}
+
+fn wrs_demo() {
+    let mut seeded_values = generate_seeded_values(6, 2);
+    let mut stream: Vec<WeightedDatum<f64>> = Vec::new();
+    for _i in 0..4 {
+        if let Some(wd) = seeded_values.pop() {
+            stream.push(wd);
+        };
+    }
+    let probability_and_index = seeded_values;
+    println!("Stream: \n {:#?} \n", stream);
+    println!("Random Numbers for Alg \n {:#?} \n ", probability_and_index);
+
+    let stream = convert(stream);
+    let mut stream = reservoir_iterable(stream, 2, Some(Pcg64::seed_from_u64(1)));
+    println!("Reservoir - initially empty: \n {:#?} \n", stream.reservoir);
+    let mut _index = 0usize;
+    while let Some(reservoir) = stream.next() {
+        if _index == 0 {
+            println!(
+                "Reservoir filled with the first items from the stream: {:#?} \n",
+                reservoir
+            );
+        } else {
+            println!("Reservoir: {:#?} \n", reservoir);
+        }
+        _index = _index + 1;
+    }
+}
+
 /// Call the different demos.
 fn main() {
     println!("\n fib_demo:\n");
     fib_demo();
     println!("\n cg_demo: \n");
     cg_demo();
+    println!("\n Weighted Reservoir Sampling Demo:\n");
+    wrs_demo();
 }
 
 /// Unit Tests Module
@@ -453,5 +617,44 @@ mod tests {
             assert_eq!(*element, _index * 3);
             _index = _index + 1;
         }
+    }
+
+    /// Tests for the ReservoirSampleIterable adaptor
+    #[test]
+    fn test_datum_struct() {
+        let samp = new_datum(String::from("hi"), 1.0);
+        assert_eq!(samp.value, String::from("hi"));
+        assert_eq!(samp.weight, 1.0);
+    }
+
+    #[test]
+    fn fill_reservoir_test() {
+        // v is the data stream.
+        let v: Vec<WeightedDatum<f64>> = vec![new_datum(0.5, 1.), new_datum(0.2, 2.)];
+        let v_copy = v.clone();
+        let iter = convert(v);
+        let mut iter = reservoir_iterable(iter, 2, None);
+        for _element in v_copy {
+            iter.advance();
+        }
+        assert_eq!(
+            iter.reservoir[0],
+            WeightedDatum {
+                value: 0.5f64,
+                weight: 1.0f64
+            }
+        );
+        assert_eq!(
+            iter.reservoir[1],
+            WeightedDatum {
+                value: 0.2f64,
+                weight: 2.0f64
+            }
+        );
+    }
+
+    #[test]
+    fn get_reservoir_test() {
+        // write test
     }
 }
