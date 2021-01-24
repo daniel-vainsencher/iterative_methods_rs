@@ -538,7 +538,7 @@ mod tests {
     use ndarray_linalg::*;
     use quickcheck::{quickcheck, TestResult};
     quickcheck! {
-        /// Test that we obtain a low precision solution for small p.s.d. 
+        /// Test that we obtain a low precision solution for small p.s.d.
         /// matrices of not-too-large numbers.
         fn prop(vs: Vec<u16>, b: Vec<u16>) -> TestResult {
             // Currently require dimension 3
