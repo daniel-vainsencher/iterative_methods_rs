@@ -551,6 +551,7 @@ mod tests {
         stream
     }
 
+    // Update to reflect probabilistic nature of the test.
     /// This test asserts that no replacements are made to the initial
     /// reservoir when the subsequent items in the stream have
     /// probabilities of being inserted close to 0.
@@ -588,15 +589,15 @@ mod tests {
     }
 
     // Add link to derivation of bounds.
-    /// This _probabilistic_ test asserts that all items of the initial 
-    /// reservoir will be replaced by the end of the streaming processes. 
-    /// It uses a stream in which the probability of each item being 
-    /// added to the reseroivr is close to 1. By using a large enough 
-    /// stream, we can ensure that the test fails very infrequently. 
-    /// The probability of the test failing is less than .001 if the 
-    /// reservoir capacity = 100, the probability of each item being 
-    /// added is >=0.999, and the length of the stream is >=2431. A 
-    /// derivation of bounds that ensure a given level of success for 
+    /// This _probabilistic_ test asserts that all items of the initial
+    /// reservoir will be replaced by the end of the streaming processes.
+    /// It uses a stream in which the probability of each item being
+    /// added to the reseroivr is close to 1. By using a large enough
+    /// stream, we can ensure that the test fails very infrequently.
+    /// The probability of the test failing is less than .001 if the
+    /// reservoir capacity = 100, the probability of each item being
+    /// added is >=0.999, and the length of the stream is >=2431. A
+    /// derivation of bounds that ensure a given level of success for
     /// the test can be found in the docs [LINK].
     #[test]
     fn wrs_complete_replacement_test() {
