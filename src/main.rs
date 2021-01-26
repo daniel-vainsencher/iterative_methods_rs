@@ -630,4 +630,8 @@ mod tests {
             _index = _index + 1;
         }
     }
+
+    fn assert_all_eq(reservoir: Vec<WeightedDatum<String>>, value: String) {
+        assert_eq!(reservoir.iter().all(|datum| datum.value == value), true);
+    }
 }
