@@ -538,29 +538,37 @@ mod tests {
     use ndarray::*;
     use ndarray_linalg::*;
     use quickcheck::{quickcheck, TestResult};
+
+    fn test_arbitrary_3x3_psd(vs: Vec<u16>, b: Vec<u16>) -> TestResult {
+        // Currently require dimension 3
+        if b.len().pow(2) != vs.len() || b.len() != 3 {
+            return TestResult::discard();
+        }
+        let vs = rcarr1(&vs).reshape((3, 3)).map(|i| *i as f64).into_shared();
+        let b = rcarr1(&b).map(|i| *i as f64).into_shared();
+        let p = make_3x3_psd_system(vs, b);
+        let eigvals = p.a.eigvals().expect("Failed to decompose p.a");
+        if !eigvals
+            .iter()
+            .all(|eig| eig.re > 0. && eig.im.abs() < 1e-14)
+        {
+            return TestResult::discard();
+        }
+        let x = solve_approximately(p.clone());
+        let res = p.a.dot(&x) - &p.b;
+        let res_norm = res.dot(&res);
+        println!("a: {}", p.a);
+        println!("b: {}", p.b);
+        println!("x: {}", x);
+
+        TestResult::from_bool(res_norm > 1e-3)
+    }
+
     quickcheck! {
         /// Test that we obtain a low precision solution for small p.s.d.
         /// matrices of not-too-large numbers.
         fn prop(vs: Vec<u16>, b: Vec<u16>) -> TestResult {
-            // Currently require dimension 3
-            if b.len().pow(2) != vs.len() || b.len() != 3 {
-                return TestResult::discard();
-            }
-            let vs = rcarr1(&vs).reshape((3, 3)).map(|i| *i as f64).into_shared();
-            let b = rcarr1(&b).map(|i| *i as f64).into_shared();
-            let p = make_3x3_psd_system(vs, b);
-            let eigvals = p.a.eigvals().expect("Failed to decompose p.a");
-            if eigvals.iter().all(|eig| eig.re > 0. && eig.im.abs() < 1e-14) {
-                return TestResult::discard();
-            }
-            let x = solve_approximately(p.clone());
-            let res = p.a.dot(&x) - &p.b;
-            let res_norm = res.dot(&res);
-            println!("a: {}", p.a);
-            println!("b: {}", p.b);
-            println!("x: {}", x);
-
-            TestResult::from_bool(res_norm < 1e-3)
+            test_arbitrary_3x3_psd(vs, b)
         }
     }
 
@@ -609,6 +617,13 @@ mod tests {
         let res_norm = r.dot(&r);
         println!("Residual squared norm is: {}", res_norm);
         assert!(res_norm < 1e-10);
+    }
+
+    #[test]
+    fn cg_zero_x() {
+        let result = test_arbitrary_3x3_psd(vec![0, 0, 1, 1, 0, 0, 0, 1, 0], vec![0, 0, 0]);
+        assert!(!result.is_failure());
+        assert!(!result.is_error());
     }
 
     #[test]
