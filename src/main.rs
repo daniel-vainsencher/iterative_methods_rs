@@ -52,7 +52,7 @@ type V = ArcArray1<S>;
 
 /// A linear system, ax-b=0, to be solved iteratively, with an optional initial solution.
 #[derive(Clone, Debug)]
-struct LinearSystem {
+pub struct LinearSystem {
     a: M,
     b: V,
     x0: Option<V>,
@@ -171,12 +171,12 @@ where
     }
 }
 
-fn solve_approximately(p: LinearSystem) -> V {
+pub fn solve_approximately(p: LinearSystem) -> V {
     let solution = CGIterable::conjugate_gradient(p).take(200);
     last(solution.map(|s| s.x.clone()))
 }
 
-fn show_progress(p: LinearSystem) {
+pub fn show_progress(p: LinearSystem) {
     let cg_iter = CGIterable::conjugate_gradient(p).take(50);
     //.take_while(|cgi| cgi.rsprev.sqrt() > 1e-6);
     let mut cg_print_iter = tee(cg_iter, |result| {
@@ -193,7 +193,7 @@ fn show_progress(p: LinearSystem) {
     while let Some(_cgi) = cg_print_iter.next() {}
 }
 
-fn make_3x3_psd_system_1() -> LinearSystem {
+pub fn make_3x3_psd_system_1() -> LinearSystem {
     make_3x3_psd_system(
         rcarr2(&[[1., 2., -1.], [0., 1., 0.], [0., 0., 1.]]),
         rcarr1(&[0., 1., 0.]),
@@ -267,7 +267,7 @@ struct TimedResult<T> {
     duration: Duration,
 }
 
-fn last<I, T>(it: I) -> T
+pub fn last<I, T>(it: I) -> T
 where
     I: StreamingIterator<Item = T>,
     T: Sized + Clone,
