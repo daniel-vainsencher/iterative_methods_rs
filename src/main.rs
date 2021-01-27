@@ -561,7 +561,7 @@ mod tests {
         println!("b: {}", p.b);
         println!("x: {}", x);
 
-        TestResult::from_bool(res_norm > 1e-3)
+        TestResult::from_bool(res_norm < 1e-3)
     }
 
     quickcheck! {
