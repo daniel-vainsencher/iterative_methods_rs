@@ -552,16 +552,18 @@ mod tests {
         let eigvals = p.a.eigvals().expect("Failed to decompose p.a");
         if !eigvals
             .iter()
-            .all(|eig| eig.re > 0. && eig.im.abs() < 1e-14)
+            .all(|eig| eig.re > 1e-9 && eig.re < 1e9 && eig.im.abs() < 1e-14)
         {
             return TestResult::discard();
         }
+        println!("eigvals: {}", eigvals);
         let x = solve_approximately(p.clone());
         let res = p.a.dot(&x) - &p.b;
         let res_norm = res.dot(&res);
         println!("a: {}", p.a);
         println!("b: {}", p.b);
         println!("x: {}", x);
+        show_progress(p.clone());
 
         TestResult::from_bool(res_norm < 1e-3)
     }
@@ -624,6 +626,24 @@ mod tests {
     #[test]
     fn cg_zero_x() {
         let result = test_arbitrary_3x3_psd(vec![0, 0, 1, 1, 0, 0, 0, 1, 0], vec![0, 0, 0]);
+        assert!(!result.is_failure());
+        assert!(!result.is_error());
+    }
+
+    #[test]
+    fn cg_rank_one_v() {
+        // This test is currently discarded by test_arbitrary_3x3_pd
+        let result = test_arbitrary_3x3_psd(vec![0, 0, 0, 0, 0, 0, 1, 43, 8124], vec![0, 0, 1]);
+        assert!(!result.is_failure());
+        assert!(!result.is_error());
+    }
+
+    #[test]
+    fn cg_horribly_conditioned() {
+        // This example is very highly ill-conditioned:        
+        // eigvals: [2904608166.992541+0i, 0.0000000010449559455574797+0i, 0.007460513747178893+0i]
+        // therefore is currently discarded by the upper bound on eigenvalues.
+        let result = test_arbitrary_3x3_psd(vec![0, 0, 0, 0, 0, 1, 101, 4654, 53693], vec![0, 0, 6]);
         assert!(!result.is_failure());
         assert!(!result.is_error());
     }
