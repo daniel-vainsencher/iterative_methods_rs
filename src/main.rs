@@ -80,7 +80,6 @@ impl CGIterable {
             Some(init_x) => init_x,
         };
         let r = problem.b.clone() - problem.a.dot(&x).view();
-        let rs = r.dot(&r);
         let p = r.clone();
         let ap = problem.a.dot(&p).into_shared();
         CGIterable {
@@ -89,7 +88,7 @@ impl CGIterable {
             x,
             alpha: 1.,
             r,
-            rs,
+            rs: 1.,
             rsprev: 1.,
             p,
             ap,
@@ -101,16 +100,19 @@ impl StreamingIterator for CGIterable {
     type Item = CGIterable;
     /// Implementation of conjugate gradient iteration
     fn advance(&mut self) {
+        self.rsprev = self.rs;
+        self.rs = self.r.dot(&self.r);
+        if self.rs.abs() <= std::f64::MIN_POSITIVE * 10. {
+            return;
+        }
+        self.p = (&self.r + &(&self.rs / self.rsprev * &self.p)).into_shared();
+        self.ap = self.a.dot(&self.p).into_shared();
         self.alpha = self.rs / self.p.dot(&self.ap);
         self.x += &(self.alpha * &self.p);
         self.r -= &(self.alpha * &self.ap);
-        self.rsprev = self.rs;
-        self.rs = self.r.dot(&self.r);
-        self.p = (&self.r + &(&self.rs / self.rsprev * &self.p)).into_shared();
-        self.ap = self.a.dot(&self.p).into_shared();
     }
     fn get(&self) -> Option<&Self::Item> {
-        if (!self.rsprev.is_normal()) || self.rsprev.abs() <= std::f64::MIN * 10. {
+        if self.rsprev.abs() <= std::f64::MIN_POSITIVE * 10. {
             None
         } else {
             Some(self)
