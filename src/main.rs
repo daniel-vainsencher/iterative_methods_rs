@@ -549,23 +549,26 @@ mod tests {
         let vs = rcarr1(&vs).reshape((3, 3)).map(|i| *i as f64).into_shared();
         let b = rcarr1(&b).map(|i| *i as f64).into_shared();
         let p = make_3x3_psd_system(vs, b);
+        // Decomposition should always succeed as p.a is p.s.d. by
+        // construction; if not this is a bug in the test.
         let eigvals = p.a.eigvals().expect("Failed to decompose p.a");
+        // Ensure A is positive definite with no extreme eigenvalues.
         if !eigvals
             .iter()
             .all(|eig| eig.re > 1e-9 && eig.re < 1e9 && eig.im.abs() < 1e-14)
         {
             return TestResult::discard();
         }
-        println!("eigvals: {}", eigvals);
-        let x = solve_approximately(p.clone());
-        let res = p.a.dot(&x) - &p.b;
-        let res_norm = res.dot(&res);
+        println!("eigvals of a: {}", eigvals);
         println!("a: {}", p.a);
         println!("b: {}", p.b);
+        let x = solve_approximately(p.clone());
+        let res = p.a.dot(&x) - &p.b;
+        let res_square_norm = res.dot(&res);
         println!("x: {}", x);
         show_progress(p.clone());
-
-        TestResult::from_bool(res_norm < 1e-3)
+        //
+        TestResult::from_bool(res_square_norm < 1e-40)
     }
 
     quickcheck! {
@@ -600,9 +603,9 @@ mod tests {
         let x = solve_approximately(p.clone());
         let r = p.a.dot(&x) - p.b;
         println!("Residual is: {}", r);
-        let res_norm = r.dot(&r);
-        println!("Residual squared norm is: {}", res_norm);
-        assert!(res_norm < 1e-10);
+        let res_square_norm = r.dot(&r);
+        println!("Residual squared norm is: {}", res_square_norm);
+        assert!(res_square_norm < 1e-10);
     }
 
     #[test]
@@ -618,9 +621,9 @@ mod tests {
         let x = solve_approximately(p.clone());
         let r = p.a.dot(&x) - p.b;
         println!("Residual is: {}", r);
-        let res_norm = r.dot(&r);
-        println!("Residual squared norm is: {}", res_norm);
-        assert!(res_norm < 1e-10);
+        let res_square_norm = r.dot(&r);
+        println!("Residual squared norm is: {}", res_square_norm);
+        assert!(res_square_norm < 1e-10);
     }
 
     #[test]
