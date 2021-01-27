@@ -183,7 +183,7 @@ fn show_progress(p: LinearSystem) {
         let res = result.a.dot(&result.x) - &result.b;
         let res_norm = res.dot(&res);
         println!(
-            "rs = {:.10}, ||Ax - b ||_2 = {:.5}, for x = {:.4}, and Ax - b = {:.5}",
+            "rs = {:.10}, ||Ax - b ||_2^2 = {:.5}, for x = {:.4}, and Ax - b = {:.5}",
             result.rs,
             res_norm,
             result.x,
@@ -240,7 +240,7 @@ fn cg_demo() {
         let res = result.a.dot(&result.x) - &result.b;
         let res_norm = res.dot(&res);
         println!(
-            "||Ax - b ||_2 = {:.5}, for x = {:.4}, and Ax - b = {:.5}; iteration duration {}μs",
+            "||Ax - b ||_2^2 = {:.5}, for x = {:.4}, and Ax - b = {:.5}; iteration duration {}μs",
             res_norm,
             result.x,
             result.a.dot(&result.x) - &result.b,
@@ -589,7 +589,7 @@ mod tests {
         let r = p.a.dot(&x) - p.b;
         println!("Residual is: {}", r);
         let res_norm = r.dot(&r);
-        println!("Residual norm is: {}", res_norm);
+        println!("Residual squared norm is: {}", res_norm);
         assert!(res_norm < 1e-10);
     }
 
@@ -607,7 +607,7 @@ mod tests {
         let r = p.a.dot(&x) - p.b;
         println!("Residual is: {}", r);
         let res_norm = r.dot(&r);
-        println!("Residual norm is: {}", res_norm);
+        println!("Residual squared norm is: {}", res_norm);
         assert!(res_norm < 1e-10);
     }
 
