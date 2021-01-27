@@ -64,11 +64,12 @@ struct CGIterable {
     a: M,
     b: V,
     x: V,
+    alpha: S,
     r: V,
     rs: S,
     rsprev: S,
     p: V,
-    ap: Option<V>,
+    ap: V,
 }
 
 impl CGIterable {
@@ -80,17 +81,18 @@ impl CGIterable {
         };
         let r = problem.b.clone() - problem.a.dot(&x).view();
         let rs = r.dot(&r);
-        let cgi_p = r.clone();
-
+        let p = r.clone();
+        let ap = problem.a.dot(&p).into_shared();
         CGIterable {
             a: problem.a,
             b: problem.b,
             x,
+            alpha: 1.,
             r,
             rs,
             rsprev: 1.,
-            p: cgi_p,
-            ap: None,
+            p,
+            ap,
         }
     }
 }
@@ -99,14 +101,13 @@ impl StreamingIterator for CGIterable {
     type Item = CGIterable;
     /// Implementation of conjugate gradient iteration
     fn advance(&mut self) {
-        let ap = self.a.dot(&self.p).into_shared();
-        let alpha = self.rs / self.p.dot(&ap);
-        self.x += &(alpha * &self.p);
-        self.r -= &(alpha * &ap);
+        self.alpha = self.rs / self.p.dot(&self.ap);
+        self.x += &(self.alpha * &self.p);
+        self.r -= &(self.alpha * &self.ap);
         self.rsprev = self.rs;
         self.rs = self.r.dot(&self.r);
         self.p = (&self.r + &(&self.rs / self.rsprev * &self.p)).into_shared();
-        self.ap = Some(ap);
+        self.ap = self.a.dot(&self.p).into_shared();
     }
     fn get(&self) -> Option<&Self::Item> {
         if (!self.rsprev.is_normal()) || self.rsprev.abs() <= std::f64::MIN * 10. {
