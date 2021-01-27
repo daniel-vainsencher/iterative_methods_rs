@@ -569,18 +569,20 @@ mod tests {
             match _index {
                 0 => {
                     // Assert that the elements in the initial reservoir have value: "initial value".
-                    assert_eq!(
-                        reservoir.iter().all(|datum| datum.value == "initial value"),
-                        true
-                    );
+                    assert_all_eq(
+                        reservoir,
+                        "initial value",
+                        "Initial Values of reservoir are not correct.",
+                    )
                 }
                 // This condition should be stream_length - 1
                 x if x == (stream_length - 1) => {
                     // Assert that the elements in the final reservoir still have value: "initial value" -- they have not been replaced.
-                    assert_eq!(
-                        reservoir.iter().all(|datum| datum.value == "initial value"),
-                        true
-                    );
+                    assert_all_eq(
+                        reservoir,
+                        "initial value",
+                        "Final Values of reservoir are not correct.",
+                    )
                 }
                 _ => {}
             }
@@ -613,17 +615,19 @@ mod tests {
             match _index {
                 0 => {
                     // Assert that the elements in the initial reservoir have value: "initial value".
-                    assert_eq!(
-                        reservoir.iter().all(|datum| datum.value == "initial value"),
-                        true
-                    );
+                    assert_all_eq(
+                        reservoir,
+                        "initial value",
+                        "Initial Values of reservoir are not correct.",
+                    )
                 }
                 x if x == (stream_length - 1) => {
                     // Assert that the elements in the final reservoir now all have value: "final value" -- they have been replaced.
-                    assert_eq!(
-                        reservoir.iter().all(|datum| datum.value == "final value"),
-                        true
-                    );
+                    assert_all_eq(
+                        reservoir,
+                        "fial value",
+                        "Final Values of reservoir are not correct.",
+                    )
                 }
                 _ => {}
             }
@@ -631,7 +635,18 @@ mod tests {
         }
     }
 
-    fn assert_all_eq(reservoir: Vec<WeightedDatum<String>>, value: String) {
-        assert_eq!(reservoir.iter().all(|datum| datum.value == value), true);
+    fn assert_all_eq(
+        reservoir: &Vec<WeightedDatum<String>>,
+        uniform_value: &str,
+        fail_message: &str,
+    ) {
+        assert_eq!(
+            reservoir
+                .iter()
+                .all(|datum| datum.value == uniform_value.to_string()),
+            true,
+            "Error: {} \n",
+            fail_message
+        );
     }
 }
