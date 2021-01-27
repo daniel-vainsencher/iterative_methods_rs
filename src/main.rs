@@ -643,10 +643,11 @@ mod tests {
 
     #[test]
     fn cg_horribly_conditioned() {
-        // This example is very highly ill-conditioned:        
+        // This example is very highly ill-conditioned:
         // eigvals: [2904608166.992541+0i, 0.0000000010449559455574797+0i, 0.007460513747178893+0i]
         // therefore is currently discarded by the upper bound on eigenvalues.
-        let result = test_arbitrary_3x3_psd(vec![0, 0, 0, 0, 0, 1, 101, 4654, 53693], vec![0, 0, 6]);
+        let result =
+            test_arbitrary_3x3_psd(vec![0, 0, 0, 0, 0, 1, 101, 4654, 53693], vec![0, 0, 6]);
         assert!(!result.is_failure());
         assert!(!result.is_error());
     }
