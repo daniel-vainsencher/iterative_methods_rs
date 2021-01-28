@@ -477,6 +477,7 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::iter;
 
     #[test]
     fn step_by_test() {
@@ -503,26 +504,24 @@ mod tests {
     fn fill_reservoir_test() {
         // v is the data stream.
         let v: Vec<WeightedDatum<f64>> = vec![new_datum(0.5, 1.), new_datum(0.2, 2.)];
-        let v_copy = v.clone();
         let iter = convert(v);
         let mut iter = reservoir_iterable(iter, 2, None);
-        for _element in v_copy {
-            iter.advance();
+        if let Some(reservoir) = iter.next() {
+            assert_eq!(
+                reservoir[0],
+                WeightedDatum {
+                    value: 0.5f64,
+                    weight: 1.0f64
+                }
+            );
+            assert_eq!(
+                reservoir[1],
+                WeightedDatum {
+                    value: 0.2f64,
+                    weight: 2.0f64
+                }
+            );
         }
-        assert_eq!(
-            iter.reservoir[0],
-            WeightedDatum {
-                value: 0.5f64,
-                weight: 1.0f64
-            }
-        );
-        assert_eq!(
-            iter.reservoir[1],
-            WeightedDatum {
-                value: 0.2f64,
-                weight: 2.0f64
-            }
-        );
     }
 
     /// utility function for testing ReservoirIterable
@@ -530,50 +529,43 @@ mod tests {
         stream_length: usize,
         capacity: usize,
         probability: f64,
-    ) -> Vec<WeightedDatum<String>> {
-        let mut stream: Vec<WeightedDatum<String>> = Vec::new();
-        let initial_weight: f64 = 1.0e-30;
-        let mut weights = vec![initial_weight];
-        // initialize stream
-        stream.push(WeightedDatum {
-            value: String::from("initial value"),
-            weight: weights[0],
+    ) -> impl Iterator<Item = WeightedDatum<&'static str>> {
+        let initial_weight = 1.0f64;
+        let initial_iter = iter::repeat(WeightedDatum {
+            value: "initial value",
+            weight: 1.0,
+        })
+        .take(capacity);
+        let final_iter = iter::repeat(WeightedDatum {
+            value: "final value",
+            weight: initial_weight,
+        })
+        .take(stream_length - capacity);
+        let mut power = -1i32;
+        let mapped = final_iter.map(move |wd| {
+            power += 1;
+            WeightedDatum {
+                value: wd.value,
+                weight: wd.weight / (1.0 - probability).powi(power),
+            }
         });
-        let mut current_weight: f64 = initial_weight;
-        for _index in 1..stream_length {
-            let new_weight: f64 = current_weight / (1.0f64 - probability);
-            weights.push(new_weight);
-            current_weight = new_weight;
-            let label = match _index {
-                x if x < capacity => String::from("initial value"),
-                _ => String::from("final value"),
-            };
-            // println!(
-            //     "Items Generated: \n index: {} \n label: {:?} \n weights: {:#?}",
-            //     _index, label, weights
-            // );
-            stream.push(WeightedDatum {
-                value: label,
-                weight: new_weight,
-            });
-            // println!("index: {:?}", _index);
-            // println!("{:#?}", stream);
-        }
+        let stream = initial_iter.chain(mapped);
         stream
     }
 
     #[test]
     fn test_stream_vec_generator() {
-        let stream_length = 1000usize;
+        let stream_length = 50usize;
         // reservoir capacity:
-        let capacity = 100usize;
+        let capacity = 10usize;
+        let probability = 0.9;
         // We create a stream whose probabilities are all 0.001:
-        let stream_vec = generate_stream_with_constant_probability(stream_length, capacity, 0.001);
-        assert_eq!(stream_vec.len(), stream_length);
-        let mut stream = convert(stream_vec);
+        let stream =
+            generate_stream_with_constant_probability(stream_length, capacity, probability);
+        let mut stream = convert(stream);
         let mut _index: usize = 0;
         while let Some(item) = stream.next() {
-            // println!("index: {}, \n item: \n {:#?}", _index, item);
+            println!("index: {}, \n item: \n {:#?}", _index, item);
             match _index {
                 x if x < capacity => assert_eq!(
                     item.value, "initial value",
@@ -600,8 +592,8 @@ mod tests {
         // reservoir capacity:
         let capacity = 10usize;
         // We create a stream whose probabilities are all 0.001:
-        let stream_vec = generate_stream_with_constant_probability(stream_length, capacity, 0.001);
-        let stream = convert(stream_vec);
+        let stream = generate_stream_with_constant_probability(stream_length, capacity, 0.001);
+        let stream = convert(stream);
         let mut wrs_iter = reservoir_iterable(stream, capacity, None);
         let mut _index: usize = 0;
         while let Some(reservoir) = wrs_iter.next() {
@@ -649,9 +641,8 @@ mod tests {
         // reservoir capacity:
         let capacity = 20usize;
         // We create a stream whose probabilities are all 0.999:
-        let stream_vec = generate_stream_with_constant_probability(stream_length, capacity, 0.9);
-        println!("\n stream_vec: \n {:#?}", stream_vec);
-        let stream = convert(stream_vec);
+        let stream = generate_stream_with_constant_probability(stream_length, capacity, 0.9);
+        let stream = convert(stream);
         let mut wrs_iter = reservoir_iterable(stream, capacity, None);
         let mut _index: usize = 0;
         while let Some(reservoir) = wrs_iter.next() {
@@ -684,7 +675,7 @@ mod tests {
     }
 
     fn assert_all_eq(
-        reservoir: &Vec<WeightedDatum<String>>,
+        reservoir: &Vec<WeightedDatum<&str>>,
         uniform_value: &str,
         fail_message: &str,
     ) {
