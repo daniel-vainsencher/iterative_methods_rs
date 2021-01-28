@@ -532,7 +532,7 @@ mod tests {
         probability: f64,
     ) -> Vec<WeightedDatum<String>> {
         let mut stream: Vec<WeightedDatum<String>> = Vec::new();
-        let initial_weight = 1f64;
+        let initial_weight: f64 = 1.0e-30;
         let mut weights = vec![initial_weight];
         // initialize stream
         stream.push(WeightedDatum {
@@ -637,17 +637,19 @@ mod tests {
     /// stream, we can ensure that the test fails very infrequently.
     /// The probability of the test failing is less than .001 if three
     /// conditions are met: 1) the
-    /// reservoir capacity = 100, 2) the probability of each item being
-    /// added is >=0.999, and 3) the length of the stream is >=2431. A
+    /// reservoir capacity = 20, 2) the probability of each item being
+    /// added is >=0.9, and 3) the length of the stream is >=460. A
     /// derivation of bounds that ensure a given level of success for
     /// the test can be found in the docs [LINK].
+    // Consider wrapping the test in a for loop that runs the test 10^6 times
+    // and counts the number of failures.
     #[test]
     fn wrs_complete_replacement_test() {
-        let stream_length = 431usize;
+        let stream_length = 460usize;
         // reservoir capacity:
         let capacity = 20usize;
         // We create a stream whose probabilities are all 0.999:
-        let stream_vec = generate_stream_with_constant_probability(stream_length, capacity, 0.99);
+        let stream_vec = generate_stream_with_constant_probability(stream_length, capacity, 0.9);
         println!("\n stream_vec: \n {:#?}", stream_vec);
         let stream = convert(stream_vec);
         let mut wrs_iter = reservoir_iterable(stream, capacity, None);
