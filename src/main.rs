@@ -532,16 +532,18 @@ mod tests {
         probability: f64,
     ) -> Vec<WeightedDatum<String>> {
         let mut stream: Vec<WeightedDatum<String>> = Vec::new();
-        let mut weights = vec![1f64];
+        let initial_weight = 1f64;
+        let mut weights = vec![initial_weight];
         // initialize stream
         stream.push(WeightedDatum {
             value: String::from("initial value"),
             weight: weights[0],
         });
+        let mut current_weight: f64 = initial_weight;
         for _index in 1..stream_length {
-            let new_weight: f64 =
-                weights.iter().sum::<f64>() * probability / (1.0f64 - probability);
+            let new_weight: f64 = current_weight / (1.0f64 - probability);
             weights.push(new_weight);
+            current_weight = new_weight;
             let label = match _index {
                 x if x < capacity => String::from("initial value"),
                 _ => String::from("final value"),
@@ -562,9 +564,9 @@ mod tests {
 
     #[test]
     fn test_stream_vec_generator() {
-        let stream_length = 10usize;
+        let stream_length = 1000usize;
         // reservoir capacity:
-        let capacity = 3usize;
+        let capacity = 100usize;
         // We create a stream whose probabilities are all 0.001:
         let stream_vec = generate_stream_with_constant_probability(stream_length, capacity, 0.001);
         assert_eq!(stream_vec.len(), stream_length);
@@ -633,24 +635,25 @@ mod tests {
     /// It uses a stream in which the probability of each item being
     /// added to the reseroivr is close to 1. By using a large enough
     /// stream, we can ensure that the test fails very infrequently.
-    /// The probability of the test failing is less than .001 if the
-    /// reservoir capacity = 100, the probability of each item being
-    /// added is >=0.999, and the length of the stream is >=2431. A
+    /// The probability of the test failing is less than .001 if three
+    /// conditions are met: 1) the
+    /// reservoir capacity = 100, 2) the probability of each item being
+    /// added is >=0.999, and 3) the length of the stream is >=2431. A
     /// derivation of bounds that ensure a given level of success for
     /// the test can be found in the docs [LINK].
     #[test]
     fn wrs_complete_replacement_test() {
-        let stream_length = 100usize;
+        let stream_length = 431usize;
         // reservoir capacity:
-        let capacity = 10usize;
+        let capacity = 20usize;
         // We create a stream whose probabilities are all 0.999:
-        let stream_vec = generate_stream_with_constant_probability(stream_length, capacity, 0.999);
+        let stream_vec = generate_stream_with_constant_probability(stream_length, capacity, 0.99);
         println!("\n stream_vec: \n {:#?}", stream_vec);
         let stream = convert(stream_vec);
         let mut wrs_iter = reservoir_iterable(stream, capacity, None);
         let mut _index: usize = 0;
         while let Some(reservoir) = wrs_iter.next() {
-            println!("\n index: {} \n reservoir: {:#?}\n", _index, reservoir);
+            // println!("\n index: {} \n reservoir: {:#?}\n", _index, reservoir);
             match _index {
                 0 => {
                     // Assert that the elements in the initial reservoir have value: "initial value".
