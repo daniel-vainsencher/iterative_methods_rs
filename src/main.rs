@@ -384,7 +384,7 @@ where
 
     #[inline]
     fn advance(&mut self) {
-        if self.reservoir.len() >= capacity {
+        if self.reservoir.len() >= self.capacity {
             if let Some(datum) = self.it.next() {
                 self.weight_sum += datum.weight;
                 let p = &(datum.weight / self.weight_sum);
@@ -395,8 +395,7 @@ where
                     self.reservoir[h] = datum_struct;
                 };
             }
-        }
-        else {
+        } else {
             while self.reservoir.len() < self.capacity {
                 for _index in 0..self.capacity {
                     self.it.advance();
@@ -406,8 +405,8 @@ where
                         self.weight_sum += datum.weight;
                     }
                 }
-            } 
-        }  
+            }
+        }
     }
 
     #[inline]
@@ -639,40 +638,42 @@ mod tests {
     /// added is >=0.999, and the length of the stream is >=2431. A
     /// derivation of bounds that ensure a given level of success for
     /// the test can be found in the docs [LINK].
-
-    // THIS FAILS: I believe there may be a problem with the advance method of ReservoirIterable: I think it calls advance on the underlying iterator too many times.
     #[test]
     fn wrs_complete_replacement_test() {
-        let stream_length = 10usize;
+        let stream_length = 100usize;
         // reservoir capacity:
-        let capacity = 3usize;
+        let capacity = 10usize;
         // We create a stream whose probabilities are all 0.999:
         let stream_vec = generate_stream_with_constant_probability(stream_length, capacity, 0.999);
-        println!("{:#?}", stream_vec);
+        println!("\n stream_vec: \n {:#?}", stream_vec);
         let stream = convert(stream_vec);
         let mut wrs_iter = reservoir_iterable(stream, capacity, None);
         let mut _index: usize = 0;
         while let Some(reservoir) = wrs_iter.next() {
             println!("\n index: {} \n reservoir: {:#?}\n", _index, reservoir);
-            // match _index {
-            //     0 => {
-            //         // Assert that the elements in the initial reservoir have value: "initial value".
-            //         assert_all_eq(
-            //             reservoir,
-            //             "initial value",
-            //             "Initial Values of reservoir are not correct.",
-            //         )
-            //     }
-            //     x if x == (stream_length - 1) => {
-            //         // Assert that the elements in the final reservoir now all have value: "final value" -- they have been replaced.
-            //         assert_all_eq(
-            //             reservoir,
-            //             "final value",
-            //             "Final Values of reservoir are not correct.",
-            //         )
-            //     }
-            //     _ => {}
-            // }
+            match _index {
+                0 => {
+                    // Assert that the elements in the initial reservoir have value: "initial value".
+                    assert_all_eq(
+                        reservoir,
+                        "initial value",
+                        "Initial Values of reservoir are not correct.",
+                    )
+                }
+                x if x == (stream_length - capacity) => {
+                    // Assert that the elements in the final reservoir now all have value: "final value" -- they have been replaced.
+                    println!(
+                        "final index: {} \n final reservoir: {:#?}",
+                        _index, reservoir
+                    );
+                    assert_all_eq(
+                        reservoir,
+                        "final value",
+                        "Final Values of reservoir are not correct.",
+                    )
+                }
+                _ => {}
+            }
             _index = _index + 1;
         }
     }
