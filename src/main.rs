@@ -221,7 +221,7 @@ fn make_3x3_psd_system(m: M, b: V) -> LinearSystem {
 /// Demonstrate usage and convergence of conjugate gradient as a streaming-iterator.
 fn cg_demo() {
     let p = make_3x3_psd_system_2();
-    println!("a: {}", &p.a);
+    println!("a: \n{}", &p.a);
     let cg_iter = CGIterable::conjugate_gradient(p)
         // Upper bound the number of iterations
         .take(20)
