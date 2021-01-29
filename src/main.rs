@@ -449,25 +449,28 @@ where
 
     #[inline]
     fn advance(&mut self) {
-        while self.reservoir.len() < self.capacity {
-            for _index in 0..self.capacity {
-                self.it.advance();
-                if let Some(datum) = self.it.get() {
-                    let cloned_datum = datum.clone();
-                    self.reservoir.push(cloned_datum);
-                    self.weight_sum += datum.weight;
+        if self.reservoir.len() >= self.capacity {
+            if let Some(datum) = self.it.next() {
+                self.weight_sum += datum.weight;
+                let p = &(datum.weight / self.weight_sum);
+                let j: f64 = self.oracle.gen();
+                if j < *p {
+                    let h = self.oracle.gen_range(0..self.capacity) as usize;
+                    let datum_struct = datum.clone();
+                    self.reservoir[h] = datum_struct;
+                };
+            }
+        } else {
+            while self.reservoir.len() < self.capacity {
+                for _index in 0..self.capacity {
+                    self.it.advance();
+                    if let Some(datum) = self.it.get() {
+                        let cloned_datum = datum.clone();
+                        self.reservoir.push(cloned_datum);
+                        self.weight_sum += datum.weight;
+                    }
                 }
             }
-        }
-        if let Some(datum) = self.it.next() {
-            self.weight_sum += datum.weight;
-            let p = &(datum.weight / self.weight_sum);
-            let j: f64 = self.oracle.gen();
-            if j < *p {
-                let h = self.oracle.gen_range(0..self.capacity) as usize;
-                let datum_struct = datum.clone();
-                self.reservoir[h] = datum_struct;
-            };
         }
     }
 
@@ -506,7 +509,7 @@ fn wrs_demo() {
     }
     let probability_and_index = seeded_values;
     println!("Stream: \n {:#?} \n", stream);
-    println!("Random Numbers for Alg \n {:#?} \n ", probability_and_index);
+    println!("Random Numbers for Alg: \n (The values are used as the probabilities and the weights as indices.) \n {:#?} \n ", probability_and_index);
 
     let stream = convert(stream);
     let mut stream = reservoir_iterable(stream, 2, Some(Pcg64::seed_from_u64(1)));
@@ -608,6 +611,7 @@ mod tests {
     }
 
     use super::*;
+    use std::iter;
 
     #[test]
     fn test_last() {
@@ -692,7 +696,7 @@ mod tests {
         }
     }
 
-    /// Tests for the ReservoirSampleIterable adaptor
+    /// Tests for the ReservoirIterable adaptor
     #[test]
     fn test_datum_struct() {
         let samp = new_datum(String::from("hi"), 1.0);
@@ -700,34 +704,204 @@ mod tests {
         assert_eq!(samp.weight, 1.0);
     }
 
+    /// This test asserts that the reservoir is filled with the correct items.
     #[test]
     fn fill_reservoir_test() {
         // v is the data stream.
         let v: Vec<WeightedDatum<f64>> = vec![new_datum(0.5, 1.), new_datum(0.2, 2.)];
-        let v_copy = v.clone();
         let iter = convert(v);
         let mut iter = reservoir_iterable(iter, 2, None);
-        for _element in v_copy {
-            iter.advance();
+        if let Some(reservoir) = iter.next() {
+            assert_eq!(
+                reservoir[0],
+                WeightedDatum {
+                    value: 0.5f64,
+                    weight: 1.0f64
+                }
+            );
+            assert_eq!(
+                reservoir[1],
+                WeightedDatum {
+                    value: 0.2f64,
+                    weight: 2.0f64
+                }
+            );
         }
-        assert_eq!(
-            iter.reservoir[0],
-            WeightedDatum {
-                value: 0.5f64,
-                weight: 1.0f64
+    }
+
+    /// utility function for testing ReservoirIterable
+    fn generate_stream_with_constant_probability(
+        stream_length: usize,
+        capacity: usize,
+        probability: f64,
+        initial_weight: f64,
+    ) -> impl Iterator<Item = WeightedDatum<&'static str>> {
+        // Create capacity of items with initial weight.
+        let initial_iter = iter::repeat(WeightedDatum {
+            value: "initial value",
+            weight: initial_weight,
+        })
+        .take(capacity);
+        let final_iter = iter::repeat(WeightedDatum {
+            value: "final value",
+            weight: initial_weight,
+        })
+        .take(stream_length - capacity);
+        let mut power = 0i32;
+        // The weight after the initial weight has an anomolous expression.
+        let w_1 = probability / (1.0 - probability) * initial_weight;
+        let mapped = final_iter.map(move |wd| {
+            power += 1;
+            if power == 1 {
+                WeightedDatum {
+                    value: wd.value,
+                    weight: initial_weight * probability / (1.0 - probability).powi(power),
+                }
+            // After w_1, the expression for the weights is regular.
+            } else {
+                WeightedDatum {
+                    value: wd.value,
+                    weight: w_1 / (1.0 - probability).powi(power),
+                }
             }
-        );
-        assert_eq!(
-            iter.reservoir[1],
-            WeightedDatum {
-                value: 0.2f64,
-                weight: 2.0f64
-            }
-        );
+        });
+        let stream = initial_iter.chain(mapped);
+        stream
     }
 
     #[test]
-    fn get_reservoir_test() {
-        // write test
+    fn test_constant_probability() {
+        let stream_length = 10usize;
+        // reservoir capacity:
+        let capacity = 3usize;
+        let probability = 0.01;
+        let initial_weight = 1.0;
+        // We create a stream with constant probability for all elements:
+        let mut stream = generate_stream_with_constant_probability(
+            stream_length,
+            capacity,
+            probability,
+            initial_weight,
+        );
+        let mut weight_sum = initial_weight;
+        // Cue the stream to the first "final value" element:
+        stream.nth(capacity - 1);
+        // Check that the probabilities are approximately correct.
+        while let Some(item) = stream.next() {
+            // println!("{:#?}", item);
+            weight_sum += item.weight;
+            let p = item.weight / weight_sum;
+            // println!("Probability: {:?}", p);
+            assert!((p - probability).abs() < 0.01 * probability);
+        }
+    }
+
+    #[test]
+    fn test_stream_vec_generator() {
+        let stream_length = 50usize;
+        // reservoir capacity:
+        let capacity = 10usize;
+        let probability = 0.01;
+        let initial_weight = 1.0;
+        // We create a stream with constant probability for all elements:
+        let stream = generate_stream_with_constant_probability(
+            stream_length,
+            capacity,
+            probability,
+            initial_weight,
+        );
+        let mut stream = convert(stream);
+        let mut _index: usize = 0;
+        while let Some(item) = stream.next() {
+            match _index {
+                x if x < capacity => assert_eq!(
+                    item.value, "initial value",
+                    "Error: item value was {} for index={}",
+                    item.value, x
+                ),
+                _ => assert_eq!(
+                    item.value, "final value",
+                    "Error: item value was {} for index={}",
+                    item.value, _index
+                ),
+            }
+            _index = _index + 1;
+        }
+    }
+
+    #[test]
+    fn wrs_no_replacement_test() {
+        let stream_length = 20usize;
+        // reservoir capacity:
+        let capacity = 10usize;
+        let probability = 0.001;
+        let initial_weight = 1.0;
+        // We create a stream with constant probability for all elements:
+        let stream = generate_stream_with_constant_probability(
+            stream_length,
+            capacity,
+            probability,
+            initial_weight,
+        );
+        let stream = convert(stream);
+        let mut wrs_iter = reservoir_iterable(stream, capacity, None);
+        if let Some(reservoir) = wrs_iter.next() {
+            assert!(reservoir
+                .into_iter()
+                .all(|wd| wd.value == String::from("initial value")));
+        };
+
+        if let Some(reservoir) = wrs_iter.nth(stream_length - capacity - 1) {
+            assert!(reservoir
+                .into_iter()
+                .all(|wd| wd.value == String::from("initial value")));
+        } else {
+            panic!("The final reservoir was None.");
+        };
+    }
+
+    // Add link to derivation of bounds.
+    /// This _probabilistic_ test asserts that all items of the initial
+    /// reservoir will be replaced by the end of the streaming processes.
+    /// It uses a stream in which the probability of each item being
+    /// added to the reseroivr is close to 1. By using a large enough
+    /// stream, we can ensure that the test fails very infrequently.
+    /// The probability of the test failing is less than .001 if three
+    /// conditions are met: 1) the
+    /// reservoir capacity = 20, 2) the probability of each item being
+    /// added is >=0.9, and 3) the length of the stream is >=460. A
+    /// derivation of bounds that ensure a given level of success for
+    /// the test can be found in the docs [LINK].
+    // Consider wrapping the test in a for loop that runs the test 10^6 times
+    // and counts the number of failures.
+    #[test]
+    fn wrs_complete_replacement_test() {
+        let stream_length = 460usize;
+        // reservoir capacity:
+        let capacity = 20usize;
+        let probability = 0.9;
+        let initial_weight = 1.0;
+        // We create a stream whose probabilities are all 0.9:
+        let stream = generate_stream_with_constant_probability(
+            stream_length,
+            capacity,
+            probability,
+            initial_weight,
+        );
+        let stream = convert(stream);
+        let mut wrs_iter = reservoir_iterable(stream, capacity, None);
+        if let Some(reservoir) = wrs_iter.next() {
+            assert!(reservoir
+                .into_iter()
+                .all(|wd| wd.value == String::from("initial value")));
+        };
+
+        if let Some(reservoir) = wrs_iter.nth(stream_length - capacity - 1) {
+            assert!(reservoir
+                .into_iter()
+                .all(|wd| wd.value == String::from("final value")));
+        } else {
+            panic!("The final reservoir was None.");
+        };
     }
 }
