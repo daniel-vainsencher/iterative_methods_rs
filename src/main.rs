@@ -540,8 +540,8 @@ fn main() {
 mod tests {
     use eigenvalues::algorithms::lanczos::HermitianLanczos;
     use eigenvalues::SpectrumTarget;
-    use ndarray::*;
     use na::{DMatrix, DVector, Dynamic};
+    use ndarray::*;
     use quickcheck::{quickcheck, TestResult};
     #[test]
     fn test_alt_eig() {
