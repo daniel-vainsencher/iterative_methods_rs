@@ -382,6 +382,9 @@ fn new_datum<U>(value: U, weight: f64) -> WeightedDatum<U>
 where
     U: Clone,
 {
+    if !weight.is_finite() {
+        panic!("The weight, {:?}, if not finite and therefore cannot be used to compute the probability of inclusion in the reservoir.", weight);
+    }
     WeightedDatum {
         value: value,
         weight: weight,
@@ -704,6 +707,30 @@ mod tests {
         assert_eq!(samp.weight, 1.0);
     }
 
+    #[test]
+    #[should_panic(
+        expected = "The weight, inf, if not finite and therefore cannot be used to compute the probability of inclusion in the reservoir."
+    )]
+    fn test_new_datum_infinite() {
+        let _wd: WeightedDatum<String> = new_datum(String::from("some value"), f64::INFINITY);
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "The weight, -inf, if not finite and therefore cannot be used to compute the probability of inclusion in the reservoir."
+    )]
+    fn test_new_datum_neg_infinite() {
+        let _wd: WeightedDatum<String> = new_datum(String::from("some value"), f64::NEG_INFINITY);
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "The weight, NaN, if not finite and therefore cannot be used to compute the probability of inclusion in the reservoir."
+    )]
+    fn test_new_datum_nan() {
+        let _wd: WeightedDatum<String> = new_datum(String::from("some value"), f64::NAN);
+    }
+
     /// This test asserts that the reservoir is filled with the correct items.
     #[test]
     fn fill_reservoir_test() {
@@ -753,16 +780,13 @@ mod tests {
         let mapped = final_iter.map(move |wd| {
             power += 1;
             if power == 1 {
-                WeightedDatum {
-                    value: wd.value,
-                    weight: initial_weight * probability / (1.0 - probability).powi(power),
-                }
+                new_datum(
+                    wd.value,
+                    initial_weight * probability / (1.0 - probability).powi(power),
+                )
             // After w_1, the expression for the weights is regular.
             } else {
-                WeightedDatum {
-                    value: wd.value,
-                    weight: w_1 / (1.0 - probability).powi(power),
-                }
+                new_datum(wd.value, w_1 / (1.0 - probability).powi(power))
             }
         });
         let stream = initial_iter.chain(mapped);
@@ -788,11 +812,31 @@ mod tests {
         stream.nth(capacity - 1);
         // Check that the probabilities are approximately correct.
         while let Some(item) = stream.next() {
-            // println!("{:#?}", item);
             weight_sum += item.weight;
             let p = item.weight / weight_sum;
-            // println!("Probability: {:?}", p);
             assert!((p - probability).abs() < 0.01 * probability);
+        }
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "The weight, inf, if not finite and therefore cannot be used to compute the probability of inclusion in the reservoir."
+    )]
+    fn test_constant_probability_fail_from_inf_weight() {
+        let stream_length = 100usize;
+        // reservoir capacity:
+        let capacity = 3usize;
+        let probability = 0.9999;
+        let initial_weight = 1.0;
+        // We create a stream with constant probability for all elements:
+        let mut stream = generate_stream_with_constant_probability(
+            stream_length,
+            capacity,
+            probability,
+            initial_weight,
+        );
+        while let Some(_item) = stream.next() {
+            ()
         }
     }
 
@@ -876,11 +920,11 @@ mod tests {
     // and counts the number of failures.
     #[test]
     fn wrs_complete_replacement_test() {
-        let stream_length = 460usize;
+        let stream_length = 333usize;
         // reservoir capacity:
-        let capacity = 20usize;
+        let capacity = 15usize;
         let probability = 0.9;
-        let initial_weight = 1.0;
+        let initial_weight = 1.0e-20;
         // We create a stream whose probabilities are all 0.9:
         let stream = generate_stream_with_constant_probability(
             stream_length,
