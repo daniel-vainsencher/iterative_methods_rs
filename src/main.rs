@@ -383,7 +383,7 @@ where
     U: Clone,
 {
     if !weight.is_finite() {
-        panic!("The weight, {:?}, if not finite and therefore cannot be used to compute the probability of inclusion in the reservoir.", weight);
+        panic!("The weight is not finite and therefore cannot be used to compute the probability of inclusion in the reservoir.");
     }
     WeightedDatum {
         value: value,
@@ -708,26 +708,10 @@ mod tests {
 
     #[test]
     #[should_panic(
-        expected = "The weight, inf, if not finite and therefore cannot be used to compute the probability of inclusion in the reservoir."
+        expected = "The weight is not finite and therefore cannot be used to compute the probability of inclusion in the reservoir."
     )]
     fn test_new_datum_infinite() {
         let _wd: WeightedDatum<String> = new_datum(String::from("some value"), f64::INFINITY);
-    }
-
-    #[test]
-    #[should_panic(
-        expected = "The weight, -inf, if not finite and therefore cannot be used to compute the probability of inclusion in the reservoir."
-    )]
-    fn test_new_datum_neg_infinite() {
-        let _wd: WeightedDatum<String> = new_datum(String::from("some value"), f64::NEG_INFINITY);
-    }
-
-    #[test]
-    #[should_panic(
-        expected = "The weight, NaN, if not finite and therefore cannot be used to compute the probability of inclusion in the reservoir."
-    )]
-    fn test_new_datum_nan() {
-        let _wd: WeightedDatum<String> = new_datum(String::from("some value"), f64::NAN);
     }
 
     /// This test asserts that the reservoir is filled with the correct items.
@@ -782,12 +766,10 @@ mod tests {
         let mut power = 0i32;
         let mapped = final_iter.map(move |wd| {
             power += 1;
-            {
-                new_datum(
-                    wd.value,
-                    initial_weight * probability / (1.0 - probability).powi(power),
-                )
-            }
+            new_datum(
+                wd.value,
+                initial_weight * probability / (1.0 - probability).powi(power),
+            )
         });
         let stream = initial_iter.chain(mapped);
         stream
@@ -820,7 +802,7 @@ mod tests {
 
     #[test]
     #[should_panic(
-        expected = "The weight, inf, if not finite and therefore cannot be used to compute the probability of inclusion in the reservoir."
+        expected = "The weight is not finite and therefore cannot be used to compute the probability of inclusion in the reservoir."
     )]
     fn test_constant_probability_fail_from_inf_weight() {
         let stream_length = 100usize;
