@@ -382,6 +382,9 @@ fn new_datum<U>(value: U, weight: f64) -> WeightedDatum<U>
 where
     U: Clone,
 {
+    if !weight.is_finite() {
+        panic!("The weight is not finite and therefore cannot be used to compute the probability of inclusion in the reservoir.");
+    }
     WeightedDatum {
         value: value,
         weight: weight,
@@ -462,13 +465,12 @@ where
             }
         } else {
             while self.reservoir.len() < self.capacity {
-                for _index in 0..self.capacity {
-                    self.it.advance();
-                    if let Some(datum) = self.it.get() {
-                        let cloned_datum = datum.clone();
-                        self.reservoir.push(cloned_datum);
-                        self.weight_sum += datum.weight;
-                    }
+                if let Some(datum) = self.it.next() {
+                    let cloned_datum = datum.clone();
+                    self.reservoir.push(cloned_datum);
+                    self.weight_sum += datum.weight;
+                } else {
+                    break;
                 }
             }
         }
@@ -704,6 +706,14 @@ mod tests {
         assert_eq!(samp.weight, 1.0);
     }
 
+    #[test]
+    #[should_panic(
+        expected = "The weight is not finite and therefore cannot be used to compute the probability of inclusion in the reservoir."
+    )]
+    fn test_new_datum_infinite() {
+        let _wd: WeightedDatum<String> = new_datum(String::from("some value"), f64::INFINITY);
+    }
+
     /// This test asserts that the reservoir is filled with the correct items.
     #[test]
     fn fill_reservoir_test() {
@@ -729,6 +739,16 @@ mod tests {
         }
     }
 
+    #[test]
+    fn stream_smaller_than_reservoir_test() {
+        let stream_vec = vec![new_datum(1, 1.0), new_datum(2, 1.0)];
+        let stream = convert(stream_vec);
+        let mut stream = reservoir_iterable(stream, 3, None);
+        while let Some(_reservoir) = stream.next() {
+            println!("{:#?}", _reservoir);
+        }
+    }
+
     /// utility function for testing ReservoirIterable
     fn generate_stream_with_constant_probability(
         stream_length: usize,
@@ -737,33 +757,19 @@ mod tests {
         initial_weight: f64,
     ) -> impl Iterator<Item = WeightedDatum<&'static str>> {
         // Create capacity of items with initial weight.
-        let initial_iter = iter::repeat(WeightedDatum {
-            value: "initial value",
-            weight: initial_weight,
-        })
-        .take(capacity);
-        let final_iter = iter::repeat(WeightedDatum {
-            value: "final value",
-            weight: initial_weight,
-        })
-        .take(stream_length - capacity);
+        let initial_iter = iter::repeat(new_datum("initial value", initial_weight)).take(capacity);
+        if capacity > stream_length {
+            panic!("Capacity must be less than or equal to stream length.");
+        }
+        let final_iter =
+            iter::repeat(new_datum("final value", initial_weight)).take(stream_length - capacity);
         let mut power = 0i32;
-        // The weight after the initial weight has an anomolous expression.
-        let w_1 = probability / (1.0 - probability) * initial_weight;
         let mapped = final_iter.map(move |wd| {
             power += 1;
-            if power == 1 {
-                WeightedDatum {
-                    value: wd.value,
-                    weight: initial_weight * probability / (1.0 - probability).powi(power),
-                }
-            // After w_1, the expression for the weights is regular.
-            } else {
-                WeightedDatum {
-                    value: wd.value,
-                    weight: w_1 / (1.0 - probability).powi(power),
-                }
-            }
+            new_datum(
+                wd.value,
+                initial_weight * probability / (1.0 - probability).powi(power),
+            )
         });
         let stream = initial_iter.chain(mapped);
         stream
@@ -788,11 +794,31 @@ mod tests {
         stream.nth(capacity - 1);
         // Check that the probabilities are approximately correct.
         while let Some(item) = stream.next() {
-            // println!("{:#?}", item);
             weight_sum += item.weight;
             let p = item.weight / weight_sum;
-            // println!("Probability: {:?}", p);
             assert!((p - probability).abs() < 0.01 * probability);
+        }
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "The weight is not finite and therefore cannot be used to compute the probability of inclusion in the reservoir."
+    )]
+    fn test_constant_probability_fail_from_inf_weight() {
+        let stream_length = 100usize;
+        // reservoir capacity:
+        let capacity = 3usize;
+        let probability = 0.9999;
+        let initial_weight = 1.0;
+        // We create a stream with constant probability for all elements:
+        let mut stream = generate_stream_with_constant_probability(
+            stream_length,
+            capacity,
+            probability,
+            initial_weight,
+        );
+        while let Some(_item) = stream.next() {
+            ()
         }
     }
 
@@ -876,11 +902,11 @@ mod tests {
     // and counts the number of failures.
     #[test]
     fn wrs_complete_replacement_test() {
-        let stream_length = 460usize;
+        let stream_length = 333usize;
         // reservoir capacity:
-        let capacity = 20usize;
+        let capacity = 15usize;
         let probability = 0.9;
-        let initial_weight = 1.0;
+        let initial_weight = 1.0e-20;
         // We create a stream whose probabilities are all 0.9:
         let stream = generate_stream_with_constant_probability(
             stream_length,
