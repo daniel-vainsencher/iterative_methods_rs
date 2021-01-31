@@ -239,34 +239,47 @@ fn cg_demo() {
     // TODO can this be fixed? see iterutils crate.
     let step_by_cg_iter = step_by(cg_iter, 2);
     let timed_cg_iter = time(step_by_cg_iter);
-    let mut cg_print_iter = tee(timed_cg_iter, |TimedResult { result, duration }| {
-        let res = result.a.dot(&result.x) - &result.b;
-        let res_norm = res.dot(&res);
-        println!(
-            "||Ax - b ||_2^2 = {:.5}, for x = {:.4}, and Ax - b = {:.5}; iteration duration {}μs",
+    let mut cg_print_iter = tee(
+        timed_cg_iter,
+        |TimedResult {
+             result,
+             start_time,
+             duration,
+         }| {
+            let res = result.a.dot(&result.x) - &result.b;
+            let res_norm = res.dot(&res);
+            println!(
+            "||Ax - b ||_2^2 = {:.5}, for x = {:.4}, and Ax - b = {:.5}; iteration start {}μs, duration {}μs",
             res_norm,
             result.x,
             result.a.dot(&result.x) - &result.b,
+            start_time.as_nanos(),
             duration.as_nanos(),
         );
-    });
+        },
+    );
     while let Some(_cgi) = cg_print_iter.next() {}
 }
 
-/// Time every call to `advance` on the underlying
-/// StreamingIterator. The goal is that our get returns a pair that is
-/// approximately (Duration, &I::Item), but the types are not lining
-/// up just yet.
+/// Times every call to `advance` on the underlying
+/// StreamingIterator. Stores both the time at which it starts, and
+/// the duration it took to run.
 struct TimedIterable<I, T>
 where
     I: StreamingIterator<Item = T>,
 {
     it: I,
-    last: Option<TimedResult<T>>,
+    current: Option<TimedResult<T>>,
+    timer: Instant,
 }
 
+/// TimedResult decorates with two duration fields: start_time is
+/// relative to the creation of the process generating results, and
+/// duration is relative to the start of the creation of the current
+/// result.
 struct TimedResult<T> {
     result: T,
+    start_time: Duration,
     duration: Duration,
 }
 
@@ -287,7 +300,11 @@ where
     I: Sized + StreamingIterator<Item = T>,
     T: Sized,
 {
-    TimedIterable { it: it, last: None }
+    TimedIterable {
+        it: it,
+        timer: Instant::now(),
+        current: None,
+    }
 }
 
 impl<I, T> StreamingIterator for TimedIterable<I, T>
@@ -298,10 +315,12 @@ where
     type Item = TimedResult<T>;
 
     fn advance(&mut self) {
+        let start_time = self.timer.elapsed();
         let before = Instant::now();
         self.it.advance();
-        self.last = match self.it.get() {
+        self.current = match self.it.get() {
             Some(n) => Some(TimedResult {
+                start_time,
                 duration: before.elapsed(),
                 result: n.clone(),
             }),
@@ -310,7 +329,7 @@ where
     }
 
     fn get(&self) -> Option<&Self::Item> {
-        match &self.last {
+        match &self.current {
             Some(tr) => Some(&tr),
             None => None,
         }
