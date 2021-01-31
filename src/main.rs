@@ -146,7 +146,7 @@ impl StreamingIterator<Item=T> {
 fn tee<I, F, T>(it: I, f: F) -> Tee<I, F>
 where
     I: Sized + StreamingIterator<Item = T>,
-    F: Fn(&T),
+    F: FnMut(&T),
 {
     Tee { it: it, f: f }
 }
