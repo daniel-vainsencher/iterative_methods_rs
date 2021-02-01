@@ -295,6 +295,9 @@ where
     last_item
 }
 
+/// Wrap each value of a streaming iterator with the durations:
+/// - between the call to this function and start of the value's computation
+/// - it took to calculate that value
 fn time<I, T>(it: I) -> TimedIterable<I, T>
 where
     I: Sized + StreamingIterator<Item = T>,
@@ -587,7 +590,7 @@ mod tests {
                 durations.push(duration.as_nanos());
             },
         );
-        while let Some(_x) = cg_print_iter.next() {};
+        while let Some(_x) = cg_print_iter.next() {}
         println!("Start times: {:?}", start_times);
         println!("Durations: {:?}", durations);
         let start_times = rcarr1(&start_times).map(|i| *i as f64);
