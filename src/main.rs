@@ -613,6 +613,7 @@ mod tests {
     use na::{DMatrix, DVector, Dynamic};
     use ndarray::*;
     use quickcheck::{quickcheck, TestResult};
+    use rand::distributions::Uniform;
     #[test]
     fn test_alt_eig() {
         let dm = DMatrix::from_row_slice(3, 3, &[3.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 2.0]);
@@ -996,16 +997,44 @@ mod tests {
         };
     }
 
+    /// Utility function to compute moments of vec of WeightedDatum
+    fn compute_moments(data_vec: Vec<WeightedDatum<f64>>) -> Vec<f64> {
+        let moments: Vec<f64> = Vec::new();
+        let num_samples: f64 = data_vec.len() as f64;
+        let mean: f64 = data_vec.iter().sum::<f64>() / num_samples;
+        moments.push(mean);
+        moments
+    }
+
     /// Utility function to test the moments of a WRS.
-    fn uniform_stream_as_vec() {
+    fn uniform_stream_as_vec() -> (Vec<f64>, Vec<f64>) {
         let range = Uniform::from(0.0..1.0);
         let stream_vec: Vec<f64> = rand::thread_rng().sample_iter(&range).take(10).collect();
-        println!("{:#?}", stream_vec);
+        let mut moments: Vec<f64> = Vec::new();
+        let num_samples: f64 = stream_vec.len() as f64;
+        let mean: f64 = stream_vec.iter().sum::<f64>() / num_samples;
+        moments.push(mean);
+        (stream_vec, moments)
     }
 
     #[test]
     fn test_reservoir_moments() {
-        uniform_stream_as_vec();
-        assert_eq!(moments[0], reservoir_moments[0]);
+        let (stream_vec, moments) = uniform_stream_as_vec();
+        println!("{:#?}", stream_vec);
+        println!("{:#?}", moments);
+        let mut wd_stream: Vec<WeightedDatum<f64>> = Vec::new();
+        for item in stream_vec.iter() {
+            wd_stream.push(new_datum(*item, 1.0))
+        }
+        let stream = convert(wd_stream);
+        let capacity: usize = 5;
+        let mut wrs_iter = reservoir_iterable(stream, capacity, None);
+        while let Some(reservoir) = wrs_iter.next() {
+            // println!("{:#?}", reservoir);
+            let moments: Vec<f64> = compute_moments(reservoir);
+            println!("moments: {:?}", moments);  
+        }
+        
+        // assert!((moments[0] - reservoir_moments[0]).abs() < .1);
     }
 }
