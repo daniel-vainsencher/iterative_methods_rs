@@ -1002,6 +1002,7 @@ mod tests {
         let mut moments: Vec<f64> = Vec::new();
         let num_samples: f64 = data_vec.len() as f64;
         let mean: f64 = data_vec.iter().sum::<f64>() / num_samples;
+        // Higher moments will be added.
         moments.push(mean);
         moments
     }
@@ -1027,10 +1028,12 @@ mod tests {
         let stream_size: usize = 10_i32.pow(5) as usize;
         let capacity: usize = 100;
 
+        // Compute moments of the stream.
         let stream_vec = uniform_stream_as_vec(stream_size);
         let moments = compute_moments(&stream_vec);
-
         println!("\n Moments of the Stream: \n{:#?}", moments);
+
+        // Compute moments of the final reservoir.
         let mut wd_stream: Vec<WeightedDatum<f64>> = Vec::new();
         // Package random values into WeightedDatum with constant weights.
         for item in stream_vec.iter() {
@@ -1038,6 +1041,8 @@ mod tests {
         }
         let stream = convert(wd_stream);
         let mut wrs_iter = reservoir_iterable(stream, capacity, None);
+        // A ReservoirIterable consumes capacity elements on the first call to advance,
+        // thus in calling nth this amount must be subtracted off.
         if let Some(reservoir) = wrs_iter.nth(stream_size - capacity - 1) {
             let mut res_values: Vec<f64> = Vec::new();
             for item in reservoir.iter() {
@@ -1045,7 +1050,7 @@ mod tests {
             }
             let res_moments: Vec<f64> = compute_moments(&res_values);
             println!("\n Moments of the Reservoir: \n{:#?}", res_moments);
-            assert!((moments[0] - res_moments[0]).abs() < 0.05 * moments[0]);
+            assert!((moments[0] - res_moments[0]).abs() < 0.1 * moments[0]);
         }
     }
 }
