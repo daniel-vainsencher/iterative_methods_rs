@@ -530,6 +530,69 @@ fn wrs_demo() {
     }
 }
 
+/// StreamingIterable whose items are the values from a stream with 
+/// WeightedDatum items. This is used in testing the moments of a 
+/// reservoir sample against the moments of the full stream.
+#[derive(Debug, Clone)]
+struct WdValues<I> {
+    it: I, 
+}
+
+/// Produce a WdValues StreamingIterable. 
+fn new_wd_values<I, T>(it: I) -> WdValues<I> 
+where
+    I: StreamingIterator<Item = WeightedDatum<T>> + Sized
+{
+    WdValues{
+        it: it,
+    }
+}
+
+// Replace unwrap with error handling
+impl<I, T> StreamingIterator for WdValues<I> 
+where 
+    I: StreamingIterator<Item = WeightedDatum<T>> + Sized,
+    T: Clone + std::fmt::Debug,
+{
+    type Item = T;
+    
+    #[inline]
+    fn advance(&mut self) {
+        &self.it.advance();
+    }
+
+    #[inline]
+    fn get(&self) -> Option<&Self::Item> {
+        let val: Option<&T>;
+        if let Some(_wd) = &self.it.get() {
+                val = Some(&_wd.value);
+                val
+        } else {None}
+    }
+}
+
+fn wd_values_demo() {
+    let mut seeded_values = generate_seeded_values(6, 2);
+    let mut stream_vec: Vec<WeightedDatum<f64>> = Vec::new();
+    for _i in 0..4 {
+        if let Some(wd) = seeded_values.pop() {
+            stream_vec.push(wd);
+        };
+    }
+    println!("The stream of WeightedDatum:\n");
+    for item in stream_vec.clone() {
+        println!("{:#?}", item);
+    }
+    let stream = convert(stream_vec);
+    let mut val_stream = new_wd_values(stream);
+    println!("The stream of extracted values:");
+    while let Some(item) = val_stream.next() {
+        println!("item: {:?}", item);
+    }
+    
+}
+
+
 /// Call the different demos.
 fn main() {
     println!("\n fib_demo:\n");
@@ -538,6 +601,8 @@ fn main() {
     cg_demo();
     println!("\n Weighted Reservoir Sampling Demo:\n");
     wrs_demo();
+    println!("\n WdValues Iterable Demo: Extract values from a WeightedDatum stream.\n");
+    wd_values_demo();
 }
 
 /// Unit Tests Module
@@ -929,5 +994,18 @@ mod tests {
         } else {
             panic!("The final reservoir was None.");
         };
+    }
+
+    /// Utility function to test the moments of a WRS.
+    fn uniform_stream_as_vec() {
+        let range = Uniform::from(0.0..1.0);
+        let stream_vec: Vec<f64> = rand::thread_rng().sample_iter(&range).take(10).collect();
+        println!("{:#?}", stream_vec);
+    }
+
+    #[test]
+    fn test_reservoir_moments() {
+        uniform_stream_as_vec();
+        assert_eq!(moments[0], reservoir_moments[0]);
     }
 }
