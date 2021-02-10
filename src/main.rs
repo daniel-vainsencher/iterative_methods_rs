@@ -530,32 +530,30 @@ fn wrs_demo() {
     }
 }
 
-/// StreamingIterable whose items are the values from a stream with 
-/// WeightedDatum items. This is used in testing the moments of a 
+/// StreamingIterable whose items are the values from a stream with
+/// WeightedDatum items. This is used in testing the moments of a
 /// reservoir sample against the moments of the full stream.
 #[derive(Debug, Clone)]
 struct WdValues<I> {
-    it: I, 
+    it: I,
 }
 
-/// Produce a WdValues StreamingIterable. 
-fn new_wd_values<I, T>(it: I) -> WdValues<I> 
+/// Produce a WdValues StreamingIterable.
+fn new_wd_values<I, T>(it: I) -> WdValues<I>
 where
-    I: StreamingIterator<Item = WeightedDatum<T>> + Sized
+    I: StreamingIterator<Item = WeightedDatum<T>> + Sized,
 {
-    WdValues{
-        it: it,
-    }
+    WdValues { it: it }
 }
 
 // Replace unwrap with error handling
-impl<I, T> StreamingIterator for WdValues<I> 
-where 
+impl<I, T> StreamingIterator for WdValues<I>
+where
     I: StreamingIterator<Item = WeightedDatum<T>> + Sized,
     T: Clone + std::fmt::Debug,
 {
     type Item = T;
-    
+
     #[inline]
     fn advance(&mut self) {
         &self.it.advance();
@@ -565,9 +563,11 @@ where
     fn get(&self) -> Option<&Self::Item> {
         let val: Option<&T>;
         if let Some(_wd) = &self.it.get() {
-                val = Some(&_wd.value);
-                val
-        } else {None}
+            val = Some(&_wd.value);
+            val
+        } else {
+            None
+        }
     }
 }
 
@@ -589,9 +589,7 @@ fn wd_values_demo() {
     while let Some(item) = val_stream.next() {
         println!("item: {:?}", item);
     }
-    
 }
-
 
 /// Call the different demos.
 fn main() {
@@ -997,44 +995,57 @@ mod tests {
         };
     }
 
-    /// Utility function to compute moments of vec of WeightedDatum
-    fn compute_moments(data_vec: Vec<WeightedDatum<f64>>) -> Vec<f64> {
-        let moments: Vec<f64> = Vec::new();
+    /// Utility function to compute moments of a vec of floats.
+    /// Currently only the mean is computed.
+    /// Add higher moments and offer the level of moments as a fn parameter.
+    fn compute_moments(data_vec: &Vec<f64>) -> Vec<f64> {
+        let mut moments: Vec<f64> = Vec::new();
         let num_samples: f64 = data_vec.len() as f64;
         let mean: f64 = data_vec.iter().sum::<f64>() / num_samples;
         moments.push(mean);
         moments
     }
 
+    /// Generates a random sample from the uniform distribution on (0,1) returned as a Vec.
     /// Utility function to test the moments of a WRS.
-    fn uniform_stream_as_vec() -> (Vec<f64>, Vec<f64>) {
+    fn uniform_stream_as_vec(num: usize) -> Vec<f64> {
         let range = Uniform::from(0.0..1.0);
-        let stream_vec: Vec<f64> = rand::thread_rng().sample_iter(&range).take(10).collect();
-        let mut moments: Vec<f64> = Vec::new();
-        let num_samples: f64 = stream_vec.len() as f64;
-        let mean: f64 = stream_vec.iter().sum::<f64>() / num_samples;
-        moments.push(mean);
-        (stream_vec, moments)
+        let stream_vec: Vec<f64> = rand::thread_rng().sample_iter(&range).take(num).collect();
+        stream_vec
     }
 
     #[test]
+    /// Test that the reservoir captures the distribution of the stream.
+    /// The moments (currently only the mean) of the stream and the final reservoir
+    /// are compared. The test passes if they are within a specified threshold.
+    /// More moments need to added. The threshold is currently arbitrary and should
+    /// be replaced using confidence intervals.
+    /// Higher moments should be added.
+    /// Other distributions should be added.
     fn test_reservoir_moments() {
-        let (stream_vec, moments) = uniform_stream_as_vec();
-        println!("{:#?}", stream_vec);
-        println!("{:#?}", moments);
+        println!("\n ----Reservoir Moments Test---- \n");
+        let stream_size: usize = 10_i32.pow(5) as usize;
+        let capacity: usize = 100;
+
+        let stream_vec = uniform_stream_as_vec(stream_size);
+        let moments = compute_moments(&stream_vec);
+
+        println!("\n Moments of the Stream: \n{:#?}", moments);
         let mut wd_stream: Vec<WeightedDatum<f64>> = Vec::new();
+        // Package random values into WeightedDatum with constant weights.
         for item in stream_vec.iter() {
             wd_stream.push(new_datum(*item, 1.0))
         }
         let stream = convert(wd_stream);
-        let capacity: usize = 5;
         let mut wrs_iter = reservoir_iterable(stream, capacity, None);
-        while let Some(reservoir) = wrs_iter.next() {
-            // println!("{:#?}", reservoir);
-            let moments: Vec<f64> = compute_moments(reservoir);
-            println!("moments: {:?}", moments);  
+        if let Some(reservoir) = wrs_iter.nth(stream_size - capacity - 1) {
+            let mut res_values: Vec<f64> = Vec::new();
+            for item in reservoir.iter() {
+                res_values.push(item.value)
+            }
+            let res_moments: Vec<f64> = compute_moments(&res_values);
+            println!("\n Moments of the Reservoir: \n{:#?}", res_moments);
+            assert!((moments[0] - res_moments[0]).abs() < 0.05 * moments[0]);
         }
-        
-        // assert!((moments[0] - reservoir_moments[0]).abs() < .1);
     }
 }
