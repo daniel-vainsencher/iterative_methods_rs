@@ -1,5 +1,12 @@
 - [X] 0.1 IM parity
   - [X] timing adaptor
+- [ ] 0.3
+  - Generic "compute cost function" adaptor
+  - Generic "report time and cost progress" adaptor
+  - Explain power method as first example
+    - Part 1: show a single iteration, explain how matrix multiplication works
+    - Part 2: show animation of point going to infinity, or rotation, we want to understand what matrices do, specialize to diagonal+p.s.d.
+    - Part 3: implement power method the usual way, gets awkward, switch to adaptors, create animation.
 - [ ] 0.5: publishable post
   - [ ] Code
     - [ ] Functionality going beyond IM?
