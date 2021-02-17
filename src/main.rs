@@ -1024,45 +1024,62 @@ mod tests {
 
     #[test]
     /// Test that the reservoir captures the distribution of the stream.
+    /// WARNING: This is a probabilistic test and so it will occasionally fail! If
+    /// it fails, run it again. It should not fail frequently.
     /// The moments (currently only the mean) of the stream and the final reservoir
-    /// are compared. The test passes if they are within a specified threshold.
-    /// More moments need to added. The threshold is currently arbitrary and should
-    /// be replaced using confidence intervals.
+    /// are compared. The test passes if the moment of the stream is within a 95% confidence
+    /// interval of the reservoir moment at least 95 out of 100 tries.
+    ///
     /// Higher moments should be added.
     /// Other distributions should be added.
     fn test_reservoir_moments() {
         println!("\n ----Reservoir Moments Test---- \n");
-        let stream_size: usize = 10_i32.pow(5) as usize;
-        let capacity: usize = 100;
-
+        let stream_size: usize = 10_i32.pow(6) as usize;
+        let capacity: usize = 1000;
+        println!(
+            "The test uses a stream of size {} and a reservoir capacity of {}.",
+            stream_size, capacity
+        );
         // Compute moments of the stream.
         let stream_vec = uniform_stream_as_vec(stream_size);
         let moments = compute_moments(&stream_vec);
-        println!("\n Moments of the Stream: \n{:#?}", moments);
+        // println!("\n Moments of the Stream: \n{:#?}", moments);
 
-        // Compute moments of the final reservoir.
-        let mut wd_stream: Vec<WeightedDatum<f64>> = Vec::new();
-        // Package random values into WeightedDatum with constant weights.
-        for item in stream_vec.iter() {
-            wd_stream.push(new_datum(*item, 1.0))
-        }
-        let stream = convert(wd_stream);
-        let mut wrs_iter = reservoir_iterable(stream, capacity, None);
-        // A ReservoirIterable consumes capacity elements on the first call to advance,
-        // thus in calling nth this amount must be subtracted off.
-        if let Some(reservoir) = wrs_iter.nth(stream_size - capacity - 1) {
-            let mut res_values: Vec<f64> = Vec::new();
-            for item in reservoir.iter() {
-                res_values.push(item.value)
+        let mut error_count: usize = 0;
+        // Apply the test 100 times, keeping track of the number of failures.
+        for _i in 0..100 {
+            // Compute moments of the final reservoir.
+            let mut wd_stream: Vec<WeightedDatum<f64>> = Vec::new();
+            // Package random values into WeightedDatum with constant weights.
+            for item in stream_vec.iter() {
+                wd_stream.push(new_datum(*item, 1.0))
             }
-            let res_moments: Vec<f64> = compute_moments(&res_values);
-            println!("\n Moments of the Reservoir: \n{:#?}", res_moments);
-            // The z(.05/2) value is encoded. It was computed using scipy.stats.norm.interval(.95) in Python.
-            const Z_ALPHA: f64 = 1.959963984540054;
-            // Compute the population variance for a sample without replacement with finite population correction:
-            let sigma_squared_mean = moments[1] / capacity as f64
-                * (1.0 - (capacity as f64 - 1.0) / (stream_size as f64 - 1.0));
-            assert!((moments[0] - res_moments[0]).abs() < sigma_squared_mean.sqrt() * Z_ALPHA);
+            let stream = convert(wd_stream);
+            let mut wrs_iter = reservoir_iterable(stream, capacity, None);
+            // A ReservoirIterable consumes capacity elements on the first call to advance,
+            // thus in calling nth this amount must be subtracted off.
+            if let Some(reservoir) = wrs_iter.nth(stream_size - capacity - 1) {
+                let mut res_values: Vec<f64> = Vec::new();
+                for item in reservoir.iter() {
+                    res_values.push(item.value)
+                }
+                let res_moments: Vec<f64> = compute_moments(&res_values);
+                // println!("\n Moments of the Reservoir: \n{:#?}", res_moments);
+                // The z(.05/2) value is encoded. It was computed using scipy.stats.norm.interval(.95) in Python.
+                const Z_ALPHA: f64 = 1.959963984540054;
+                // Compute the population variance for a sample without replacement with finite population correction:
+                let sigma_squared_mean = moments[1] / capacity as f64
+                    * (1.0 - (capacity as f64 - 1.0) / (stream_size as f64 - 1.0));
+                if (moments[0] - res_moments[0]).abs() > sigma_squared_mean.sqrt() * Z_ALPHA {
+                    error_count += 1;
+                }
+            }
         }
+        println!(
+            "The reservoir moments failed to have the expected accuracy {} times.",
+            error_count
+        );
+        // Assert that the number of failures is within the expected range.
+        assert!(error_count <= 5);
     }
 }
