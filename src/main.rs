@@ -996,14 +996,21 @@ mod tests {
     }
 
     /// Utility function to compute moments of a vec of floats.
-    /// Currently only the mean is computed.
+    /// Currently the mean and variance are computed.
     /// Add higher moments and offer the level of moments as a fn parameter.
     fn compute_moments(data_vec: &Vec<f64>) -> Vec<f64> {
         let mut moments: Vec<f64> = Vec::new();
         let num_samples: f64 = data_vec.len() as f64;
+        // Moment-1
         let mean: f64 = data_vec.iter().sum::<f64>() / num_samples;
-        // Higher moments will be added.
         moments.push(mean);
+        let sigma_squared = data_vec
+            .iter()
+            .map(|x| (x - mean) * (x - mean))
+            .sum::<f64>()
+            / num_samples;
+        moments.push(sigma_squared);
+        // Higher moments will be added.
         moments
     }
 
@@ -1050,7 +1057,12 @@ mod tests {
             }
             let res_moments: Vec<f64> = compute_moments(&res_values);
             println!("\n Moments of the Reservoir: \n{:#?}", res_moments);
-            assert!((moments[0] - res_moments[0]).abs() < 0.1 * moments[0]);
+            // The z(.05/2) value is encoded. It was computed using scipy.stats.norm.interval(.95) in Python.
+            const Z_ALPHA: f64 = 1.959963984540054;
+            // Compute the population variance for a sample without replacement with finite population correction:
+            let sigma_squared_mean = moments[1] / capacity as f64
+                * (1.0 - (capacity as f64 - 1.0) / (stream_size as f64 - 1.0));
+            assert!((moments[0] - res_moments[0]).abs() < sigma_squared_mean.sqrt() * Z_ALPHA);
         }
     }
 }
