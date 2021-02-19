@@ -484,6 +484,100 @@ where
     }
 }
 
+/// WDIterable provides an easy conversion of any iterable to one whose items are WeightedDatum.
+/// WDIterable holds an iterator and a function. The function is defined by the user to extract
+/// weights from the iterable and package the old items and extracted weights into items as
+/// WeightedDatum  
+struct WDIterable<I, F, T> {
+    it: I,
+    wt_fn: F,
+    wd: WeightedDatum<T>,
+}
+
+// old version with F: Fn(&T)
+// fn wd_iterable<I, T, F>(mut it: I, wt_fn: F) -> WDIterable<I, F, T>
+// where
+//     I: Sized + StreamingIterator<Item = T>,
+//     T: Clone,
+//     F: Fn(&T) -> f64,
+// {
+//     let item = it.next().unwrap();
+//     let item_clone = item.clone();
+//     let weight = wt_fn(&item_clone);
+//     let wd_init = new_datum(item_clone, weight);
+//     WDIterable {
+//         it,
+//         wt_fn,
+//         wd: wd_init,
+//     }
+// }
+
+fn wd_iterable<I, T, F>(mut it: I, wt_fn: F) -> WDIterable<I, F, T>
+where
+    I: Sized + StreamingIterator<Item = T>,
+    T: Clone,
+    F: Fn(&I::Item) -> f64,
+{
+    let item = it.next().unwrap();
+    let item_clone = item.clone();
+    let weight = wt_fn(&item_clone);
+    let wd_init = new_datum(item_clone, weight);
+    WDIterable {
+        it,
+        wt_fn,
+        wd: wd_init,
+    }
+}
+
+impl<I, T, F> StreamingIterator for WDIterable<I, F, T>
+where
+    I: Sized + StreamingIterator<Item = T>,
+    T: Clone,
+    // F: Fn(&T) -> f64,
+    F: Fn(&I::Item) -> f64,
+{
+    type Item = WeightedDatum<T>;
+
+    #[inline]
+    // This needs to update the wd attribute
+    fn advance(&mut self) {
+        if let Some(item) = self.it.next() {
+            self.wd.value = item.clone();
+            self.wd.weight = (self.wt_fn)(item);
+        };
+    }
+
+    #[inline]
+    fn get(&self) -> Option<&Self::Item> {
+        if let Some(_wd) = &self.it.get() {
+            Some(&self.wd)
+        } else {
+            None
+        }
+    }
+}
+
+fn wd_iterable_demo() {
+    // let v: Vec<Vec<usize>> = vec![vec![0,1],vec![1,1],vec![2,1],vec![3,1]];
+    let v: Vec<usize> = vec![0,1,2,3];
+    let v_iter = v.iter();
+    let v_stream = convert(v_iter);
+    // define weight function
+    fn expose_weight<I>(element: &I::Item) -> f64 
+    where
+        I: Sized + StreamingIterator<Item = usize>, 
+    {
+        *element as f64
+    }
+    let wd_iter = wd_iterable(v_stream, expose_weight);
+    while let Some(item) = wd_iter.next() {
+        print!("{:#?}", item);
+    } 
+    // if let Some(dummy) = v_stream.next() {
+    //     let dumdum: f64 = dummy;
+    // };
+}
+
 /// The weighted reservoir sampling algorithm of M. T. Chao is implemented.
 /// `ReservoirIterable` wraps a `StreamingIterator`, `I`, whose items must be of type `WeightedDatum` and
 /// produces a `StreamingIterator` whose items are samples of size `capacity`
@@ -504,9 +598,9 @@ where
 /// Future work might include implementing parallellized batch processing:
 /// https://dl.acm.org/doi/10.1145/3350755.3400287
 #[derive(Debug, Clone)]
-struct ReservoirIterable<I, U> {
+struct ReservoirIterable<I, T> {
     it: I,
-    reservoir: Vec<WeightedDatum<U>>,
+    reservoir: Vec<WeightedDatum<T>>,
     capacity: usize,
     weight_sum: f64,
     oracle: Pcg64,
@@ -625,12 +719,13 @@ fn wrs_demo() {
 
 /// Call the different demos.
 fn main() {
-    println!("\n fib_demo:\n");
-    fib_demo();
-    println!("\n cg_demo: \n");
-    cg_demo();
-    println!("\n Weighted Reservoir Sampling Demo:\n");
-    wrs_demo();
+    // println!("\n fib_demo:\n");
+    // fib_demo();
+    // println!("\n cg_demo: \n");
+    // cg_demo();
+    // println!("\n Weighted Reservoir Sampling Demo:\n");
+    // wrs_demo();
+    wd_iterable_demo();
 }
 
 /// Unit Tests Module
