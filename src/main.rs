@@ -641,7 +641,7 @@ mod tests {
         let eigvals = eigvals(&p.a).expect(&format!("Failed to compute eigenvalues for {}", &p.a));
 
         // Ensure A is positive definite with no extreme eigenvalues.
-        if !eigvals.iter().all(|ev| &1e-9 < ev && ev < &1e9) {
+        if !eigvals.iter().all(|ev| &1e-8 < ev && ev < &1e9) {
             return TestResult::discard();
         }
 
