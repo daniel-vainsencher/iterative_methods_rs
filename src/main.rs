@@ -121,6 +121,63 @@ impl StreamingIterator for CGIterable {
     }
 }
 
+/// Annotate the underlying items with a cost (non-negative f64) as
+/// given by a function.
+struct CostIterable<I, F, T>
+where
+    I: StreamingIterator<Item = T>,
+{
+    it: I,
+    f: F,
+    last: Option<CostResult<T>>,
+}
+
+/// Store the cost of a state. Lower costs are better.
+#[derive(Clone)]
+struct CostResult<T> {
+    result: T,
+    cost: f64,
+}
+
+fn assess<I, F, T>(it: I, f: F) -> CostIterable<I, F, T>
+where
+    I: StreamingIterator<Item = T>,
+    F: FnMut(&I::Item) -> f64,
+{
+    CostIterable { it, f, last: None }
+}
+
+impl<I, F, T> StreamingIterator for CostIterable<I, F, T>
+where
+    I: StreamingIterator<Item = T>,
+    T: Sized + Clone,
+    F: FnMut(&T) -> f64,
+{
+    type Item = CostResult<T>;
+
+    fn advance(&mut self) {
+        let before = Instant::now();
+        self.it.advance();
+        self.last = match self.it.get() {
+            Some(n) => {
+                let cost = (self.f)(n);
+                Some(CostResult {
+                    cost,
+                    result: n.clone(),
+                })
+            }
+            None => None,
+        }
+    }
+
+    fn get(&self) -> Option<&Self::Item> {
+        match &self.last {
+            Some(tr) => Some(&tr),
+            None => None,
+        }
+    }
+}
+
 /// Pass the values from the streaming iterator through, running a
 /// function on each for side effects.
 struct Tee<I, F> {
