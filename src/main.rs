@@ -306,14 +306,19 @@ fn cg_demo() {
         let res = result.a.dot(&result.x) - &result.b;
         res.dot(&res)
     });
-    let mut cg_print_iter = tee(ct_cg_iter, |CostResult { result, cost }| {
-        let TimedResult {
-            result,
-            start_time,
-            duration,
-        } = result;
-        let res = result.a.dot(&result.x) - &result.b;
-        println!(
+    let mut cg_print_iter = tee(
+        ct_cg_iter,
+        |CostResult {
+             result:
+                 TimedResult {
+                     result,
+                     start_time,
+                     duration,
+                 },
+             cost,
+         }| {
+            let res = result.a.dot(&result.x) - &result.b;
+            println!(
             "||Ax - b ||_2^2 = {:.5}, for x = {:.4}, and Ax - b = {:.5}; iteration start {}μs, duration {}μs",
             cost,
             result.x,
@@ -321,7 +326,8 @@ fn cg_demo() {
             start_time.as_nanos(),
             duration.as_nanos(),
         );
-    });
+        },
+    );
     while let Some(_cgi) = cg_print_iter.next() {}
 }
 
