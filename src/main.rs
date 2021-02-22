@@ -288,33 +288,40 @@ fn cg_demo() {
         // not just the result.
         .take_while(|cgi| cgi.rsprev.sqrt() > 1e-6);
     // Because time, tee are not part of the StreamingIterator trait,
-    // they cannot be chained as in the above. Note the side effect of
-    // tee is applied exactly to every x produced above, the sequence
-    // of which is not affected at all. This is just like applying a
-    // side effect inside the while loop, except we can compose
-    // multiple tee, each with its own effect.
+    // they cannot be chained syntactically as in the above.
+
     // TODO can this be fixed? see iterutils crate.
+
+    //Note the side effect of tee is applied exactly to every x
+    // produced above, the sequence of which is not affected at
+    // all. This is just like applying a side effect inside the while
+    // loop, except we can compose multiple tee, each with its own
+    // effect.
     let step_by_cg_iter = step_by(cg_iter, 2);
     let timed_cg_iter = time(step_by_cg_iter);
-    let mut cg_print_iter = tee(
-        timed_cg_iter,
-        |TimedResult {
-             result,
-             start_time,
-             duration,
-         }| {
-            let res = result.a.dot(&result.x) - &result.b;
-            let res_norm = res.dot(&res);
-            println!(
+    // We are assessing after timing, which means that computing this
+    // function is excluded from the duration measurements, which can
+    // be important in other cases.
+    let ct_cg_iter = assess(timed_cg_iter, |TimedResult { result, .. }| {
+        let res = result.a.dot(&result.x) - &result.b;
+        res.dot(&res)
+    });
+    let mut cg_print_iter = tee(ct_cg_iter, |CostResult { result, cost }| {
+        let TimedResult {
+            result,
+            start_time,
+            duration,
+        } = result;
+        let res = result.a.dot(&result.x) - &result.b;
+        println!(
             "||Ax - b ||_2^2 = {:.5}, for x = {:.4}, and Ax - b = {:.5}; iteration start {}μs, duration {}μs",
-            res_norm,
+            cost,
             result.x,
-            result.a.dot(&result.x) - &result.b,
+            res,
             start_time.as_nanos(),
             duration.as_nanos(),
         );
-        },
-    );
+    });
     while let Some(_cgi) = cg_print_iter.next() {}
 }
 
@@ -334,6 +341,7 @@ where
 /// relative to the creation of the process generating results, and
 /// duration is relative to the start of the creation of the current
 /// result.
+#[derive(Clone)]
 struct TimedResult<T> {
     result: T,
     start_time: Duration,
