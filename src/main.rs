@@ -121,6 +121,63 @@ impl StreamingIterator for CGIterable {
     }
 }
 
+/// Annotate the underlying items with a cost (non-negative f64) as
+/// given by a function.
+struct CostIterable<I, F, T>
+where
+    I: StreamingIterator<Item = T>,
+{
+    it: I,
+    f: F,
+    last: Option<CostResult<T>>,
+}
+
+/// Store the cost of a state. Lower costs are better.
+#[derive(Clone)]
+struct CostResult<T> {
+    result: T,
+    cost: f64,
+}
+
+fn assess<I, F, T>(it: I, f: F) -> CostIterable<I, F, T>
+where
+    I: StreamingIterator<Item = T>,
+    F: FnMut(&I::Item) -> f64,
+{
+    CostIterable { it, f, last: None }
+}
+
+impl<I, F, T> StreamingIterator for CostIterable<I, F, T>
+where
+    I: StreamingIterator<Item = T>,
+    T: Sized + Clone,
+    F: FnMut(&T) -> f64,
+{
+    type Item = CostResult<T>;
+
+    fn advance(&mut self) {
+        let before = Instant::now();
+        self.it.advance();
+        self.last = match self.it.get() {
+            Some(n) => {
+                let cost = (self.f)(n);
+                Some(CostResult {
+                    cost,
+                    result: n.clone(),
+                })
+            }
+            None => None,
+        }
+    }
+
+    fn get(&self) -> Option<&Self::Item> {
+        match &self.last {
+            Some(tr) => Some(&tr),
+            None => None,
+        }
+    }
+}
+
 /// Pass the values from the streaming iterator through, running a
 /// function on each for side effects.
 struct Tee<I, F> {
@@ -231,28 +288,41 @@ fn cg_demo() {
         // not just the result.
         .take_while(|cgi| cgi.rsprev.sqrt() > 1e-6);
     // Because time, tee are not part of the StreamingIterator trait,
-    // they cannot be chained as in the above. Note the side effect of
-    // tee is applied exactly to every x produced above, the sequence
-    // of which is not affected at all. This is just like applying a
-    // side effect inside the while loop, except we can compose
-    // multiple tee, each with its own effect.
+    // they cannot be chained syntactically as in the above.
+
     // TODO can this be fixed? see iterutils crate.
+
+    //Note the side effect of tee is applied exactly to every x
+    // produced above, the sequence of which is not affected at
+    // all. This is just like applying a side effect inside the while
+    // loop, except we can compose multiple tee, each with its own
+    // effect.
     let step_by_cg_iter = step_by(cg_iter, 2);
     let timed_cg_iter = time(step_by_cg_iter);
+    // We are assessing after timing, which means that computing this
+    // function is excluded from the duration measurements, which can
+    // be important in other cases.
+    let ct_cg_iter = assess(timed_cg_iter, |TimedResult { result, .. }| {
+        let res = result.a.dot(&result.x) - &result.b;
+        res.dot(&res)
+    });
     let mut cg_print_iter = tee(
-        timed_cg_iter,
-        |TimedResult {
-             result,
-             start_time,
-             duration,
+        ct_cg_iter,
+        |CostResult {
+             result:
+                 TimedResult {
+                     result,
+                     start_time,
+                     duration,
+                 },
+             cost,
          }| {
             let res = result.a.dot(&result.x) - &result.b;
-            let res_norm = res.dot(&res);
             println!(
             "||Ax - b ||_2^2 = {:.5}, for x = {:.4}, and Ax - b = {:.5}; iteration start {}μs, duration {}μs",
-            res_norm,
+            cost,
             result.x,
-            result.a.dot(&result.x) - &result.b,
+            res,
             start_time.as_nanos(),
             duration.as_nanos(),
         );
@@ -277,6 +347,7 @@ where
 /// relative to the creation of the process generating results, and
 /// duration is relative to the start of the creation of the current
 /// result.
+#[derive(Clone)]
 struct TimedResult<T> {
     result: T,
     start_time: Duration,
@@ -641,7 +712,7 @@ mod tests {
         let eigvals = eigvals(&p.a).expect(&format!("Failed to compute eigenvalues for {}", &p.a));
 
         // Ensure A is positive definite with no extreme eigenvalues.
-        if !eigvals.iter().all(|ev| &1e-9 < ev && ev < &1e9) {
+        if !eigvals.iter().all(|ev| &1e-8 < ev && ev < &1e9) {
             return TestResult::discard();
         }
 
