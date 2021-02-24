@@ -496,11 +496,16 @@ where
     f: F,
 }
 
+// NOTE:
+// Either
+// F: FnMut(&I::Item) -> f64,
+// F: FnMut(&T) -> f64
+// compiles
 fn wd_iterable<I, T, F>(it: I, f: F) -> WDIterable<I, T, F>
 where
-    I: Sized + StreamingIterator<Item = T>,
-    T: Clone,
-    F: Fn(&I::Item) -> f64,
+    I: StreamingIterator<Item = T>,
+    // F: FnMut(&I::Item) -> f64,
+    F: FnMut(&T) -> f64,
 {
     let item = it.next().unwrap();
     let item_clone = item.clone();
@@ -513,12 +518,17 @@ where
     }
 }
 
-impl<I, T, F> StreamingIterator for WDIterable<I, F, T>
+// NOTE:
+// Either
+// F: FnMut(&I::Item) -> f64,
+// F: FnMut(&T) -> f64
+// compiles
+impl<I, T, F> StreamingIterator for WDIterable<I, T, F>
 where
-    I: Sized + StreamingIterator<Item = T>,
-    T: Clone,
-    // F: Fn(&T) -> f64,
-    F: Fn(&I::Item) -> f64,
+    I: StreamingIterator<Item = T>,
+    F: FnMut(&T) -> f64,
+    // F: FnMut(&I::Item) -> f64,
+    T: Sized + Clone,
 {
     type Item = WeightedDatum<T>;
 
@@ -581,7 +591,7 @@ fn wd_iterable_counter_demo() {
         wd: Some(new_datum(0., 0.)),
     };
 
-    for _ in 0..5 {
+    for _ in 0..6 {
         if let Some(wd) = wd_iter.next() {
             print!("{:#?}", wd);
         }
