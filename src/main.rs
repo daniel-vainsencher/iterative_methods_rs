@@ -463,8 +463,6 @@ where
 /// The WeightedDatum struct wraps the values of a data set to include
 /// a weight for each datum. Currently, the main motivation for this
 /// is to use it for Weighted Reservoir Sampling.
-
-// Switch type of weight to Option<f64>
 #[derive(Debug, Clone, PartialEq)]
 struct WeightedDatum<U> {
     value: U,
@@ -487,32 +485,18 @@ where
 /// WDIterable provides an easy conversion of any iterable to one whose items are WeightedDatum.
 /// WDIterable holds an iterator and a function. The function is defined by the user to extract
 /// weights from the iterable and package the old items and extracted weights into items as
-/// WeightedDatum  
-struct WDIterable<I, F, T> {
+/// WeightedDatum
+#[derive(Debug, Clone)]
+struct WDIterable<I, T, F>
+where
+    I: StreamingIterator<Item = T>,
+{
     it: I,
-    wt_fn: F,
-    wd: WeightedDatum<T>,
+    wd: Option<WeightedDatum<T>>,
+    f: F,
 }
 
-// old version with F: Fn(&T)
-// fn wd_iterable<I, T, F>(mut it: I, wt_fn: F) -> WDIterable<I, F, T>
-// where
-//     I: Sized + StreamingIterator<Item = T>,
-//     T: Clone,
-//     F: Fn(&T) -> f64,
-// {
-//     let item = it.next().unwrap();
-//     let item_clone = item.clone();
-//     let weight = wt_fn(&item_clone);
-//     let wd_init = new_datum(item_clone, weight);
-//     WDIterable {
-//         it,
-//         wt_fn,
-//         wd: wd_init,
-//     }
-// }
-
-fn wd_iterable<I, T, F>(mut it: I, wt_fn: F) -> WDIterable<I, F, T>
+fn wd_iterable<I, T, F>(it: I, f: F) -> WDIterable<I, T, F>
 where
     I: Sized + StreamingIterator<Item = T>,
     T: Clone,
@@ -541,10 +525,15 @@ where
     #[inline]
     // This needs to update the wd attribute
     fn advance(&mut self) {
-        if let Some(item) = self.it.next() {
-            self.wd.value = item.clone();
-            self.wd.weight = (self.wt_fn)(item);
-        };
+        self.it.advance();
+        self.wd = match self.it.get() {
+            Some(item) => {
+                let new_weight = (self.f)(item);
+                let new_item = item.clone();
+                Some(new_datum(new_item, new_weight))
+            }
+            None => None,
+        }
     }
 
     #[inline]
@@ -557,26 +546,109 @@ where
     }
 }
 
-fn wd_iterable_demo() {
-    // let v: Vec<Vec<usize>> = vec![vec![0,1],vec![1,1],vec![2,1],vec![3,1]];
-    let v: Vec<usize> = vec![0,1,2,3];
-    let v_iter = v.iter();
-    let v_stream = convert(v_iter);
-    // define weight function
-    fn expose_weight<I>(element: &I::Item) -> f64 
-    where
-        I: Sized + StreamingIterator<Item = usize>, 
-    {
-        *element as f64
+fn wd_iterable_counter_demo() {
+    println!("\n\n -----WDIterable Counter Demo----- \n\n");
+
+    struct Counter {
+        count: f64,
+    };
+
+    fn new_counter() -> Counter {
+        Counter { count: 0. }
     }
-    let wd_iter = wd_iterable(v_stream, expose_weight);
-    while let Some(item) = wd_iter.next() {
-        print!("{:#?}", item);
-    } 
-    // if let Some(dummy) = v_stream.next() {
-    //     let dumdum: f64 = dummy;
-    // };
+
+    impl StreamingIterator for Counter {
+        type Item = f64;
+
+        fn advance(&mut self) {
+            self.count += 1.;
+        }
+
+        fn get(&self) -> Option<&Self::Item> {
+            Some(&self.count)
+        }
+    }
+
+    fn expose_w(count: &f64) -> f64 {
+        count * count
+    }
+
+    let counter_stream: Counter = new_counter();
+
+    let mut wd_iter = WDIterable {
+        it: counter_stream,
+        f: expose_w,
+        wd: Some(new_datum(0., 0.)),
+    };
+
+    for _ in 0..5 {
+        if let Some(wd) = wd_iter.next() {
+            print!("{:#?}", wd);
+        }
+    }
 }
+
+// In Process
+// fn wd_iterable_string_demo() {
+//     println!("\n\n -----WDIterable String Demo----- \n\n");
+//     // let v: Vec<Vec<usize>> = vec![vec![0,1],vec![1,1],vec![2,1],vec![3,1]];
+//     // let v: Vec<usize> = vec![0, 1, 2, 3];
+//     // let v_iter = v.iter();
+//     // let v_stream = convert(v_iter);
+//     // let dummy: f64 = v_stream;
+//     // define weight function
+//     // fn expose_weight<I>(element: &I::Item) -> f64
+//     struct Counter {
+//         count: f64,
+//     };
+
+//     fn new_counter() -> Counter {
+//         Counter { count: 0. }
+//     }
+
+//     impl StreamingIterator for Counter {
+//         type Item = f64;
+
+//         fn advance(&mut self) {
+//             self.count += 1.;
+//         }
+
+//         fn get(&self) -> Option<&Self::Item> {
+//             Some(&self.count)
+//         }
+//     }
+
+//     fn expose_weight(element: &usize) -> f64 {
+//         *element as f64
+//     }
+
+//     fn expose_w(count: &f64) -> f64 {
+//         count * count
+//     }
+
+//     let counter_stream: Counter = new_counter();
+
+//     let mut wd_iter = WDIterable {
+//         it: counter_stream,
+//         f: expose_w,
+//         wd: Some(new_datum(0., 0.)),
+//     };
+
+//     // println!("{:#?}", wd_iter.get());
+//     for _ in 0..5 {
+//         if let Some(wd) = wd_iter.next() {
+//             print!("{:#?}", wd);
+//         }
+//     }
+
+//     // while let Some(item) = wd_iter.next() {
+//     //     print!("{:#?}", item);
+//     // }
+//     // if let Some(dummy) = v_stream.next() {
+//     //     let dumdum: f64 = dummy;
+//     // };
+// }
+
 
 /// The weighted reservoir sampling algorithm of M. T. Chao is implemented.
 /// `ReservoirIterable` wraps a `StreamingIterator`, `I`, whose items must be of type `WeightedDatum` and
@@ -725,7 +797,7 @@ fn main() {
     // cg_demo();
     // println!("\n Weighted Reservoir Sampling Demo:\n");
     // wrs_demo();
-    wd_iterable_demo();
+    wd_iterable_counter_demo();
 }
 
 /// Unit Tests Module
