@@ -598,65 +598,9 @@ fn wd_iterable_counter_demo() {
     }
 }
 
-// In Process
+// In Process: a demo using a stream of strings; weight is length
 // fn wd_iterable_string_demo() {
-//     println!("\n\n -----WDIterable String Demo----- \n\n");
-//     // let v: Vec<Vec<usize>> = vec![vec![0,1],vec![1,1],vec![2,1],vec![3,1]];
-//     // let v: Vec<usize> = vec![0, 1, 2, 3];
-//     // let v_iter = v.iter();
-//     // let v_stream = convert(v_iter);
-//     // let dummy: f64 = v_stream;
-//     // define weight function
-//     // fn expose_weight<I>(element: &I::Item) -> f64
-//     struct Counter {
-//         count: f64,
-//     };
-
-//     fn new_counter() -> Counter {
-//         Counter { count: 0. }
-//     }
-
-//     impl StreamingIterator for Counter {
-//         type Item = f64;
-
-//         fn advance(&mut self) {
-//             self.count += 1.;
-//         }
-
-//         fn get(&self) -> Option<&Self::Item> {
-//             Some(&self.count)
-//         }
-//     }
-
-//     fn expose_weight(element: &usize) -> f64 {
-//         *element as f64
-//     }
-
-//     fn expose_w(count: &f64) -> f64 {
-//         count * count
-//     }
-
-//     let counter_stream: Counter = new_counter();
-
-//     let mut wd_iter = WDIterable {
-//         it: counter_stream,
-//         f: expose_w,
-//         wd: Some(new_datum(0., 0.)),
-//     };
-
-//     // println!("{:#?}", wd_iter.get());
-//     for _ in 0..5 {
-//         if let Some(wd) = wd_iter.next() {
-//             print!("{:#?}", wd);
-//         }
-//     }
-
-//     // while let Some(item) = wd_iter.next() {
-//     //     print!("{:#?}", item);
-//     // }
-//     // if let Some(dummy) = v_stream.next() {
-//     //     let dumdum: f64 = dummy;
-//     // };
+//
 // }
 
 
