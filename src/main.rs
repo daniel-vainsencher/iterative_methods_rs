@@ -507,14 +507,10 @@ where
     // F: FnMut(&I::Item) -> f64,
     F: FnMut(&T) -> f64,
 {
-    let item = it.next().unwrap();
-    let item_clone = item.clone();
-    let weight = wt_fn(&item_clone);
-    let wd_init = new_datum(item_clone, weight);
     WDIterable {
-        it,
-        wt_fn,
-        wd: wd_init,
+        it: it,
+        wd: None,
+        f: f,
     }
 }
 
@@ -532,8 +528,6 @@ where
 {
     type Item = WeightedDatum<T>;
 
-    #[inline]
-    // This needs to update the wd attribute
     fn advance(&mut self) {
         self.it.advance();
         self.wd = match self.it.get() {
@@ -546,12 +540,10 @@ where
         }
     }
 
-    #[inline]
     fn get(&self) -> Option<&Self::Item> {
-        if let Some(_wd) = &self.it.get() {
-            Some(&self.wd)
-        } else {
-            None
+        match &self.wd {
+            Some(wdatum) => Some(&wdatum),
+            None => None,
         }
     }
 }
@@ -602,7 +594,6 @@ fn wd_iterable_counter_demo() {
 // fn wd_iterable_string_demo() {
 //
 // }
-
 
 /// The weighted reservoir sampling algorithm of M. T. Chao is implemented.
 /// `ReservoirIterable` wraps a `StreamingIterator`, `I`, whose items must be of type `WeightedDatum` and
