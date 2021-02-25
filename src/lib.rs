@@ -12,8 +12,6 @@ use std::time::{Duration, Instant};
 use streaming_iterator::*;
 
 pub mod algorithms;
-// use algorithms;
-// pub mod conjugate_gradient_methods;
 
 /// Annotate the underlying items with a cost (non-negative f64) as
 /// given by a function.
@@ -50,7 +48,7 @@ where
     type Item = CostResult<T>;
 
     fn advance(&mut self) {
-        let before = Instant::now();
+        let _before = Instant::now();
         self.it.advance();
         self.last = match self.it.get() {
             Some(n) => {
@@ -285,9 +283,9 @@ pub struct WDIterable<I, T, F>
 where
     I: StreamingIterator<Item = T>,
 {
-    it: I,
-    wd: Option<WeightedDatum<T>>,
-    f: F,
+    pub it: I,
+    pub wd: Option<WeightedDatum<T>>,
+    pub f: F,
 }
 
 // NOTE:
@@ -342,65 +340,15 @@ where
     }
 }
 
-/// A simple Counter iterator to use in demos and tests.
-#[derive(Clone, Debug)]
-pub struct Counter {
-    count: f64,
-}
-
-pub fn new_counter() -> Counter {
-    Counter { count: 0. }
-}
-
-impl StreamingIterator for Counter {
-    type Item = f64;
-
-    fn advance(&mut self) {
-        self.count += 1.;
-    }
-
-    fn get(&self) -> Option<&Self::Item> {
-        Some(&self.count)
-    }
-}
-
-/// Expose the weight of the counter iterable. This is an arbitrary choice of weight.
-pub fn expose_w(count: &f64) -> f64 {
-    count * count
-}
-
-fn wd_iterable_counter_demo() {
-    println!("\n\n -----WDIterable Counter Demo----- \n\n");
-
-    let counter_stream: Counter = new_counter();
-
-    let mut wd_iter = WDIterable {
-        it: counter_stream,
-        f: expose_w,
-        wd: Some(new_datum(0., 0.)),
-    };
-
-    for _ in 0..6 {
-        if let Some(wd) = wd_iter.next() {
-            print!("{:#?}", wd);
-        }
-    }
-}
-
-// In Process: a demo using a stream of strings; weight is length
-// fn wd_iterable_string_demo() {
-//
-// }
-
 /// ExtractValue converts items from WeightedDatum<T> to T.
-struct ExtractValue<I, T>
+pub struct ExtractValue<I, T>
 where
     I: StreamingIterator<Item = WeightedDatum<T>>,
 {
     it: I,
 }
 
-fn extract_value<I, T>(it: I) -> ExtractValue<I, T>
+pub fn extract_value<I, T>(it: I) -> ExtractValue<I, T>
 where
     I: StreamingIterator<Item = WeightedDatum<T>>,
 {
@@ -444,16 +392,16 @@ where
 /// Future work might include implementing parallellized batch processing:
 /// https://dl.acm.org/doi/10.1145/3350755.3400287
 #[derive(Debug, Clone)]
-struct ReservoirIterable<I, T> {
+pub struct ReservoirIterable<I, T> {
     it: I,
-    reservoir: Vec<WeightedDatum<T>>,
+    pub reservoir: Vec<WeightedDatum<T>>,
     capacity: usize,
     weight_sum: f64,
     oracle: Pcg64,
 }
 
 // Create a ReservoirIterable
-fn reservoir_iterable<I, T>(
+pub fn reservoir_iterable<I, T>(
     it: I,
     capacity: usize,
     custom_oracle: Option<Pcg64>,
@@ -519,64 +467,43 @@ where
     }
 }
 
-/// Utility function to generate a sequence of (float, int as float)
-/// values wrapped in a WeightedDatum struct that will be used in tests
-/// of ReservoirIterable.
-fn generate_seeded_values(num_values: usize, int_range_bound: usize) -> Vec<WeightedDatum<f64>> {
-    let mut prng = Pcg64::seed_from_u64(1);
-    let mut seeded_values: Vec<WeightedDatum<f64>> = Vec::new();
-    for _i in 0..num_values {
-        let afloat = prng.gen();
-        let anint = prng.gen_range(0..int_range_bound) as f64;
-        let wd: WeightedDatum<f64> = new_datum(afloat, anint);
-        seeded_values.push(wd);
-    }
-    seeded_values
+/// A simple Counter iterator to use in demos and tests.
+#[derive(Clone, Debug)]
+pub struct Counter {
+    count: f64,
 }
 
-fn wrs_demo() {
-    let mut seeded_values = generate_seeded_values(6, 2);
-    let mut stream: Vec<WeightedDatum<f64>> = Vec::new();
-    for _i in 0..4 {
-        if let Some(wd) = seeded_values.pop() {
-            stream.push(wd);
-        };
-    }
-    let probability_and_index = seeded_values;
-    println!("Stream: \n {:#?} \n", stream);
-    println!("Random Numbers for Alg: \n (The values are used as the probabilities and the weights as indices.) \n {:#?} \n ", probability_and_index);
-
-    let stream = convert(stream);
-    let mut stream = reservoir_iterable(stream, 2, Some(Pcg64::seed_from_u64(1)));
-    println!("Reservoir - initially empty: \n {:#?} \n", stream.reservoir);
-    let mut _index = 0usize;
-    while let Some(reservoir) = stream.next() {
-        if _index == 0 {
-            println!(
-                "Reservoir filled with the first items from the stream: {:#?} \n",
-                reservoir
-            );
-        } else {
-            println!("Reservoir: {:#?} \n", reservoir);
-        }
-        _index = _index + 1;
-    }
+pub fn new_counter() -> Counter {
+    Counter { count: 0. }
 }
 
-/// Call the different demos.
-// fn main() {
-//     // println!("\n fib_demo:\n");
-//     // fib_demo();
-//     // println!("\n cg_demo: \n");
-//     // cg_demo();
-//     // println!("\n Weighted Reservoir Sampling Demo:\n");
-//     // wrs_demo();
-//     wd_iterable_counter_demo();
-// }
+impl StreamingIterator for Counter {
+    type Item = f64;
+
+    fn advance(&mut self) {
+        self.count += 1.;
+    }
+
+    fn get(&self) -> Option<&Self::Item> {
+        Some(&self.count)
+    }
+}
 
 /// Unit Tests Module
 #[cfg(test)]
 mod tests {
+
+    use crate::last;
+    use crate::tee;
+    extern crate eigenvalues;
+    extern crate nalgebra as na;
+    use ndarray::ArcArray2;
+    use ndarray::*;
+    use streaming_iterator::*;
+    pub type S = f64;
+    pub type M = ArcArray2<S>;
+    pub type V = ArcArray1<S>;
+
     use eigenvalues::algorithms::lanczos::HermitianLanczos;
     use eigenvalues::SpectrumTarget;
     use na::{DMatrix, DVector, Dynamic};
@@ -843,30 +770,5 @@ mod tests {
         } else {
             panic!("The final reservoir was None.");
         };
-    }
-
-    /// Test that WDIterable followed by ExtractValue is a roundtrip.
-    ///
-    /// WDIterable wraps the items of a simple Counter iterable as WeightedDatum
-    /// with the square of the count as the weight. Then ExtractValue unwraps, leaving
-    /// items with only the original value. The items of a clone of the original iterator
-    /// and the wrapped/unwrapped iterator are checked to be equal.
-    #[test]
-    fn wd_iterable_extract_value_test() {
-        let mut counter_stream: Counter = new_counter();
-        let counter_stream_copy = counter_stream.clone();
-        let wd_iter = WDIterable {
-            it: counter_stream_copy,
-            f: expose_w,
-            wd: Some(new_datum(0., 0.)),
-        };
-
-        let mut extract_value_iter = extract_value(wd_iter);
-
-        for _ in 0..6 {
-            if let (Some(val1), Some(val2)) = (extract_value_iter.next(), counter_stream.next()) {
-                assert!(val1 == val2);
-            }
-        }
     }
 }

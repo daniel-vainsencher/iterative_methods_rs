@@ -6,29 +6,6 @@ use streaming_iterator::*;
 use iterative_methods::algorithms::cg_method::*;
 use iterative_methods::*;
 
-pub fn make_3x3_psd_system_1() -> LinearSystem {
-    make_3x3_psd_system(
-        rcarr2(&[[1., 2., -1.], [0., 1., 0.], [0., 0., 1.]]),
-        rcarr1(&[0., 1., 0.]),
-    )
-}
-
-fn make_3x3_psd_system_2() -> LinearSystem {
-    make_3x3_psd_system(
-        rcarr2(&[[1.0, 0.5, 0.0], [0.5, 1.0, 0.5], [0.0, 0.5, 1.0]]),
-        rcarr1(&[0., 1., 0.]),
-    )
-}
-
-fn make_3x3_psd_system(m: M, b: V) -> LinearSystem {
-    let a = (m.t().dot(&m)).into_shared();
-    LinearSystem {
-        a: a,
-        b: b,
-        x0: None,
-    }
-}
-
 /// Demonstrate usage and convergence of conjugate gradient as a streaming-iterator.
 fn cg_demo() {
     let p = make_3x3_psd_system_2();

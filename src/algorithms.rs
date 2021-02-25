@@ -11,6 +11,29 @@ pub mod cg_method {
     pub type M = ArcArray2<S>;
     pub type V = ArcArray1<S>;
 
+    pub fn make_3x3_psd_system_1() -> LinearSystem {
+        make_3x3_psd_system(
+            rcarr2(&[[1., 2., -1.], [0., 1., 0.], [0., 0., 1.]]),
+            rcarr1(&[0., 1., 0.]),
+        )
+    }
+
+    pub fn make_3x3_psd_system_2() -> LinearSystem {
+        make_3x3_psd_system(
+            rcarr2(&[[1.0, 0.5, 0.0], [0.5, 1.0, 0.5], [0.0, 0.5, 1.0]]),
+            rcarr1(&[0., 1., 0.]),
+        )
+    }
+
+    pub fn make_3x3_psd_system(m: M, b: V) -> LinearSystem {
+        let a = (m.t().dot(&m)).into_shared();
+        LinearSystem {
+            a: a,
+            b: b,
+            x0: None,
+        }
+    }
+
     /// A linear system, ax-b=0, to be solved iteratively, with an optional initial solution.
     #[derive(Clone, Debug)]
     pub struct LinearSystem {
@@ -107,6 +130,20 @@ pub mod cg_method {
 /// Unit Tests Module
 #[cfg(test)]
 mod tests {
+
+    // use ::examples::conjugate_gradient_method::*;
+    use crate::last;
+    use crate::tee;
+    use cg_method::*;
+    extern crate eigenvalues;
+    extern crate nalgebra as na;
+    use ndarray::ArcArray2;
+    use ndarray::*;
+    use streaming_iterator::*;
+    pub type S = f64;
+    pub type M = ArcArray2<S>;
+    pub type V = ArcArray1<S>;
+
     use eigenvalues::algorithms::lanczos::HermitianLanczos;
     use eigenvalues::SpectrumTarget;
     use na::{DMatrix, DVector, Dynamic};
