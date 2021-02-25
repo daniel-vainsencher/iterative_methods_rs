@@ -13,7 +13,7 @@ iterative_methods_done_right_in_rust
 ├── LICENSE_APACHE.md
 ├── LICENSE_MIT.md
 ├── README.md
-├── feedback_loop.sh
+├── feedback_loop.sh // run this once to watch project files and automatically update targets and provide feedback.
 └── pull_request_template.md
 ```
 
