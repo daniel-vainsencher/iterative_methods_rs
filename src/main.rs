@@ -12,21 +12,21 @@ use std::time::{Duration, Instant};
 use streaming_iterator::*;
 
 /// State of Fibonacci iterator.
-struct FibonnacciIterable<T> {
+struct FibonacciIterable<T> {
     s0: T,
     s1: T,
 }
 
-impl FibonnacciIterable<f64> {
-    fn start(first: f64, second: f64) -> FibonnacciIterable<f64> {
-        FibonnacciIterable::<f64> {
+impl FibonacciIterable<f64> {
+    fn start(first: f64, second: f64) -> FibonacciIterable<f64> {
+        FibonacciIterable::<f64> {
             s0: first,
             s1: second,
         }
     }
 }
 
-impl Iterator for FibonnacciIterable<f64> {
+impl Iterator for FibonacciIterable<f64> {
     type Item = f64;
     fn next(&mut self) -> Option<Self::Item> {
         let out = self.s0;
@@ -38,7 +38,7 @@ impl Iterator for FibonnacciIterable<f64> {
 
 /// Demonstrate usage of fibonacci sequence as an Iterator.
 fn fib_demo() {
-    let fib = FibonnacciIterable::start(0.0, 1.0);
+    let fib = FibonacciIterable::start(0.0, 1.0);
 
     // enumerate is a simple iterator adaptor annotating the results
     // with their place in the sequence.
