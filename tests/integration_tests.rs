@@ -1,3 +1,4 @@
+use crate::utils::*;
 use iterative_methods::*;
 extern crate streaming_iterator;
 use crate::streaming_iterator::StreamingIterator;

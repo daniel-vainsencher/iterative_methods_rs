@@ -1,10 +1,8 @@
 //! # iterative-methods
 //! A demonstration of the use of StreamingIterators and their adapters to implement iterative algorithms.
-// extern crate eigenvalues;
-// extern crate nalgebra as na;
 #[cfg(test)]
 extern crate quickcheck;
-// use ndarray::*;
+
 use rand::{Rng, SeedableRng};
 use rand_pcg::Pcg64;
 use std::cmp::PartialEq;
@@ -12,6 +10,7 @@ use std::time::{Duration, Instant};
 use streaming_iterator::*;
 
 pub mod algorithms;
+pub mod utils;
 
 /// Annotate the underlying items with a cost (non-negative f64) as
 /// given by a function.
@@ -492,23 +491,6 @@ impl StreamingIterator for Counter {
 /// Unit Tests Module
 #[cfg(test)]
 mod tests {
-
-    use crate::last;
-    use crate::tee;
-    extern crate eigenvalues;
-    extern crate nalgebra as na;
-    use ndarray::ArcArray2;
-    use ndarray::*;
-    use streaming_iterator::*;
-    pub type S = f64;
-    pub type M = ArcArray2<S>;
-    pub type V = ArcArray1<S>;
-
-    use eigenvalues::algorithms::lanczos::HermitianLanczos;
-    use eigenvalues::SpectrumTarget;
-    use na::{DMatrix, DVector, Dynamic};
-    use ndarray::*;
-    use quickcheck::{quickcheck, TestResult};
 
     use super::*;
     use std::iter;

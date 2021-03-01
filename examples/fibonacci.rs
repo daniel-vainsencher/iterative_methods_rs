@@ -1,5 +1,3 @@
-use streaming_iterator::*;
-
 /// State of Fibonacci iterator.
 struct FibonacciIterable<T> {
     s0: T,

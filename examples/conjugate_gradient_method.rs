@@ -1,9 +1,9 @@
 extern crate eigenvalues;
 extern crate nalgebra as na;
-use ndarray::*;
 use streaming_iterator::*;
 
-use iterative_methods::algorithms::cg_method::*;
+use iterative_methods::algorithms::cg_method::CGIterable;
+use iterative_methods::utils::make_3x3_psd_system_2;
 use iterative_methods::*;
 
 /// Demonstrate usage and convergence of conjugate gradient as a streaming-iterator.

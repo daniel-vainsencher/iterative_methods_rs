@@ -2,45 +2,14 @@ pub mod cg_method {
 
     use crate::last;
     use crate::tee;
-    extern crate eigenvalues;
-    extern crate nalgebra as na;
+    use crate::utils::LinearSystem;
+    use ndarray::ArcArray1;
     use ndarray::ArcArray2;
-    use ndarray::*;
+    use ndarray::ArrayBase;
     use streaming_iterator::*;
     pub type S = f64;
     pub type M = ArcArray2<S>;
     pub type V = ArcArray1<S>;
-
-    pub fn make_3x3_psd_system_1() -> LinearSystem {
-        make_3x3_psd_system(
-            rcarr2(&[[1., 2., -1.], [0., 1., 0.], [0., 0., 1.]]),
-            rcarr1(&[0., 1., 0.]),
-        )
-    }
-
-    pub fn make_3x3_psd_system_2() -> LinearSystem {
-        make_3x3_psd_system(
-            rcarr2(&[[1.0, 0.5, 0.0], [0.5, 1.0, 0.5], [0.0, 0.5, 1.0]]),
-            rcarr1(&[0., 1., 0.]),
-        )
-    }
-
-    pub fn make_3x3_psd_system(m: M, b: V) -> LinearSystem {
-        let a = (m.t().dot(&m)).into_shared();
-        LinearSystem {
-            a: a,
-            b: b,
-            x0: None,
-        }
-    }
-
-    /// A linear system, ax-b=0, to be solved iteratively, with an optional initial solution.
-    #[derive(Clone, Debug)]
-    pub struct LinearSystem {
-        pub a: M,
-        pub b: V,
-        pub x0: Option<V>,
-    }
 
     /// The state of a conjugate gradient algorithm.
     #[derive(Clone)]
@@ -131,23 +100,20 @@ pub mod cg_method {
 #[cfg(test)]
 mod tests {
 
-    // use ::examples::conjugate_gradient_method::*;
+    use super::cg_method::*;
     use crate::last;
-    use crate::tee;
-    use cg_method::*;
-    extern crate eigenvalues;
-    extern crate nalgebra as na;
-    use ndarray::ArcArray2;
-    use ndarray::*;
-    use streaming_iterator::*;
-    pub type S = f64;
-    pub type M = ArcArray2<S>;
-    pub type V = ArcArray1<S>;
+    use crate::utils::make_3x3_psd_system;
+    use crate::utils::make_3x3_psd_system_1;
+    use crate::utils::LinearSystem;
 
+    use streaming_iterator::*;
+    extern crate nalgebra as na;
     use eigenvalues::algorithms::lanczos::HermitianLanczos;
     use eigenvalues::SpectrumTarget;
     use na::{DMatrix, DVector, Dynamic};
-    use ndarray::*;
+    use ndarray::rcarr1;
+    use ndarray::rcarr2;
+
     use quickcheck::{quickcheck, TestResult};
 
     #[test]
@@ -213,9 +179,6 @@ mod tests {
             test_arbitrary_3x3_psd(vs, b)
         }
     }
-
-    use super::*;
-    use std::iter;
 
     #[test]
     fn test_last() {
