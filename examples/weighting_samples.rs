@@ -1,3 +1,4 @@
+use iterative_methods::utils::expose_w;
 use iterative_methods::*;
 use streaming_iterator::*;
 
@@ -21,12 +22,6 @@ impl StreamingIterator for Counter {
     fn get(&self) -> Option<&Self::Item> {
         Some(&self.count)
     }
-}
-
-/// Expose the weight of the counter iterable. This is an arbitrary choice of weight.
-/// ***WARNING: this function is duplicated in integration_tests.rs. Find a single location for it.
-pub fn expose_w(count: &f64) -> f64 {
-    count * count
 }
 
 fn wd_iterable_counter_demo() {

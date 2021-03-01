@@ -44,11 +44,6 @@ fn test_timed_iterable() {
 /// items with only the original value. The items of a clone of the original iterator
 /// and the wrapped/unwrapped iterator are checked to be equal.
 
-/// ***WARNING: this function is duplicated in integration_tests.rs. Find a single location for it.
-pub fn expose_w(count: &f64) -> f64 {
-    count * count
-}
-
 #[test]
 fn wd_iterable_extract_value_test() {
     let mut counter_stream: Counter = new_counter();

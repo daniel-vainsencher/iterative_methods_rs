@@ -31,3 +31,7 @@ pub fn make_3x3_psd_system(m: M, b: V) -> LinearSystem {
         x0: None,
     }
 }
+
+pub fn expose_w(count: &f64) -> f64 {
+    count * count
+}
