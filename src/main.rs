@@ -121,6 +121,53 @@ impl StreamingIterator for CGIterable {
     }
 }
 
+/// Store a generic annotation next to the state.
+#[derive(Clone)]
+struct AnnotatedResult<T, A> {
+    result: T,
+    annotation: A,
+}
+
+struct AnnotatedIterable<I, F, T, A>
+where
+    I: StreamingIterator<Item = T>,
+    F: FnMut(&T) -> A,
+{
+    it: I,
+    f: F,
+    last: Option<AnnotatedResult<T, A>>,
+}
+
+impl<I, F, T, A> StreamingIterator for AnnotatedIterable<I, F, T, A>
+where
+    I: StreamingIterator<Item = T>,
+    T: Sized + Clone,
+    F: FnMut(&T) -> A,
+{
+    type Item = AnnotatedResult<T, A>;
+
+    fn advance(&mut self) {
+        self.it.advance();
+        self.last = match self.it.get() {
+            Some(n) => {
+                let annotation = (self.f)(n);
+                Some(AnnotatedResult {
+                    annotation,
+                    result: n.clone(),
+                })
+            }
+            None => None,
+        }
+    }
+
+    fn get(&self) -> Option<&Self::Item> {
+        match &self.last {
+            Some(tr) => Some(&tr),
+            None => None,
+        }
+    }
+}
+
 /// Annotate the underlying items with a cost (non-negative f64) as
 /// given by a function.
 struct CostIterable<I, F, T>
