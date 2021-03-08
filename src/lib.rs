@@ -347,8 +347,8 @@ where
 /// is to use it for Weighted Reservoir Sampling.
 #[derive(Debug, Clone, PartialEq)]
 pub struct WeightedDatum<U> {
-    value: U,
-    weight: f64,
+    pub value: U,
+    pub weight: f64,
 }
 
 pub fn new_datum<U>(value: U, weight: f64) -> WeightedDatum<U>

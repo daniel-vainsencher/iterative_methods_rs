@@ -50,6 +50,7 @@ fn wd_iterable_extract_value_test() {
     let counter_stream_copy = counter_stream.clone();
     let wd_iter = WDIterable {
         it: counter_stream_copy,
+        // expose_w is in utils.rs
         f: expose_w,
         wd: Some(new_datum(0., 0.)),
     };
