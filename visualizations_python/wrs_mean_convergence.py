@@ -5,6 +5,7 @@ import yaml
 from yaml import CLoader
 import plotly.graph_objects as go
 import plotly.express as px
+import os
 
 parser = argparse.ArgumentParser("Accept population (stream) size, capacity, step.")
 parser.add_argument("pop_size_arg", help = "This should be the size of the population or stream.", type = str)
@@ -39,6 +40,11 @@ with open("./target/debug/examples/reservoirs.yaml") as res_file, open("./target
 	fig.add_trace(go.Scatter(x = res_df["reservoir number"], y = res_df["stream mean"], name = "Stream Means", mode = "lines+markers"))
 	fig.update_layout(title = "Reservoir and Stream Means")
 	fig.show()
+
+	# To export a still image:
+	if not os.path.exists("visualizations"):
+		os.mkdir("visualizations")
+	fig.write_image("visualizations/reservoir_and_stream_means.png")
 
 
 	

@@ -58,11 +58,11 @@ where
 /// return the stream_size, capacity, and step size used.
 fn wrs_mean_convergence_for_step() -> (usize, usize, usize) {
     // Streamline up error handling
-    let stream_size: usize = 10_i32.pow(2) as usize;
-    let capacity: usize = 10;
+    let stream_size: usize = 10_i32.pow(3) as usize;
+    let capacity: usize = 100;
     let step: usize = 1;
     println!(
-        "The test uses a stream of size {} and a reservoir capacity of {}.",
+        "The test uses a stream of size {:#?} and a reservoir capacity of {:#?}.",
         stream_size, capacity
     );
     let population_file = "./target/debug/examples/population.yaml";
