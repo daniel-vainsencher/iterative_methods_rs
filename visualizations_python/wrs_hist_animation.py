@@ -18,7 +18,7 @@ num_bins = int(args.num_bins_arg)
 capacity = int(args.capacity_arg)
 pop_size = int(args.pop_size_arg)
 step = int(args.step_arg)
-num_res = pop_size // step
+num_res = 1+ (pop_size - capacity) // step
 
 with open("./target/debug/examples/reservoirs.yaml") as res_file, open("./target/debug/examples/population.yaml") as pop_file:
 

@@ -23,25 +23,25 @@ num_res = 1 + (pop_size-capacity) // step
 with open("./target/debug/examples/reservoirs.yaml") as res_file, open("./target/debug/examples/population.yaml") as pop_file:
 
 	reservoirs = yaml.load_all(res_file, Loader=CLoader)
-	arr = np.full((num_res,2),0, dtype = float)
+	population = yaml.load(pop_file, Loader = CLoader)
+	pop = np.array(population, dtype = float)
+	arr = np.full((num_res,3),0, dtype = float)
 	for i, res in enumerate(reservoirs):
 		if res is not None:
 			arr[i,0] = i
 			arr[i,1] = np.mean(np.array(res, dtype = float))
+			arr[i,2] = np.mean(pop[:capacity + i * step]) # the mean of the population from which the current reservoir is drawn
 			
-
-
-	res_df = pd.DataFrame(arr, columns = ["res_num", "mean"])
-	# res_df = res_df.iloc[num_res-20:,:]
-
+	res_df = pd.DataFrame(arr, columns = ["reservoir number", "reservoir mean", "stream mean"])
+	
 	fig = go.Figure()
-	fig.add_trace(go.Scatter(x = res_df["res_num"], y = res_df["mean"], name = "Reservoir Means", mode = "lines+markers"))
-	# fig.update_xaxes(range = [.25,.75])
+	fig.add_trace(go.Scatter(x = res_df["reservoir number"], y = res_df["reservoir mean"], name = "Reservoir Means", mode = "lines+markers"))
+	fig.add_trace(go.Scatter(x = res_df["reservoir number"], y = res_df["stream mean"], name = "Stream Means", mode = "lines+markers"))
+	fig.update_layout(title = "Reservoir and Stream Means")
 	fig.show()
-	# y_max = np.max(arr[:,2]) + 1
 
 
-	# population = yaml.load(pop_file, Loader = CLoader)
+	
 	
 
 

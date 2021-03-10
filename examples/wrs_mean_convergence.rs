@@ -50,6 +50,9 @@ fn write_res_to_file(res_vec_values: &Vec<f64>, file_name: &str) -> std::io::Res
     Ok(())
 }
 
+/// Create a stream of data, write the full stream and a
+/// sequence of reservoir samples to yaml files,
+/// return the stream_size, capacity, and step size used.
 fn wrs_mean_convergence() -> (usize, usize, usize) {
     // Streamline up error handling
     let stream_size: usize = 10_i32.pow(4) as usize;
