@@ -1,3 +1,4 @@
+use crate::utils;
 use iterative_methods::*;
 use rand::distributions::Uniform;
 use rand::Rng;
@@ -15,7 +16,10 @@ fn uniform_stream_as_vec(num: usize) -> Vec<f64> {
     stream_vec
 }
 
-fn write_population_to_file(a_stream_vec: &Vec<f64>, file_name: &str) -> std::io::Result<()> {
+fn write_population_to_file<T>(a_stream_vec: &Vec<T>, file_name: &str) -> std::io::Result<()>
+where
+    T: std::fmt::Display,
+{
     let mut file = File::create(file_name)?;
     for val in a_stream_vec {
         let mut val = val.to_string();
@@ -32,8 +36,10 @@ fn clear_file(file_name: &str) -> std::io::Result<()> {
     Ok(())
 }
 
-fn write_res_to_file(res_vec_values: &Vec<f64>, file_name: &str) -> std::io::Result<()> {
-    // let mut file = File::create(file_name)?;
+fn write_res_to_file<T>(res_vec_values: &Vec<T>, file_name: &str) -> std::io::Result<()>
+where
+    T: std::fmt::Display,
+{
     let mut file = OpenOptions::new().append(true).create(true).open(file_name);
     for val in res_vec_values {
         let mut val = val.to_string();
@@ -53,18 +59,25 @@ fn write_res_to_file(res_vec_values: &Vec<f64>, file_name: &str) -> std::io::Res
 /// Create a stream of data, write the full stream and a
 /// sequence of reservoir samples to yaml files,
 /// return the stream_size, capacity, and step size used.
-fn wrs_mean_convergence() -> (usize, usize, usize) {
+fn wrs_mean_convergence_for_step() -> (usize, usize, usize) {
     // Streamline up error handling
-    let stream_size: usize = 10_i32.pow(4) as usize;
-    let capacity: usize = 1000;
-    let step: usize = 100;
+    let stream_size: usize = 10_i32.pow(2) as usize;
+    let capacity: usize = 10;
+    let step: usize = 1;
     println!(
         "The test uses a stream of size {} and a reservoir capacity of {}.",
         stream_size, capacity
     );
     let population_file = "./target/debug/examples/population.yaml";
-    // Create the data as a vec
-    let stream_vec = uniform_stream_as_vec(stream_size);
+    // Create the stream:
+    let stream = utils::generate_step_stream(stream_size, capacity, 1.0, 0, 1);
+    let stream = convert(stream);
+    // Create another copy of the stream to be turned into a vec:
+    let mut stream_for_vec = utils::generate_step_stream(stream_size, capacity, 1.0, 0, 1);
+    let mut stream_vec: Vec<usize> = Vec::new();
+    while let Some(wd) = stream_for_vec.next() {
+        stream_vec.push(wd.value)
+    }
     // Clear contents of the file.
     if let Err(error) = clear_file(&population_file) {
         println!("{:#?}", error);
@@ -75,9 +88,9 @@ fn wrs_mean_convergence() -> (usize, usize, usize) {
     };
 
     // Produce reservoir samples and write to file
-    let stream = convert(stream_vec);
-    let wd_stream = wd_iterable(stream, |_x| 1.);
-    let wrs_iter = reservoir_iterable(wd_stream, capacity, None);
+    // let stream = convert(stream_vec);
+    // let wd_stream = wd_iterable(stream, |_x| 1.);
+    let wrs_iter = reservoir_iterable(stream, capacity, None);
     let mut wrs_iter = step_by(wrs_iter, step);
 
     let reservoir_samples_file = "./target/debug/examples/reservoirs.yaml";
@@ -87,7 +100,7 @@ fn wrs_mean_convergence() -> (usize, usize, usize) {
     };
     // Write data to file for visualization.
     while let Some(res) = wrs_iter.next() {
-        let mut res_values: Vec<f64> = Vec::new();
+        let mut res_values: Vec<usize> = Vec::new();
         for wd in res {
             res_values.push(wd.value);
         }
@@ -125,7 +138,7 @@ fn make_animations_in_python(
 
 fn main() -> std::io::Result<()> {
     let num_bins = 50usize;
-    let (stream_size, capacity, step) = wrs_mean_convergence();
+    let (stream_size, capacity, step) = wrs_mean_convergence_for_step();
     make_animations_in_python(stream_size, capacity, step, num_bins)?;
     Ok(())
 }
