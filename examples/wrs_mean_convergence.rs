@@ -41,18 +41,15 @@ where
     T: std::fmt::Display,
 {
     let mut file = OpenOptions::new().append(true).create(true).open(file_name);
-    for val in res_vec_values {
-        let mut val = val.to_string();
-        val = ["-", &val, "\n"].join(" ");
-        if let Ok(ref mut f) = file {
+    if let Ok(ref mut f) = file {
+        for val in res_vec_values {
+            let mut val = val.to_string();
+            val = ["-", &val, "\n"].join(" ");
             f.write_all(val.as_bytes())?;
-        };
-    }
-    if let Ok(mut f) = file {
+        }
         f.write_all(b"--- # new reservoir \n")?;
         f.flush()?;
-    }
-
+    };
     Ok(())
 }
 
