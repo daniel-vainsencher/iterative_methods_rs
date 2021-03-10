@@ -493,7 +493,7 @@ impl StreamingIterator for Counter {
 mod tests {
 
     use super::*;
-    use std::iter;
+    use crate::utils::generate_stream_with_constant_probability;
 
     #[test]
     fn test_last() {
@@ -572,32 +572,6 @@ mod tests {
         }
     }
 
-    /// utility function for testing ReservoirIterable
-    fn generate_stream_with_constant_probability(
-        stream_length: usize,
-        capacity: usize,
-        probability: f64,
-        initial_weight: f64,
-    ) -> impl Iterator<Item = WeightedDatum<&'static str>> {
-        // Create capacity of items with initial weight.
-        let initial_iter = iter::repeat(new_datum("initial value", initial_weight)).take(capacity);
-        if capacity > stream_length {
-            panic!("Capacity must be less than or equal to stream length.");
-        }
-        let final_iter =
-            iter::repeat(new_datum("final value", initial_weight)).take(stream_length - capacity);
-        let mut power = 0i32;
-        let mapped = final_iter.map(move |wd| {
-            power += 1;
-            new_datum(
-                wd.value,
-                initial_weight * probability / (1.0 - probability).powi(power),
-            )
-        });
-        let stream = initial_iter.chain(mapped);
-        stream
-    }
-
     #[test]
     fn test_constant_probability() {
         let stream_length = 10usize;
@@ -611,6 +585,8 @@ mod tests {
             capacity,
             probability,
             initial_weight,
+            0,
+            1,
         );
         let mut weight_sum = initial_weight;
         // Cue the stream to the first "final value" element:
@@ -639,6 +615,8 @@ mod tests {
             capacity,
             probability,
             initial_weight,
+            0,
+            1,
         );
         while let Some(_item) = stream.next() {
             ()
@@ -658,18 +636,20 @@ mod tests {
             capacity,
             probability,
             initial_weight,
+            0,
+            1,
         );
         let mut stream = convert(stream);
         let mut _index: usize = 0;
         while let Some(item) = stream.next() {
             match _index {
                 x if x < capacity => assert_eq!(
-                    item.value, "initial value",
+                    item.value, 0,
                     "Error: item value was {} for index={}",
                     item.value, x
                 ),
                 _ => assert_eq!(
-                    item.value, "final value",
+                    item.value, 1,
                     "Error: item value was {} for index={}",
                     item.value, _index
                 ),
@@ -691,19 +671,17 @@ mod tests {
             capacity,
             probability,
             initial_weight,
+            0,
+            1,
         );
         let stream = convert(stream);
         let mut wrs_iter = reservoir_iterable(stream, capacity, None);
         if let Some(reservoir) = wrs_iter.next() {
-            assert!(reservoir
-                .into_iter()
-                .all(|wd| wd.value == String::from("initial value")));
+            assert!(reservoir.into_iter().all(|wd| wd.value == 0));
         };
 
         if let Some(reservoir) = wrs_iter.nth(stream_length - capacity - 1) {
-            assert!(reservoir
-                .into_iter()
-                .all(|wd| wd.value == String::from("initial value")));
+            assert!(reservoir.into_iter().all(|wd| wd.value == 0));
         } else {
             panic!("The final reservoir was None.");
         };
@@ -736,19 +714,17 @@ mod tests {
             capacity,
             probability,
             initial_weight,
+            0,
+            1,
         );
         let stream = convert(stream);
         let mut wrs_iter = reservoir_iterable(stream, capacity, None);
         if let Some(reservoir) = wrs_iter.next() {
-            assert!(reservoir
-                .into_iter()
-                .all(|wd| wd.value == String::from("initial value")));
+            assert!(reservoir.into_iter().all(|wd| wd.value == 0));
         };
 
         if let Some(reservoir) = wrs_iter.nth(stream_length - capacity - 1) {
-            assert!(reservoir
-                .into_iter()
-                .all(|wd| wd.value == String::from("final value")));
+            assert!(reservoir.into_iter().all(|wd| wd.value == 1));
         } else {
             panic!("The final reservoir was None.");
         };
