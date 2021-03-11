@@ -38,7 +38,7 @@ with open("./target/debug/examples/reservoirs.yaml") as res_file, open("./target
 	fig = go.Figure()
 	fig.add_trace(go.Scatter(x = res_df["reservoir number"], y = res_df["reservoir mean"], name = "Reservoir Means", mode = "lines+markers"))
 	fig.add_trace(go.Scatter(x = res_df["reservoir number"], y = res_df["stream mean"], name = "Stream Means", mode = "lines+markers"))
-	fig.update_layout(title = "Reservoir and Stream Means")
+	fig.update_layout(title = f"Reservoir and Stream Means. Stream Size={pop_size}, Capacity={capacity}")
 	fig.show()
 
 	# To export a still image:
