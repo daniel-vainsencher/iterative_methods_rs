@@ -612,6 +612,19 @@ mod tests {
         }
     }
 
+    /// This test asserts that the reservoir is filled with the correct items.
+    #[test]
+    fn fill_reservoir_test() {
+        // v is the data stream.
+        let v: Vec<f64> = vec![0.5, 0.2];
+        let iter = convert(v);
+        let mut iter = reservoir_iterable(iter, 2, None);
+        if let Some(reservoir) = iter.next() {
+            assert_eq!(reservoir[0], 0.5);
+            assert_eq!(reservoir[1], 0.2);
+        }
+    }
+
     /// Tests for the WeightedReservoirIterable adaptor
     #[test]
     fn test_datum_struct() {
@@ -628,7 +641,7 @@ mod tests {
         let _wd: WeightedDatum<String> = new_datum(String::from("some value"), f64::INFINITY);
     }
 
-    /// This test asserts that the reservoir is filled with the correct items.
+    /// This test asserts that the weighted reservoir is filled with the correct items.
     #[test]
     fn fill_weighted_reservoir_test() {
         // v is the data stream.
