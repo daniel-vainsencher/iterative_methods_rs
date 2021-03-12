@@ -119,6 +119,22 @@ pub fn generate_stream_with_constant_probability(
 pub fn generate_step_stream(
     stream_length: usize,
     capacity: usize,
+    initial_value: usize,
+    final_value: usize,
+) -> impl Iterator<Item = usize> {
+    // Create capacity of items with initial weight and value.
+    let initial_iter = iter::repeat(initial_value).take(capacity);
+    if capacity > stream_length {
+        panic!("Capacity must be less than or equal to stream length.");
+    }
+    let final_iter = iter::repeat(final_value).take(stream_length - capacity);
+    let stream = initial_iter.chain(final_iter);
+    stream
+}
+
+pub fn generate_weighted_step_stream(
+    stream_length: usize,
+    capacity: usize,
     weight: f64,
     initial_value: usize,
     final_value: usize,

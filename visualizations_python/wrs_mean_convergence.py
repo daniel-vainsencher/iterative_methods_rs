@@ -28,7 +28,7 @@ harm = np.zeros(num_res)
 for i in range(num_res):
     harm[i] = harmonic_sum(i+1)/capacity
 
-with open("./target/debug/examples/reservoirs.yaml") as res_file, open("./target/debug/examples/population.yaml") as pop_file:
+with open("./target/debug/examples/wrs_reservoirs.yaml") as res_file, open("./target/debug/examples/wrs_population.yaml") as pop_file:
 
     reservoirs = yaml.load_all(res_file, Loader=CLoader)
     population = yaml.load(pop_file, Loader = CLoader)
@@ -43,16 +43,16 @@ with open("./target/debug/examples/reservoirs.yaml") as res_file, open("./target
     # res_df = pd.DataFrame(arr, columns = ["reservoir number", "reservoir mean", "stream mean"])
     
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x = arr[:,0], y = arr[:,1], name = "Reservoir Means", mode = "lines+markers"))
+    fig.add_trace(go.Scatter(x = arr[:,0], y = arr[:,1], name = "WRS Reservoir Means", mode = "lines+markers"))
     fig.add_trace(go.Scatter(x = arr[:,0], y = arr[:,2], name = "Stream Means", mode = "lines+markers"))
     fig.add_trace(go.Scatter(x = arr[:,0], y = harm, name = "Harmonic Sums", mode = "lines"))
-    fig.update_layout(title = f"Reservoir and Stream Means. Stream Size={pop_size}, Capacity={capacity}")
+    fig.update_layout(title = f"WRS Reservoir and Stream Means. Stream Size={pop_size}, Capacity={capacity}")
     fig.show()
 
     # To export a still image:
     if not os.path.exists("visualizations"):
         os.mkdir("visualizations")
-    fig.write_image("visualizations/reservoir_and_stream_means.png")
+    fig.write_image("visualizations/wrs_reservoir_and_stream_means.png")
 
 
     

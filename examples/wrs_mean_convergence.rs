@@ -15,12 +15,12 @@ fn wrs_mean_convergence_for_step() -> (usize, usize, usize) {
         "The test uses a stream of size {:#?} and a reservoir capacity of {:#?}.",
         stream_size, capacity
     );
-    let population_file = "./target/debug/examples/population.yaml";
+    let population_file = "./target/debug/examples/wrs_population.yaml";
     // Create the stream:
-    let stream = utils::generate_step_stream(stream_size, capacity, 1.0, 0, 1);
+    let stream = utils::generate_weighted_step_stream(stream_size, capacity, 1.0, 0, 1);
     let stream = convert(stream);
     // Create another copy of the stream to be turned into a vec:
-    let mut stream_for_vec = utils::generate_step_stream(stream_size, capacity, 1.0, 0, 1);
+    let mut stream_for_vec = utils::generate_weighted_step_stream(stream_size, capacity, 1.0, 0, 1);
     let mut stream_vec: Vec<usize> = Vec::new();
     while let Some(wd) = stream_for_vec.next() {
         stream_vec.push(wd.value)
@@ -40,7 +40,7 @@ fn wrs_mean_convergence_for_step() -> (usize, usize, usize) {
     let wrs_iter = weighted_reservoir_iterable(stream, capacity, None);
     let mut wrs_iter = step_by(wrs_iter, step);
 
-    let reservoir_samples_file = "./target/debug/examples/reservoirs.yaml";
+    let reservoir_samples_file = "./target/debug/examples/wrs_reservoirs.yaml";
     // Clear conents of the file.
     if let Err(error) = utils::clear_file(&reservoir_samples_file) {
         println!("{:#?}", error);
