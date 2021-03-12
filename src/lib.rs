@@ -630,7 +630,7 @@ mod tests {
 
     /// This test asserts that the reservoir is filled with the correct items.
     #[test]
-    fn fill_reservoir_test() {
+    fn fill_weighted_reservoir_test() {
         // v is the data stream.
         let v: Vec<WeightedDatum<f64>> = vec![new_datum(0.5, 1.), new_datum(0.2, 2.)];
         let iter = convert(v);
@@ -654,7 +654,7 @@ mod tests {
     }
 
     #[test]
-    fn stream_smaller_than_reservoir_test() {
+    fn stream_smaller_than_weighted_reservoir_test() {
         let stream_vec = vec![new_datum(1, 1.0), new_datum(2, 1.0)];
         let stream = convert(stream_vec);
         let mut stream = weighted_reservoir_iterable(stream, 3, None);
