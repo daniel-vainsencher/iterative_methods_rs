@@ -58,7 +58,7 @@ where
 /// return the stream_size, capacity, and step size used.
 fn wrs_mean_convergence_for_step() -> (usize, usize, usize) {
     // Streamline up error handling
-    let stream_size: usize = 10_i32.pow(5) as usize;
+    let stream_size: usize = 10_i32.pow(4) as usize;
     let capacity: usize = 100;
     let step: usize = 1;
     println!(
