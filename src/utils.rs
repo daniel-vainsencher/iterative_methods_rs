@@ -1,6 +1,10 @@
 use crate::algorithms::cg_method::*;
 use crate::*;
 use ndarray::{rcarr1, rcarr2};
+use rand::distributions::Uniform;
+use std::fs::File;
+use std::fs::OpenOptions;
+use std::io::Write;
 use std::iter;
 
 /// Utility Functions for the Conjugate Gradient Method
@@ -36,9 +40,54 @@ pub fn make_3x3_psd_system(m: M, b: V) -> LinearSystem {
     }
 }
 
-/// Utility Functions for Weighted Reservoir Sampling
+/// Utility Functions for (Weighted) Reservoir Sampling
 
-/// utility function for testing ReservoirIterable
+/// Generates a random sample from the uniform distribution on (0,1) returned as a Vec.
+/// Utility function to test the moments of a WRS.
+pub fn uniform_stream_as_vec(num: usize) -> Vec<f64> {
+    let range = Uniform::from(0.0..1.0);
+    let stream_vec: Vec<f64> = rand::thread_rng().sample_iter(&range).take(num).collect();
+    stream_vec
+}
+
+pub fn write_population_to_file<T>(a_stream_vec: &Vec<T>, file_name: &str) -> std::io::Result<()>
+where
+    T: std::fmt::Display,
+{
+    let mut file = File::create(file_name)?;
+    for val in a_stream_vec {
+        let mut val = val.to_string();
+        val = ["-", &val, "\n"].join(" ");
+        file.write_all(val.as_bytes())?;
+    }
+    file.flush()?;
+    Ok(())
+}
+
+pub fn clear_file(file_name: &str) -> std::io::Result<()> {
+    let file = File::create(file_name)?;
+    file.set_len(0)?;
+    Ok(())
+}
+
+pub fn write_res_to_file<T>(res_vec_values: &Vec<T>, file_name: &str) -> std::io::Result<()>
+where
+    T: std::fmt::Display,
+{
+    let mut file = OpenOptions::new().append(true).create(true).open(file_name);
+    if let Ok(ref mut f) = file {
+        for val in res_vec_values {
+            let mut val = val.to_string();
+            val = ["-", &val, "\n"].join(" ");
+            f.write_all(val.as_bytes())?;
+        }
+        f.write_all(b"--- # new reservoir \n")?;
+        f.flush()?;
+    };
+    Ok(())
+}
+
+/// Utility function for testing WeightedReservoirIterable
 pub fn generate_stream_with_constant_probability(
     stream_length: usize,
     capacity: usize,
