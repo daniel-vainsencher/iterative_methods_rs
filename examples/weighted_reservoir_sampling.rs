@@ -31,7 +31,7 @@ fn wrs_demo() {
     println!("Random Numbers for Alg: \n (The values are used as the probabilities and the weights as indices.) \n {:#?} \n ", probability_and_index);
 
     let stream = convert(stream);
-    let mut stream = reservoir_iterable(stream, 2, Some(Pcg64::seed_from_u64(1)));
+    let mut stream = weighted_reservoir_iterable(stream, 2, Some(Pcg64::seed_from_u64(1)));
     println!("Reservoir - initially empty: \n {:#?} \n", stream.reservoir);
     let mut _index = 0usize;
     while let Some(reservoir) = stream.next() {
