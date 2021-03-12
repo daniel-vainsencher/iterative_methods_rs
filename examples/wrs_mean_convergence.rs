@@ -87,7 +87,7 @@ fn wrs_mean_convergence_for_step() -> (usize, usize, usize) {
     // Produce reservoir samples and write to file
     // let stream = convert(stream_vec);
     // let wd_stream = wd_iterable(stream, |_x| 1.);
-    let wrs_iter = reservoir_iterable(stream, capacity, None);
+    let wrs_iter = weighted_reservoir_iterable(stream, capacity, None);
     let mut wrs_iter = step_by(wrs_iter, step);
 
     let reservoir_samples_file = "./target/debug/examples/reservoirs.yaml";
