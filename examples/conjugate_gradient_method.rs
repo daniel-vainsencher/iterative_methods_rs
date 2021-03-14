@@ -6,6 +6,7 @@ use iterative_methods::algorithms::cg_method::CGIterable;
 use iterative_methods::utils::make_3x3_psd_system_2;
 use iterative_methods::*;
 
+use std::rc::Rc;
 /// Demonstrate usage and convergence of conjugate gradient as a streaming-iterator.
 fn cg_demo() {
     let p = make_3x3_psd_system_2();
@@ -23,17 +24,25 @@ fn cg_demo() {
     // all. This is just like applying a side effect inside the while
     // loop, except we can compose multiple tee, each with its own
     // effect.
-    let step_by_cg_iter = step_by(cg_iter, 2);
-    let timed_cg_iter = time(step_by_cg_iter);
+    let cg_iter = step_by(cg_iter, 2);
+    let cg_iter = time(cg_iter);
+
     // We are assessing after timing, which means that computing this
     // function is excluded from the duration measurements, which can
     // be important in other cases.
-    let ct_cg_iter = assess(timed_cg_iter, |TimedResult { result, .. }| {
+    let score: Rc<fn(&TimedResult<CGIterable>) -> f64> =
+        Rc::new(|TimedResult { result, .. }| {
+            let res = result.a.dot(&result.x) - &result.b;
+            res.dot(&res)
+        });
+
+    let cg_iter = assess(cg_iter, score);
+    /*let cg_iter = benchmark(cg_iter, |result| {
         let res = result.a.dot(&result.x) - &result.b;
         res.dot(&res)
-    });
+    });*/
     let mut cg_print_iter = tee(
-        ct_cg_iter,
+        cg_iter,
         |AnnotatedResult {
              result:
                  TimedResult {

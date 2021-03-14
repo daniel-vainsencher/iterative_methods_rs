@@ -6,6 +6,7 @@ extern crate quickcheck;
 use rand::{Rng, SeedableRng};
 use rand_pcg::Pcg64;
 use std::cmp::PartialEq;
+use std::rc::Rc;
 use std::time::{Duration, Instant};
 use streaming_iterator::*;
 
@@ -19,21 +20,19 @@ pub struct AnnotatedResult<T, A> {
     pub annotation: A,
 }
 
-pub struct AnnotatedIterable<I, F, T, A>
+pub struct AnnotatedIterable<I, T, A>
 where
-    I: StreamingIterator<Item = T>,
-    F: FnMut(&T) -> A,
+    I: Sized + StreamingIterator<Item = T>,
 {
-    it: I,
-    f: F,
-    last: Option<AnnotatedResult<T, A>>,
+    pub it: I,
+    pub f: Rc<dyn Fn(&T) -> A>,
+    pub last: Option<AnnotatedResult<T, A>>,
 }
 
-impl<I, F, T, A> StreamingIterator for AnnotatedIterable<I, F, T, A>
+impl<I, T, A> StreamingIterator for AnnotatedIterable<I, T, A>
 where
     I: StreamingIterator<Item = T>,
     T: Sized + Clone,
-    F: FnMut(&T) -> A,
 {
     type Item = AnnotatedResult<T, A>;
 
@@ -59,12 +58,16 @@ where
     }
 }
 
-pub fn assess<I, F, T>(it: I, f: F) -> AnnotatedIterable<I, F, T, f64>
+/// Apply a score function to every Item in the underlying iterable.
+pub fn assess<I, T>(it: I, f: Rc<dyn Fn(&I::Item) -> f64>) -> AnnotatedIterable<I, T, f64>
 where
     I: StreamingIterator<Item = T>,
-    F: FnMut(&I::Item) -> f64,
 {
-    AnnotatedIterable { it, f, last: None }
+    AnnotatedIterable {
+        it,
+        f: f,
+        last: None,
+    }
 }
 
 /// Pass the values from the streaming iterator through, running a
@@ -172,7 +175,7 @@ where
 
 impl<I, T> StreamingIterator for TimedIterable<I, T>
 where
-    I: StreamingIterator<Item = T>,
+    I: Sized + StreamingIterator<Item = T>,
     T: Sized + Clone,
 {
     type Item = TimedResult<T>;
