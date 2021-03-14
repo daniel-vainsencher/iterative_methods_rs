@@ -10,19 +10,15 @@ use iterative_methods::*;
 fn cg_demo() {
     let p = make_3x3_psd_system_2();
     println!("a: \n{}", &p.a);
-    let cg_iter = CGIterable::conjugate_gradient(p)
-        // Upper bound the number of iterations
-        .take(20)
-        // Apply a quality based stopping condition; this relies on
-        // algorithm internals, requiring all state to be exposed and
-        // not just the result.
-        .take_while(|cgi| cgi.rsprev.sqrt() > 1e-6);
-    // Because time, tee are not part of the StreamingIterator trait,
-    // they cannot be chained syntactically as in the above.
+    let cg_iter = CGIterable::conjugate_gradient(p);
+    // Upper bound the number of iterations
+    let cg_iter = cg_iter.take(20);
+    // Apply a quality based stopping condition; this relies on
+    // algorithm internals, requiring all state to be exposed and
+    // not just the result.
+    let cg_iter = cg_iter.take_while(|cgi| cgi.rsprev.sqrt() > 1e-6);
 
-    // TODO can this be fixed? see iterutils crate.
-
-    //Note the side effect of tee is applied exactly to every x
+    // Note the side effect of tee is applied exactly to every x
     // produced above, the sequence of which is not affected at
     // all. This is just like applying a side effect inside the while
     // loop, except we can compose multiple tee, each with its own
