@@ -19,20 +19,22 @@ pub struct AnnotatedResult<T, A> {
     pub annotation: A,
 }
 
-pub struct AnnotatedIterable<I, T, A>
+pub struct AnnotatedIterable<I, T, F, A>
 where
     I: Sized + StreamingIterator<Item = T>,
     T: Clone,
+    F: FnMut(&T) -> A,
 {
     pub it: I,
-    pub f: Box<dyn FnMut(&T) -> A>,
+    pub f: F,
     pub last: Option<AnnotatedResult<T, A>>,
 }
 
-impl<I, T, A> StreamingIterator for AnnotatedIterable<I, T, A>
+impl<I, T, F, A> StreamingIterator for AnnotatedIterable<I, T, F, A>
 where
     I: StreamingIterator<Item = T>,
     T: Sized + Clone,
+    F: FnMut(&T) -> A,
 {
     type Item = AnnotatedResult<T, A>;
 
@@ -59,9 +61,10 @@ where
 }
 
 /// Apply a score function to every Item in the underlying iterable.
-pub fn assess<I, T>(it: I, f: Box<dyn FnMut(&I::Item) -> f64>) -> AnnotatedIterable<I, T, f64>
+pub fn assess<I, T, F>(it: I, f: F) -> AnnotatedIterable<I, T, F, f64>
 where
     T: Clone,
+    F: FnMut(&T) -> f64,
     I: StreamingIterator<Item = T>,
 {
     AnnotatedIterable {

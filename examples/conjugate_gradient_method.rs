@@ -27,19 +27,11 @@ fn cg_demo() {
     let cg_iter = time(cg_iter);
 
     // We are assessing after timing, which means that computing this
-    // function is excluded from the duration measurements, which can
-    // be important in other cases.
-    let score: Box<fn(&TimedResult<CGIterable>) -> f64> =
-        Box::new(|TimedResult { result, .. }| {
-            let res = result.a.dot(&result.x) - &result.b;
-            res.dot(&res)
-        });
+    // function is excluded from the duration measurements, which is
+    // generally the right way to do it, thought not important here.
+    let score: fn(&TimedResult<CGIterable>) -> f64 = |TimedResult { result, .. }| result.rs;
 
     let cg_iter = assess(cg_iter, score);
-    /*let cg_iter = benchmark(cg_iter, |result| {
-        let res = result.a.dot(&result.x) - &result.b;
-        res.dot(&res)
-    });*/
     let mut cg_print_iter = tee(
         cg_iter,
         |AnnotatedResult {
