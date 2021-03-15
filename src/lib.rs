@@ -74,56 +74,16 @@ where
     }
 }
 
-/// Pass the values from the streaming iterator through, running a
-/// function on each for side effects.
-pub struct Tee<I, F> {
-    pub it: I,
-    pub f: F,
-}
-
-/*
-// TODO: For ideal convenience, this should be implemented inside the StreamingIterator trait.
-impl StreamingIterator<Item=T> {
-    fn tee<F>(self, f: F) -> Tee<Self, F>
-    where
-        Self: Sized,
-        F: Fn(&Self::Item)
-    {
-        Tee {
-            it: self,
-            f: f
-        }
-    }
-} */
-
-pub fn tee<I, F, T>(it: I, f: F) -> Tee<I, F>
+pub fn tee<I, F, T>(it: I, f: F) -> AnnotatedIterable<I, T, F, ()>
 where
     I: Sized + StreamingIterator<Item = T>,
     F: FnMut(&T),
+    T: Clone,
 {
-    Tee { it: it, f: f }
-}
-
-impl<I, F> StreamingIterator for Tee<I, F>
-where
-    I: StreamingIterator,
-    F: FnMut(&I::Item),
-{
-    type Item = I::Item;
-
-    #[inline]
-    fn advance(&mut self) {
-        // The side effect happens exactly once for each new value
-        // generated.
-        self.it.advance();
-        if let Some(x) = self.it.get() {
-            (self.f)(x);
-        }
-    }
-
-    #[inline]
-    fn get(&self) -> Option<&I::Item> {
-        self.it.get()
+    AnnotatedIterable {
+        it,
+        f: f,
+        last: None,
     }
 }
 
