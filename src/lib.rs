@@ -291,15 +291,9 @@ where
     pub f: F,
 }
 
-// NOTE:
-// Either
-// F: FnMut(&I::Item) -> f64,
-// F: FnMut(&T) -> f64
-// compiles
 pub fn wd_iterable<I, T, F>(it: I, f: F) -> WDIterable<I, T, F>
 where
     I: StreamingIterator<Item = T>,
-    // F: FnMut(&I::Item) -> f64,
     F: FnMut(&T) -> f64,
 {
     WDIterable {
@@ -309,16 +303,10 @@ where
     }
 }
 
-// NOTE:
-// Either
-// F: FnMut(&I::Item) -> f64,
-// F: FnMut(&T) -> f64
-// compiles
 impl<I, T, F> StreamingIterator for WDIterable<I, T, F>
 where
     I: StreamingIterator<Item = T>,
     F: FnMut(&T) -> f64,
-    // F: FnMut(&I::Item) -> f64,
     T: Sized + Clone,
 {
     type Item = WeightedDatum<T>;
