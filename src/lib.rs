@@ -23,6 +23,7 @@ pub struct AnnotatedResult<T, A> {
 pub struct AnnotatedIterable<I, T, A>
 where
     I: Sized + StreamingIterator<Item = T>,
+    T: Clone,
 {
     pub it: I,
     pub f: Rc<dyn Fn(&T) -> A>,
@@ -61,6 +62,7 @@ where
 /// Apply a score function to every Item in the underlying iterable.
 pub fn assess<I, T>(it: I, f: Rc<dyn Fn(&I::Item) -> f64>) -> AnnotatedIterable<I, T, f64>
 where
+    T: Clone,
     I: StreamingIterator<Item = T>,
 {
     AnnotatedIterable {
@@ -129,6 +131,7 @@ where
 pub struct TimedIterable<I, T>
 where
     I: StreamingIterator<Item = T>,
+    T: Clone,
 {
     it: I,
     current: Option<TimedResult<T>>,
@@ -164,7 +167,7 @@ where
 pub fn time<I, T>(it: I) -> TimedIterable<I, T>
 where
     I: Sized + StreamingIterator<Item = T>,
-    T: Sized,
+    T: Sized + Clone,
 {
     TimedIterable {
         it: it,
