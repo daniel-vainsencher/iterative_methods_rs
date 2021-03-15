@@ -232,6 +232,7 @@ mod tests {
         assert!(!result.is_error());
     }
 
+    #[ignore]
     #[test]
     fn cg_rank_one_v() {
         // This test is currently discarded by test_arbitrary_3x3_pd
