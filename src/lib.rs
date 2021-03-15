@@ -6,7 +6,6 @@ extern crate quickcheck;
 use rand::{Rng, SeedableRng};
 use rand_pcg::Pcg64;
 use std::cmp::PartialEq;
-use std::rc::Rc;
 use std::time::{Duration, Instant};
 use streaming_iterator::*;
 
@@ -26,7 +25,7 @@ where
     T: Clone,
 {
     pub it: I,
-    pub f: Rc<dyn Fn(&T) -> A>,
+    pub f: Box<dyn FnMut(&T) -> A>,
     pub last: Option<AnnotatedResult<T, A>>,
 }
 
@@ -60,7 +59,7 @@ where
 }
 
 /// Apply a score function to every Item in the underlying iterable.
-pub fn assess<I, T>(it: I, f: Rc<dyn Fn(&I::Item) -> f64>) -> AnnotatedIterable<I, T, f64>
+pub fn assess<I, T>(it: I, f: Box<dyn FnMut(&I::Item) -> f64>) -> AnnotatedIterable<I, T, f64>
 where
     T: Clone,
     I: StreamingIterator<Item = T>,

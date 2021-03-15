@@ -6,7 +6,6 @@ use iterative_methods::algorithms::cg_method::CGIterable;
 use iterative_methods::utils::make_3x3_psd_system_2;
 use iterative_methods::*;
 
-use std::rc::Rc;
 /// Demonstrate usage and convergence of conjugate gradient as a streaming-iterator.
 fn cg_demo() {
     let p = make_3x3_psd_system_2();
@@ -30,8 +29,8 @@ fn cg_demo() {
     // We are assessing after timing, which means that computing this
     // function is excluded from the duration measurements, which can
     // be important in other cases.
-    let score: Rc<fn(&TimedResult<CGIterable>) -> f64> =
-        Rc::new(|TimedResult { result, .. }| {
+    let score: Box<fn(&TimedResult<CGIterable>) -> f64> =
+        Box::new(|TimedResult { result, .. }| {
             let res = result.a.dot(&result.x) - &result.b;
             res.dot(&res)
         });
