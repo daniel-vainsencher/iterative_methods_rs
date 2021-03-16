@@ -28,8 +28,10 @@ fn cg_demo() {
 
     // We are assessing after timing, which means that computing this
     // function is excluded from the duration measurements, which is
-    // generally the right way to do it, thought not important here.
-    let score: fn(&TimedResult<CGIterable>) -> f64 = |TimedResult { result, .. }| result.rs;
+    // generally the right way to do it, though not important here.
+    fn score(TimedResult { result, .. }: &TimedResult<CGIterable>) -> f64 {
+        result.rs
+    }
 
     let cg_iter = assess(cg_iter, score);
     let mut cg_print_iter = tee(
