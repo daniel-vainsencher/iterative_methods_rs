@@ -260,7 +260,7 @@ where
 /// iterator `capacity` steps. Subsequent calls of `advance` on `ReservoirIterator`
 /// advance `I` by `skip + 1` steps and will at most replace a single element of the `reservoir`.
 
-/// The random oracle is of type `Pcg64` by default, which allows seeded rng. This should be
+/// The random rng is of type `Pcg64` by default, which allows seeded rng. This should be
 /// extended to generic type bound by traits for implementing seeding.
 
 /// See Algorithm L in https://en.wikipedia.org/wiki/Reservoir_sampling#An_optimal_algorithm and
@@ -273,32 +273,32 @@ pub struct ReservoirIterable<I, T> {
     capacity: usize,
     w: f64,
     skip: usize,
-    oracle: Pcg64,
+    rng: Pcg64,
 }
 
 // Create a ReservoirIterable
 pub fn reservoir_iterable<I, T>(
     it: I,
     capacity: usize,
-    custom_oracle: Option<Pcg64>,
+    custom_rng: Option<Pcg64>,
 ) -> ReservoirIterable<I, T>
 where
     I: Sized + StreamingIterator<Item = T>,
     T: Clone,
 {
-    let mut oracle = match custom_oracle {
-        Some(oracle) => oracle,
+    let mut rng = match custom_rng {
+        Some(rng) => rng,
         None => Pcg64::from_entropy(),
     };
     let res: Vec<T> = Vec::new();
-    let w_initial = (oracle.gen::<f64>().ln() / (capacity as f64)).exp();
+    let w_initial = (rng.gen::<f64>().ln() / (capacity as f64)).exp();
     ReservoirIterable {
         it,
         reservoir: res,
         capacity: capacity,
         w: w_initial,
-        skip: ((oracle.gen::<f64>() as f64).ln() / (1. - w_initial).ln()).floor() as usize,
-        oracle: oracle,
+        skip: ((rng.gen::<f64>() as f64).ln() / (1. - w_initial).ln()).floor() as usize,
+        rng: rng,
     }
 }
 
@@ -322,12 +322,12 @@ where
             }
         } else {
             if let Some(datum) = self.it.nth(self.skip) {
-                let h = self.oracle.gen_range(0..self.capacity) as usize;
+                let h = self.rng.gen_range(0..self.capacity) as usize;
                 let datum_struct = datum.clone();
                 self.reservoir[h] = datum_struct;
-                self.w = self.w * (self.oracle.gen::<f64>().ln() / (self.capacity as f64)).exp();
+                self.w = self.w * (self.rng.gen::<f64>().ln() / (self.capacity as f64)).exp();
                 self.skip =
-                    ((self.oracle.gen::<f64>() as f64).ln() / (1. - self.w).ln()).floor() as usize;
+                    ((self.rng.gen::<f64>() as f64).ln() / (1. - self.w).ln()).floor() as usize;
             }
         }
     }
@@ -473,7 +473,7 @@ where
 /// iterator `capacity` steps. Subsequent calls of `advance` on `ReservoirIterator`
 /// advance `I` one step and will at most replace a single element of the `reservoir`.
 
-/// The random oracle is of type `Pcg64` by default, which allows seeded rng. This should be
+/// The random rng is of type `Pcg64` by default, which allows seeded rng. This should be
 /// extended to generic type bound by traits for implementing seeding.
 
 /// See https://en.wikipedia.org/wiki/Reservoir_sampling#Weighted_random_sampling,
@@ -488,21 +488,21 @@ pub struct WeightedReservoirIterable<I, T> {
     pub reservoir: Vec<WeightedDatum<T>>,
     capacity: usize,
     weight_sum: f64,
-    oracle: Pcg64,
+    rng: Pcg64,
 }
 
 // Create a WeightedReservoirIterable
 pub fn weighted_reservoir_iterable<I, T>(
     it: I,
     capacity: usize,
-    custom_oracle: Option<Pcg64>,
+    custom_rng: Option<Pcg64>,
 ) -> WeightedReservoirIterable<I, T>
 where
     I: Sized + StreamingIterator<Item = WeightedDatum<T>>,
     T: Clone,
 {
-    let oracle = match custom_oracle {
-        Some(oracle) => oracle,
+    let rng = match custom_rng {
+        Some(rng) => rng,
         None => Pcg64::from_entropy(),
     };
     let res: Vec<WeightedDatum<T>> = Vec::new();
@@ -511,7 +511,7 @@ where
         reservoir: res,
         capacity: capacity,
         weight_sum: 0.0,
-        oracle: oracle,
+        rng: rng,
     }
 }
 
@@ -528,9 +528,9 @@ where
             if let Some(datum) = self.it.next() {
                 self.weight_sum += datum.weight;
                 let p = &(datum.weight / self.weight_sum);
-                let j: f64 = self.oracle.gen();
+                let j: f64 = self.rng.gen();
                 if j < *p {
-                    let h = self.oracle.gen_range(0..self.capacity) as usize;
+                    let h = self.rng.gen_range(0..self.capacity) as usize;
                     let datum_struct = datum.clone();
                     self.reservoir[h] = datum_struct;
                 };
