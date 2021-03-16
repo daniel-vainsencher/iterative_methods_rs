@@ -27,7 +27,22 @@ where
 {
     pub it: I,
     pub f: F,
-    pub last: Option<AnnotatedResult<T, A>>,
+    pub current: Option<AnnotatedResult<T, A>>,
+}
+
+impl<I, T, F, A> AnnotatedIterable<I, T, F, A>
+where
+    I: StreamingIterator<Item = T>,
+    T: Sized + Clone,
+    F: FnMut(&T) -> A,
+{
+    fn new(it: I, f: F) -> AnnotatedIterable<I, T, F, A> {
+        AnnotatedIterable {
+            it,
+            f: f,
+            current: None,
+        }
+    }
 }
 
 impl<I, T, F, A> StreamingIterator for AnnotatedIterable<I, T, F, A>
@@ -40,7 +55,7 @@ where
 
     fn advance(&mut self) {
         self.it.advance();
-        self.last = match self.it.get() {
+        self.current = match self.it.get() {
             Some(n) => {
                 let annotation = (self.f)(n);
                 Some(AnnotatedResult {
@@ -53,7 +68,7 @@ where
     }
 
     fn get(&self) -> Option<&Self::Item> {
-        match &self.last {
+        match &self.current {
             Some(tr) => Some(&tr),
             None => None,
         }
@@ -67,11 +82,7 @@ where
     F: FnMut(&T) -> f64,
     I: StreamingIterator<Item = T>,
 {
-    AnnotatedIterable {
-        it,
-        f: f,
-        last: None,
-    }
+    AnnotatedIterable::new(it, f)
 }
 
 pub fn tee<I, F, T>(it: I, f: F) -> AnnotatedIterable<I, T, F, ()>
@@ -80,11 +91,15 @@ where
     F: FnMut(&T),
     T: Clone,
 {
-    AnnotatedIterable {
-        it,
-        f: f,
-        last: None,
-    }
+    AnnotatedIterable::new(it, f)
+}
+
+pub fn last<I, T>(it: I) -> Option<T>
+where
+    I: StreamingIterator<Item = T>,
+    T: Sized + Clone,
+{
+    it.fold(None, |_acc, i| Some((*i).clone()))
 }
 
 /// Times every call to `advance` on the underlying
@@ -111,18 +126,6 @@ pub struct TimedResult<T> {
     pub duration: Duration,
 }
 
-pub fn last<I, T>(it: I) -> T
-where
-    I: StreamingIterator<Item = T>,
-    T: Sized + Clone,
-{
-    let last_some = it.fold(None, |_acc, i| Some((*i).clone()));
-    let last_item = last_some
-        .expect("StreamingIterator last expects at least one non-None element.")
-        .clone();
-    last_item
-}
-
 /// Wrap each value of a streaming iterator with the durations:
 /// - between the call to this function and start of the value's computation
 /// - it took to calculate that value
@@ -133,8 +136,8 @@ where
 {
     TimedIterable {
         it: it,
-        timer: Instant::now(),
         current: None,
+        timer: Instant::now(),
     }
 }
 
@@ -453,14 +456,13 @@ mod tests {
     fn test_last() {
         let v = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
         let iter = convert(v.clone());
-        assert!(last(iter) == 9);
+        assert!(last(iter) == Some(9));
     }
 
     #[test]
-    #[should_panic(expected = "StreamingIterator last expects at least one non-None element.")]
-    fn test_last_fail() {
+    fn test_last_none() {
         let v: Vec<u32> = vec![];
-        last(convert(v.clone()));
+        assert!(last(convert(v.clone())) == None);
     }
 
     #[test]
