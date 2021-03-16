@@ -258,19 +258,20 @@ where
 /// To produce a `reservoir` of length `capacity` on the first call, the
 /// first call of the `advance` method automatically advances the input
 /// iterator `capacity` steps. Subsequent calls of `advance` on `ReservoirIterator`
-/// advance `I` one step and will at most replace a single element of the `reservoir`.
+/// advance `I` by `skip + 1` steps and will at most replace a single element of the `reservoir`.
 
 /// The random oracle is of type `Pcg64` by default, which allows seeded rng. This should be
 /// extended to generic type bound by traits for implementing seeding.
 
-/// See https://en.wikipedia.org/wiki/Reservoir_sampling#An_optimal_algorithm
+/// See Algorithm L in https://en.wikipedia.org/wiki/Reservoir_sampling#An_optimal_algorithm and
+/// https://dl.acm.org/doi/abs/10.1145/198429.198435
 
 #[derive(Debug, Clone)]
 pub struct ReservoirIterable<I, T> {
     it: I,
     pub reservoir: Vec<T>,
     capacity: usize,
-    scale: f64,
+    w: f64,
     skip: usize,
     oracle: Pcg64,
 }
@@ -290,12 +291,13 @@ where
         None => Pcg64::from_entropy(),
     };
     let res: Vec<T> = Vec::new();
+    let w_initial = (oracle.gen::<f64>().ln() / (capacity as f64)).exp();
     ReservoirIterable {
         it,
         reservoir: res,
         capacity: capacity,
-        scale: oracle.gen(),
-        skip: 1,
+        w: w_initial,
+        skip: ((oracle.gen::<f64>() as f64).ln() / (1. - w_initial).ln()).floor() as usize,
         oracle: oracle,
     }
 }
@@ -309,17 +311,7 @@ where
 
     #[inline]
     fn advance(&mut self) {
-        if self.reservoir.len() >= self.capacity {
-            if let Some(datum) = self.it.nth(self.skip) {
-                let h = self.oracle.gen_range(0..self.capacity) as usize;
-                let datum_struct = datum.clone();
-                self.reservoir[h] = datum_struct;
-                self.scale = (self.oracle.gen::<f64>() as f64).ln() / (self.capacity as f64).exp();
-                self.skip += 1
-                    + (((self.oracle.gen::<f64>() as f64).ln() / (1. - self.scale).ln()).floor()
-                        as usize);
-            }
-        } else {
+        if self.reservoir.len() < self.capacity {
             while self.reservoir.len() < self.capacity {
                 if let Some(datum) = self.it.next() {
                     let cloned_datum = datum.clone();
@@ -327,6 +319,15 @@ where
                 } else {
                     break;
                 }
+            }
+        } else {
+            if let Some(datum) = self.it.nth(self.skip) {
+                let h = self.oracle.gen_range(0..self.capacity) as usize;
+                let datum_struct = datum.clone();
+                self.reservoir[h] = datum_struct;
+                self.w = self.w * (self.oracle.gen::<f64>().ln() / (self.capacity as f64)).exp();
+                self.skip =
+                    ((self.oracle.gen::<f64>() as f64).ln() / (1. - self.w).ln()).floor() as usize;
             }
         }
     }
