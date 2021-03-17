@@ -19,6 +19,7 @@ pub struct AnnotatedResult<T, A> {
     pub annotation: A,
 }
 
+/// An adaptor that annotates every underlying item `x` with `f(x)`.
 pub struct AnnotatedIterable<I, T, F, A>
 where
     I: Sized + StreamingIterator<Item = T>,
@@ -359,7 +360,7 @@ pub struct ReservoirIterable<I, T> {
     oracle: Pcg64,
 }
 
-// Create a ReservoirIterable
+/// Create a random sample of the underlying weighted stream.
 pub fn reservoir_iterable<I, T>(
     it: I,
     capacity: usize,
