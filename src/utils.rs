@@ -140,3 +140,4 @@ pub fn read_yaml_to_string(file_path: &str) -> Result<std::string::String, std::
     std::fs::remove_file(file_path).expect("Could not remove data file for test.");
     Ok(contents)
 }
+
