@@ -36,6 +36,7 @@ where
     T: Sized + Clone,
     F: FnMut(&T) -> A,
 {
+    /// Annotate every underlying item with the result of applying `f` to it.
     fn new(it: I, f: F) -> AnnotatedIterable<I, T, F, A> {
         AnnotatedIterable {
             it,
@@ -75,7 +76,7 @@ where
     }
 }
 
-/// Apply a score function to every Item in the underlying iterable.
+/// Annotate every underlying item with its score, as defined by `f`.
 pub fn assess<I, T, F>(it: I, f: F) -> AnnotatedIterable<I, T, F, f64>
 where
     T: Clone,
@@ -85,6 +86,7 @@ where
     AnnotatedIterable::new(it, f)
 }
 
+/// Apply `f` to every underlying item.
 pub fn tee<I, F, T>(it: I, f: F) -> AnnotatedIterable<I, T, F, ()>
 where
     I: Sized + StreamingIterator<Item = T>,
@@ -94,6 +96,7 @@ where
     AnnotatedIterable::new(it, f)
 }
 
+/// Get the item before the first None, assuming any exist.
 pub fn last<I, T>(it: I) -> Option<T>
 where
     I: StreamingIterator<Item = T>,
