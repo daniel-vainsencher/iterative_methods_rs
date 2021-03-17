@@ -6,6 +6,9 @@ extern crate quickcheck;
 use rand::{Rng, SeedableRng};
 use rand_pcg::Pcg64;
 use std::cmp::PartialEq;
+use std::fs::File;
+use std::fs::OpenOptions;
+use std::io::Write;
 use std::time::{Duration, Instant};
 use streaming_iterator::*;
 
@@ -214,6 +217,89 @@ where
             self.it.advance();
         } else {
             self.it.nth(self.step);
+        }
+    }
+
+    #[inline]
+    fn get(&self) -> Option<&I::Item> {
+        self.it.get()
+    }
+}
+
+/// Write scalar items of StreamingIterator to a list in a file.
+///
+/// Add error handling!
+pub struct ToFileIterable<I, F> {
+    it: I,
+    write_function: F,
+    file_writer: File,
+}
+
+pub fn list_to_file<I, T, F>(it: I, write_function: F, file_path: String) -> Result<ToFileIterable<I, F>, std::io::Error>
+where
+    I: Sized + StreamingIterator<Item = T>,
+    T: std::fmt::Debug,
+    F: FnMut(&T, &mut std::fs::File) -> std::io::Result<()>,
+{
+    let file = OpenOptions::new().append(true).create(true).open(file_path);
+    if let Ok(file_writer) = file {
+        file_writer.set_len(0).expect("Error setting file length to zero.");
+        Ok(ToFileIterable { it, write_function, file_writer })
+    } else {
+        panic!("\n File could not be created for the iterator. \n ");
+    }
+}
+
+/// Function used by ToFileIterable to specify how to write each item: scalar to file. 
+///
+pub fn write_scalar_to_list<T>(item: &T, file_writer: &mut std::fs::File) -> std::io::Result<()>
+where
+    T: std::string::ToString + std::fmt::Debug,
+{
+    let item = item.to_string();
+    let val = ["-", &item, "\n"].join(" ");
+    file_writer
+        .write_all(val.as_bytes())
+        .expect("Writing value to file failed.");
+    Ok(())
+}
+
+/// Function used by ToFileIterable to specify how to write each item: Vec to file. 
+///
+/// Each item: Vec is separated into its own document so that opening the file as a yaml file
+/// produces an iterator in which each item is a vec.
+pub fn write_vec_to_list<T>(item: &Vec<T>, file_writer: &mut std::fs::File) -> std::io::Result<()>
+where
+    T: std::string::ToString + std::fmt::Debug,
+{
+    for val in item.iter() {
+        let mut val = val.to_string();
+        val = ["-", &val, "\n"].join(" ");
+        file_writer
+            .write_all(val.as_bytes())
+            .expect("Writing value to file failed.");
+    }
+    file_writer
+        .write_all(b"--- # new reservoir \n")
+        .expect("Writing New Document line failed.");
+    Ok(())
+}
+
+impl<I, T, F> StreamingIterator for ToFileIterable<I, F>
+where
+    I: Sized + StreamingIterator<Item = T>,
+    T: std::fmt::Debug,
+    F: FnMut(&T, &mut std::fs::File) -> std::io::Result<()>,
+{
+    type Item = I::Item;
+
+    #[inline]
+    fn advance(&mut self) {
+        if let Some(item) = self.it.next() {
+            (self.write_function)(&item, &mut self.file_writer)
+                .expect("Write item to file in ToFileIterable advance failed.");
+        } else {
+            self.file_writer.flush().expect("Flush of file failed.");
         }
     }
 
@@ -590,7 +676,41 @@ mod tests {
         assert_eq!(annotations, target_annotations);
     }
 
+    /// ToFileIterable Test: Write list to yaml
+    ///
+    /// This writes a vec to a yaml file using ToFileIterable iterable.
+    /// It should be improved by asserting that the contents of the file are correct.
+    #[test]
+    fn list_to_file_test() {
+        let v = vec![0, 1, 2, 3];
+        println!("The vec to be iterated: {:#?}", v);
+        let v_iter = convert(v);
+        let mut file_list: Vec<usize> = Vec::with_capacity(4);
+        let mut yaml_iter = list_to_file(v_iter, write_scalar_to_list, String::from("./list_to_file_test.yaml"))
+            .expect("Create File and initialize yaml_iter failed.");
+        while let Some(item) = yaml_iter.next() {
+            file_list.push(*item);
+        }
+        println!("file_list: {:#?}", file_list);
+    }
+
+    /// ToFileIterable Test: Write reservoirs (Vecs) to yaml
+    ///
+    /// This writes a sequence of reservoirs (Vecs) to a yaml file using ToFileIterable iterable.
+    /// It should be improved by asserting that the contents of the file are correct.
+    #[test]
+    fn reservoirs_to_yaml_test() {
+        let capacity = 2;
+        let stream = utils::generate_step_stream(100, capacity, 0, 1);
+        let stream = convert(stream);
+        let res_iter = reservoir_iterable(stream, capacity, None);
+        let mut yaml_iter = list_to_file(res_iter, write_vec_to_list, String::from("./reservoir_to_yaml_test.yaml"))
+            .expect("Create File and initialize yaml_iter failed.");
+        while let Some(_item) = yaml_iter.next() {};
+    }
+
     /// Tests for the ReservoirIterable adaptor
+    ///
     /// This test asserts that the reservoir is filled with the correct items.
     #[test]
     fn fill_reservoir_test() {

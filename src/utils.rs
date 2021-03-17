@@ -1,6 +1,7 @@
 use crate::algorithms::cg_method::*;
 use crate::*;
 use ndarray::{rcarr1, rcarr2};
+use std::collections::HashMap;
 use std::iter;
 
 /// Utility Functions for the Conjugate Gradient Method
@@ -66,6 +67,70 @@ pub fn generate_stream_with_constant_probability(
     stream
 }
 
+/// Utility function used in examples showing convergence of reservoir mean to stream mean.
+pub fn generate_step_stream(
+    stream_length: usize,
+    capacity: usize,
+    initial_value: usize,
+    final_value: usize,
+) -> impl Iterator<Item = usize> {
+    // Create capacity of items with initial weight and value.
+    let initial_iter = iter::repeat(initial_value).take(capacity);
+    if capacity > stream_length {
+        panic!("Capacity must be less than or equal to stream length.");
+    }
+    let final_iter = iter::repeat(final_value).take(stream_length - capacity);
+    let stream = initial_iter.chain(final_iter);
+    stream
+}
+
+pub fn generate_weighted_step_stream(
+    stream_length: usize,
+    capacity: usize,
+    weight: f64,
+    initial_value: usize,
+    final_value: usize,
+) -> impl Iterator<Item = WeightedDatum<usize>> {
+    // Create capacity of items with initial weight and value.
+    let initial_iter = iter::repeat(new_datum(initial_value, weight)).take(capacity);
+    if capacity > stream_length {
+        panic!("Capacity must be less than or equal to stream length.");
+    }
+    let final_iter = iter::repeat(new_datum(final_value, weight)).take(stream_length - capacity);
+    let stream = initial_iter.chain(final_iter);
+    stream
+}
+
 pub fn expose_w(count: &f64) -> f64 {
     count * count
+}
+
+/// Utility functions for visualizations
+///
+/// The order of the parameters is not controlled.
+pub fn write_parameters_to_yaml<T>(params: HashMap<&str, T>, file_path: &str) -> std::io::Result<()>
+where
+    T: std::string::ToString,
+{
+    let mut file = File::create(file_path)?;
+    for (key, value) in params.iter() {
+        let line: String = [&key.to_string(), ":", " ", &value.to_string(), "\n"].join("");
+        file.write_all(line.as_bytes())?;
+    }
+    Ok(())
+}
+
+pub fn write_vec_to_yaml<T>(avec: &Vec<T>, file_name: &str) -> std::io::Result<()>
+where
+    T: std::fmt::Display,
+{
+    let mut file = File::create(file_name)?;
+    file.set_len(0)?;
+    for val in avec {
+        let mut val = val.to_string();
+        val = ["-", &val, "\n"].join(" ");
+        file.write_all(val.as_bytes())?;
+    }
+    file.flush()?;
+    Ok(())
 }
