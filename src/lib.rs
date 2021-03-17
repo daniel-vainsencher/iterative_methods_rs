@@ -477,6 +477,22 @@ mod tests {
         }
     }
 
+    #[test]
+    fn annotate_test() {
+        let v = vec![0., 1., 2.];
+        let iter = convert(v);
+        fn f(num: &f64) -> f64 {
+            num * 2.
+        }
+        let target_annotations = vec![0., 2., 4.];
+        let mut annotations: Vec<f64> = Vec::with_capacity(3);
+        let mut ann_iter = AnnotatedIterable::new(iter, f);
+        while let Some(n) = ann_iter.next() {
+            annotations.push(n.annotation);
+        }
+        assert_eq!(annotations, target_annotations);
+    }
+
     /// Tests for the ReservoirIterable adaptor
     #[test]
     fn test_datum_struct() {
