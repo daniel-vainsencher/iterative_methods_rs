@@ -223,6 +223,98 @@ where
     }
 }
 
+/// An optimal reservoir sampling algorithm is implemented.
+/// `ReservoirIterable` wraps a `StreamingIterator`, `I` and
+/// produces a `StreamingIterator` whose items are samples of size `capacity`
+/// from the stream of `I`. (This is not the capacity of the `Vec` which holds the `reservoir`;
+/// Rather, the length of the `reservoir` is normally referred to as its `capacity`.)
+/// To produce a `reservoir` of length `capacity` on the first call, the
+/// first call of the `advance` method automatically advances the input
+/// iterator `capacity` steps. Subsequent calls of `advance` on `ReservoirIterator`
+/// advance `I` by `skip + 1` steps and will at most replace a single element of the `reservoir`.
+
+/// The random rng is of type `Pcg64` by default, which allows seeded rng. This should be
+/// extended to generic type bound by traits for implementing seeding.
+
+/// See Algorithm L in https://en.wikipedia.org/wiki/Reservoir_sampling#An_optimal_algorithm and
+/// https://dl.acm.org/doi/abs/10.1145/198429.198435
+
+#[derive(Debug, Clone)]
+pub struct ReservoirIterable<I, T> {
+    it: I,
+    pub reservoir: Vec<T>,
+    capacity: usize,
+    w: f64,
+    skip: usize,
+    rng: Pcg64,
+}
+
+// Create a ReservoirIterable
+pub fn reservoir_iterable<I, T>(
+    it: I,
+    capacity: usize,
+    custom_rng: Option<Pcg64>,
+) -> ReservoirIterable<I, T>
+where
+    I: Sized + StreamingIterator<Item = T>,
+    T: Clone,
+{
+    let mut rng = match custom_rng {
+        Some(rng) => rng,
+        None => Pcg64::from_entropy(),
+    };
+    let res: Vec<T> = Vec::new();
+    let w_initial = (rng.gen::<f64>().ln() / (capacity as f64)).exp();
+    ReservoirIterable {
+        it,
+        reservoir: res,
+        capacity: capacity,
+        w: w_initial,
+        skip: ((rng.gen::<f64>() as f64).ln() / (1. - w_initial).ln()).floor() as usize,
+        rng: rng,
+    }
+}
+
+impl<I, T> StreamingIterator for ReservoirIterable<I, T>
+where
+    T: Clone + std::fmt::Debug,
+    I: StreamingIterator<Item = T>,
+{
+    type Item = Vec<T>;
+
+    #[inline]
+    fn advance(&mut self) {
+        if self.reservoir.len() < self.capacity {
+            while self.reservoir.len() < self.capacity {
+                if let Some(datum) = self.it.next() {
+                    let cloned_datum = datum.clone();
+                    self.reservoir.push(cloned_datum);
+                } else {
+                    break;
+                }
+            }
+        } else {
+            if let Some(datum) = self.it.nth(self.skip) {
+                let h = self.rng.gen_range(0..self.capacity) as usize;
+                let datum_struct = datum.clone();
+                self.reservoir[h] = datum_struct;
+                self.w = self.w * (self.rng.gen::<f64>().ln() / (self.capacity as f64)).exp();
+                self.skip =
+                    ((self.rng.gen::<f64>() as f64).ln() / (1. - self.w).ln()).floor() as usize;
+            }
+        }
+    }
+
+    #[inline]
+    fn get(&self) -> Option<&Self::Item> {
+        if let Some(_wd) = &self.it.get() {
+            Some(&self.reservoir)
+        } else {
+            None
+        }
+    }
+}
+
 /// Weighted Sampling
 /// The WeightedDatum struct wraps the values of a data set to include
 /// a weight for each datum. Currently, the main motivation for this
@@ -333,7 +425,7 @@ where
 }
 
 /// The weighted reservoir sampling algorithm of M. T. Chao is implemented.
-/// `ReservoirIterable` wraps a `StreamingIterator`, `I`, whose items must be of type `WeightedDatum` and
+/// `WeightedReservoirIterable` wraps a `StreamingIterator`, `I`, whose items must be of type `WeightedDatum` and
 /// produces a `StreamingIterator` whose items are samples of size `capacity`
 /// from the stream of `I`. (This is not the capacity of the `Vec` which holds the `reservoir`;
 /// Rather, the length of the `reservoir` is normally referred to as its `capacity`.)
@@ -342,7 +434,7 @@ where
 /// iterator `capacity` steps. Subsequent calls of `advance` on `ReservoirIterator`
 /// advance `I` one step and will at most replace a single element of the `reservoir`.
 
-/// The random oracle is of type `Pcg64` by default, which allows seeded rng. This should be
+/// The random rng is of type `Pcg64` by default, which allows seeded rng. This should be
 /// extended to generic type bound by traits for implementing seeding.
 
 /// See https://en.wikipedia.org/wiki/Reservoir_sampling#Weighted_random_sampling,
@@ -352,39 +444,39 @@ where
 /// Future work might include implementing parallellized batch processing:
 /// https://dl.acm.org/doi/10.1145/3350755.3400287
 #[derive(Debug, Clone)]
-pub struct ReservoirIterable<I, T> {
+pub struct WeightedReservoirIterable<I, T> {
     it: I,
     pub reservoir: Vec<WeightedDatum<T>>,
     capacity: usize,
     weight_sum: f64,
-    oracle: Pcg64,
+    rng: Pcg64,
 }
 
 /// Create a random sample of the underlying weighted stream.
-pub fn reservoir_iterable<I, T>(
+pub fn weighted_reservoir_iterable<I, T>(
     it: I,
     capacity: usize,
-    custom_oracle: Option<Pcg64>,
-) -> ReservoirIterable<I, T>
+    custom_rng: Option<Pcg64>,
+) -> WeightedReservoirIterable<I, T>
 where
     I: Sized + StreamingIterator<Item = WeightedDatum<T>>,
     T: Clone,
 {
-    let oracle = match custom_oracle {
-        Some(oracle) => oracle,
+    let rng = match custom_rng {
+        Some(rng) => rng,
         None => Pcg64::from_entropy(),
     };
     let res: Vec<WeightedDatum<T>> = Vec::new();
-    ReservoirIterable {
+    WeightedReservoirIterable {
         it,
         reservoir: res,
         capacity: capacity,
         weight_sum: 0.0,
-        oracle: oracle,
+        rng: rng,
     }
 }
 
-impl<I, T> StreamingIterator for ReservoirIterable<I, T>
+impl<I, T> StreamingIterator for WeightedReservoirIterable<I, T>
 where
     T: Clone + std::fmt::Debug,
     I: StreamingIterator<Item = WeightedDatum<T>>,
@@ -397,9 +489,9 @@ where
             if let Some(datum) = self.it.next() {
                 self.weight_sum += datum.weight;
                 let p = &(datum.weight / self.weight_sum);
-                let j: f64 = self.oracle.gen();
+                let j: f64 = self.rng.gen();
                 if j < *p {
-                    let h = self.oracle.gen_range(0..self.capacity) as usize;
+                    let h = self.rng.gen_range(0..self.capacity) as usize;
                     let datum_struct = datum.clone();
                     self.reservoir[h] = datum_struct;
                 };
@@ -454,6 +546,7 @@ impl StreamingIterator for Counter {
 mod tests {
 
     use super::*;
+    use crate::utils::generate_stream_with_constant_probability;
     use std::iter;
 
     #[test]
@@ -498,6 +591,54 @@ mod tests {
     }
 
     /// Tests for the ReservoirIterable adaptor
+    /// This test asserts that the reservoir is filled with the correct items.
+    #[test]
+    fn fill_reservoir_test() {
+        // v is the data stream.
+        let v: Vec<f64> = vec![0.5, 0.2];
+        let iter = convert(v);
+        let mut iter = reservoir_iterable(iter, 2, None);
+        if let Some(reservoir) = iter.next() {
+            assert_eq!(reservoir[0], 0.5);
+            assert_eq!(reservoir[1], 0.2);
+        }
+    }
+
+    #[test]
+    /// Test that the initial reservoir is eventually completely replaced.
+    /// This needs to be improved so that the parameters values are chosen such that
+    /// the test passes at a specified success rate.
+    fn reservoir_replacement_test() {
+        let stream_length = 500usize;
+        // reservoir capacity:
+        let capacity = 5usize;
+        // Generate a stream that with items initially 0 and then 1:
+        let initial_stream = iter::repeat(0).take(capacity);
+        let final_stream = iter::repeat(1).take(stream_length - capacity);
+        let stream = initial_stream.chain(final_stream);
+        let stream = convert(stream);
+        let mut res_iter = reservoir_iterable(stream, capacity, None);
+        if let Some(reservoir) = res_iter.next() {
+            println!("Initial reservoir: \n {:#?} \n", reservoir);
+            assert!(reservoir.into_iter().all(|x| *x == 0));
+        } else {
+            panic!("The initial reservoir was None.");
+        };
+
+        let mut final_reservoir: Vec<usize> = vec![0, 0, 0, 0, 0];
+        let mut count: usize = 0;
+        while let Some(reservoir) = res_iter.next() {
+            count += 1;
+            final_reservoir = reservoir.to_vec();
+        }
+        println!(
+            "Final reservoir after {:?} iterations: \n {:#?} \n ",
+            count, final_reservoir
+        );
+        assert!(final_reservoir.into_iter().all(|x| x == 1));
+    }
+
+    /// Tests for the WeightedReservoirIterable adaptor
     #[test]
     fn test_datum_struct() {
         let samp = new_datum(String::from("hi"), 1.0);
@@ -513,13 +654,13 @@ mod tests {
         let _wd: WeightedDatum<String> = new_datum(String::from("some value"), f64::INFINITY);
     }
 
-    /// This test asserts that the reservoir is filled with the correct items.
+    /// This test asserts that the weighted reservoir is filled with the correct items.
     #[test]
-    fn fill_reservoir_test() {
+    fn fill_weighted_reservoir_test() {
         // v is the data stream.
         let v: Vec<WeightedDatum<f64>> = vec![new_datum(0.5, 1.), new_datum(0.2, 2.)];
         let iter = convert(v);
-        let mut iter = reservoir_iterable(iter, 2, None);
+        let mut iter = weighted_reservoir_iterable(iter, 2, None);
         if let Some(reservoir) = iter.next() {
             assert_eq!(
                 reservoir[0],
@@ -539,39 +680,13 @@ mod tests {
     }
 
     #[test]
-    fn stream_smaller_than_reservoir_test() {
+    fn stream_smaller_than_weighted_reservoir_test() {
         let stream_vec = vec![new_datum(1, 1.0), new_datum(2, 1.0)];
         let stream = convert(stream_vec);
-        let mut stream = reservoir_iterable(stream, 3, None);
+        let mut stream = weighted_reservoir_iterable(stream, 3, None);
         while let Some(_reservoir) = stream.next() {
             println!("{:#?}", _reservoir);
         }
-    }
-
-    /// utility function for testing ReservoirIterable
-    fn generate_stream_with_constant_probability(
-        stream_length: usize,
-        capacity: usize,
-        probability: f64,
-        initial_weight: f64,
-    ) -> impl Iterator<Item = WeightedDatum<&'static str>> {
-        // Create capacity of items with initial weight.
-        let initial_iter = iter::repeat(new_datum("initial value", initial_weight)).take(capacity);
-        if capacity > stream_length {
-            panic!("Capacity must be less than or equal to stream length.");
-        }
-        let final_iter =
-            iter::repeat(new_datum("final value", initial_weight)).take(stream_length - capacity);
-        let mut power = 0i32;
-        let mapped = final_iter.map(move |wd| {
-            power += 1;
-            new_datum(
-                wd.value,
-                initial_weight * probability / (1.0 - probability).powi(power),
-            )
-        });
-        let stream = initial_iter.chain(mapped);
-        stream
     }
 
     #[test]
@@ -587,6 +702,8 @@ mod tests {
             capacity,
             probability,
             initial_weight,
+            0,
+            1,
         );
         let mut weight_sum = initial_weight;
         // Cue the stream to the first "final value" element:
@@ -615,6 +732,8 @@ mod tests {
             capacity,
             probability,
             initial_weight,
+            0,
+            1,
         );
         while let Some(_item) = stream.next() {
             ()
@@ -634,18 +753,20 @@ mod tests {
             capacity,
             probability,
             initial_weight,
+            0,
+            1,
         );
         let mut stream = convert(stream);
         let mut _index: usize = 0;
         while let Some(item) = stream.next() {
             match _index {
                 x if x < capacity => assert_eq!(
-                    item.value, "initial value",
+                    item.value, 0,
                     "Error: item value was {} for index={}",
                     item.value, x
                 ),
                 _ => assert_eq!(
-                    item.value, "final value",
+                    item.value, 1,
                     "Error: item value was {} for index={}",
                     item.value, _index
                 ),
@@ -667,19 +788,17 @@ mod tests {
             capacity,
             probability,
             initial_weight,
+            0,
+            1,
         );
         let stream = convert(stream);
-        let mut wrs_iter = reservoir_iterable(stream, capacity, None);
+        let mut wrs_iter = weighted_reservoir_iterable(stream, capacity, None);
         if let Some(reservoir) = wrs_iter.next() {
-            assert!(reservoir
-                .into_iter()
-                .all(|wd| wd.value == String::from("initial value")));
+            assert!(reservoir.into_iter().all(|wd| wd.value == 0));
         };
 
         if let Some(reservoir) = wrs_iter.nth(stream_length - capacity - 1) {
-            assert!(reservoir
-                .into_iter()
-                .all(|wd| wd.value == String::from("initial value")));
+            assert!(reservoir.into_iter().all(|wd| wd.value == 0));
         } else {
             panic!("The final reservoir was None.");
         };
@@ -712,19 +831,17 @@ mod tests {
             capacity,
             probability,
             initial_weight,
+            0,
+            1,
         );
         let stream = convert(stream);
-        let mut wrs_iter = reservoir_iterable(stream, capacity, None);
+        let mut wrs_iter = weighted_reservoir_iterable(stream, capacity, None);
         if let Some(reservoir) = wrs_iter.next() {
-            assert!(reservoir
-                .into_iter()
-                .all(|wd| wd.value == String::from("initial value")));
+            assert!(reservoir.into_iter().all(|wd| wd.value == 0));
         };
 
         if let Some(reservoir) = wrs_iter.nth(stream_length - capacity - 1) {
-            assert!(reservoir
-                .into_iter()
-                .all(|wd| wd.value == String::from("final value")));
+            assert!(reservoir.into_iter().all(|wd| wd.value == 1));
         } else {
             panic!("The final reservoir was None.");
         };
