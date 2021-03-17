@@ -12,48 +12,56 @@ use streaming_iterator::*;
 pub mod algorithms;
 pub mod utils;
 
-/// Annotate the underlying items with a cost (non-negative f64) as
-/// given by a function.
-pub struct CostIterable<I, F, T>
-where
-    I: StreamingIterator<Item = T>,
-{
-    it: I,
-    f: F,
-    last: Option<CostResult<T>>,
-}
-
-/// Store the cost of a state. Lower costs are better.
+/// Store a generic annotation next to the state.
 #[derive(Clone)]
-pub struct CostResult<T> {
+pub struct AnnotatedResult<T, A> {
     pub result: T,
-    pub cost: f64,
+    pub annotation: A,
 }
 
-pub fn assess<I, F, T>(it: I, f: F) -> CostIterable<I, F, T>
+/// An adaptor that annotates every underlying item `x` with `f(x)`.
+pub struct AnnotatedIterable<I, T, F, A>
 where
-    I: StreamingIterator<Item = T>,
-    F: FnMut(&I::Item) -> f64,
+    I: Sized + StreamingIterator<Item = T>,
+    T: Clone,
+    F: FnMut(&T) -> A,
 {
-    CostIterable { it, f, last: None }
+    pub it: I,
+    pub f: F,
+    pub current: Option<AnnotatedResult<T, A>>,
 }
 
-impl<I, F, T> StreamingIterator for CostIterable<I, F, T>
+impl<I, T, F, A> AnnotatedIterable<I, T, F, A>
 where
     I: StreamingIterator<Item = T>,
     T: Sized + Clone,
-    F: FnMut(&T) -> f64,
+    F: FnMut(&T) -> A,
 {
-    type Item = CostResult<T>;
+    /// Annotate every underlying item with the result of applying `f` to it.
+    fn new(it: I, f: F) -> AnnotatedIterable<I, T, F, A> {
+        AnnotatedIterable {
+            it,
+            f: f,
+            current: None,
+        }
+    }
+}
+
+impl<I, T, F, A> StreamingIterator for AnnotatedIterable<I, T, F, A>
+where
+    I: StreamingIterator<Item = T>,
+    T: Sized + Clone,
+    F: FnMut(&T) -> A,
+{
+    type Item = AnnotatedResult<T, A>;
 
     fn advance(&mut self) {
-        let _before = Instant::now();
         self.it.advance();
-        self.last = match self.it.get() {
+        self.current = match self.it.get() {
             Some(n) => {
-                let cost = (self.f)(n);
-                Some(CostResult {
-                    cost,
+                let annotation = (self.f)(n);
+                Some(AnnotatedResult {
+                    annotation,
                     result: n.clone(),
                 })
             }
@@ -62,64 +70,40 @@ where
     }
 
     fn get(&self) -> Option<&Self::Item> {
-        match &self.last {
+        match &self.current {
             Some(tr) => Some(&tr),
             None => None,
         }
     }
 }
 
-/// Pass the values from the streaming iterator through, running a
-/// function on each for side effects.
-pub struct Tee<I, F> {
-    pub it: I,
-    pub f: F,
+/// Annotate every underlying item with its score, as defined by `f`.
+pub fn assess<I, T, F>(it: I, f: F) -> AnnotatedIterable<I, T, F, f64>
+where
+    T: Clone,
+    F: FnMut(&T) -> f64,
+    I: StreamingIterator<Item = T>,
+{
+    AnnotatedIterable::new(it, f)
 }
 
-/*
-// TODO: For ideal convenience, this should be implemented inside the StreamingIterator trait.
-impl StreamingIterator<Item=T> {
-    fn tee<F>(self, f: F) -> Tee<Self, F>
-    where
-        Self: Sized,
-        F: Fn(&Self::Item)
-    {
-        Tee {
-            it: self,
-            f: f
-        }
-    }
-} */
-
-pub fn tee<I, F, T>(it: I, f: F) -> Tee<I, F>
+/// Apply `f` to every underlying item.
+pub fn tee<I, F, T>(it: I, f: F) -> AnnotatedIterable<I, T, F, ()>
 where
     I: Sized + StreamingIterator<Item = T>,
     F: FnMut(&T),
+    T: Clone,
 {
-    Tee { it: it, f: f }
+    AnnotatedIterable::new(it, f)
 }
 
-impl<I, F> StreamingIterator for Tee<I, F>
+/// Get the item before the first None, assuming any exist.
+pub fn last<I, T>(it: I) -> Option<T>
 where
-    I: StreamingIterator,
-    F: FnMut(&I::Item),
+    I: StreamingIterator<Item = T>,
+    T: Sized + Clone,
 {
-    type Item = I::Item;
-
-    #[inline]
-    fn advance(&mut self) {
-        // The side effect happens exactly once for each new value
-        // generated.
-        self.it.advance();
-        if let Some(x) = self.it.get() {
-            (self.f)(x);
-        }
-    }
-
-    #[inline]
-    fn get(&self) -> Option<&I::Item> {
-        self.it.get()
-    }
+    it.fold(None, |_acc, i| Some((*i).clone()))
 }
 
 /// Times every call to `advance` on the underlying
@@ -128,6 +112,7 @@ where
 pub struct TimedIterable<I, T>
 where
     I: StreamingIterator<Item = T>,
+    T: Clone,
 {
     it: I,
     current: Option<TimedResult<T>>,
@@ -145,36 +130,24 @@ pub struct TimedResult<T> {
     pub duration: Duration,
 }
 
-pub fn last<I, T>(it: I) -> T
-where
-    I: StreamingIterator<Item = T>,
-    T: Sized + Clone,
-{
-    let last_some = it.fold(None, |_acc, i| Some((*i).clone()));
-    let last_item = last_some
-        .expect("StreamingIterator last expects at least one non-None element.")
-        .clone();
-    last_item
-}
-
 /// Wrap each value of a streaming iterator with the durations:
 /// - between the call to this function and start of the value's computation
 /// - it took to calculate that value
 pub fn time<I, T>(it: I) -> TimedIterable<I, T>
 where
     I: Sized + StreamingIterator<Item = T>,
-    T: Sized,
+    T: Sized + Clone,
 {
     TimedIterable {
         it: it,
-        timer: Instant::now(),
         current: None,
+        timer: Instant::now(),
     }
 }
 
 impl<I, T> StreamingIterator for TimedIterable<I, T>
 where
-    I: StreamingIterator<Item = T>,
+    I: Sized + StreamingIterator<Item = T>,
     T: Sized + Clone,
 {
     type Item = TimedResult<T>;
@@ -379,15 +352,9 @@ where
     pub f: F,
 }
 
-// NOTE:
-// Either
-// F: FnMut(&I::Item) -> f64,
-// F: FnMut(&T) -> f64
-// compiles
 pub fn wd_iterable<I, T, F>(it: I, f: F) -> WDIterable<I, T, F>
 where
     I: StreamingIterator<Item = T>,
-    // F: FnMut(&I::Item) -> f64,
     F: FnMut(&T) -> f64,
 {
     WDIterable {
@@ -397,16 +364,10 @@ where
     }
 }
 
-// NOTE:
-// Either
-// F: FnMut(&I::Item) -> f64,
-// F: FnMut(&T) -> f64
-// compiles
 impl<I, T, F> StreamingIterator for WDIterable<I, T, F>
 where
     I: StreamingIterator<Item = T>,
     F: FnMut(&T) -> f64,
-    // F: FnMut(&I::Item) -> f64,
     T: Sized + Clone,
 {
     type Item = WeightedDatum<T>;
@@ -491,7 +452,7 @@ pub struct WeightedReservoirIterable<I, T> {
     rng: Pcg64,
 }
 
-// Create a WeightedReservoirIterable
+/// Create a random sample of the underlying weighted stream.
 pub fn weighted_reservoir_iterable<I, T>(
     it: I,
     capacity: usize,
@@ -592,14 +553,13 @@ mod tests {
     fn test_last() {
         let v = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
         let iter = convert(v.clone());
-        assert!(last(iter) == 9);
+        assert!(last(iter) == Some(9));
     }
 
     #[test]
-    #[should_panic(expected = "StreamingIterator last expects at least one non-None element.")]
-    fn test_last_fail() {
+    fn test_last_none() {
         let v: Vec<u32> = vec![];
-        last(convert(v.clone()));
+        assert!(last(convert(v.clone())) == None);
     }
 
     #[test]
@@ -614,6 +574,23 @@ mod tests {
         }
     }
 
+    #[test]
+    fn annotate_test() {
+        let v = vec![0., 1., 2.];
+        let iter = convert(v);
+        fn f(num: &f64) -> f64 {
+            num * 2.
+        }
+        let target_annotations = vec![0., 2., 4.];
+        let mut annotations: Vec<f64> = Vec::with_capacity(3);
+        let mut ann_iter = AnnotatedIterable::new(iter, f);
+        while let Some(n) = ann_iter.next() {
+            annotations.push(n.annotation);
+        }
+        assert_eq!(annotations, target_annotations);
+    }
+
+    /// Tests for the ReservoirIterable adaptor
     /// This test asserts that the reservoir is filled with the correct items.
     #[test]
     fn fill_reservoir_test() {

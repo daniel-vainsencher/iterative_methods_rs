@@ -75,7 +75,7 @@ pub mod cg_method {
 
     pub fn solve_approximately(p: LinearSystem) -> V {
         let solution = CGIterable::conjugate_gradient(p).take(200);
-        last(solution.map(|s| s.x.clone()))
+        last(solution.map(|s| s.x.clone())).expect("CGIterable should always return a solution.")
     }
 
     pub fn show_progress(p: LinearSystem) {
@@ -101,7 +101,6 @@ pub mod cg_method {
 mod tests {
 
     use super::cg_method::*;
-    use crate::last;
     use crate::utils::make_3x3_psd_system;
     use crate::utils::make_3x3_psd_system_1;
     use crate::utils::LinearSystem;
@@ -181,20 +180,6 @@ mod tests {
     }
 
     #[test]
-    fn test_last() {
-        let v = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-        let iter = convert(v.clone());
-        assert!(last(iter) == 9);
-    }
-
-    #[test]
-    #[should_panic(expected = "StreamingIterator last expects at least one non-None element.")]
-    fn test_last_fail() {
-        let v: Vec<u32> = vec![];
-        last(convert(v.clone()));
-    }
-
-    #[test]
     fn cg_simple_test() {
         let p = make_3x3_psd_system_1();
         println!("Problem is: {:?}", p);
@@ -232,6 +217,7 @@ mod tests {
         assert!(!result.is_error());
     }
 
+    #[ignore]
     #[test]
     fn cg_rank_one_v() {
         // This test is currently discarded by test_arbitrary_3x3_pd
