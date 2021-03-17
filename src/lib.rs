@@ -235,7 +235,11 @@ pub struct ToFileIterable<I, F> {
     file_writer: File,
 }
 
-pub fn list_to_file<I, T, F>(it: I, write_function: F, file_path: String) -> Result<ToFileIterable<I, F>, std::io::Error>
+pub fn list_to_file<I, T, F>(
+    it: I,
+    write_function: F,
+    file_path: String,
+) -> Result<ToFileIterable<I, F>, std::io::Error>
 where
     I: Sized + StreamingIterator<Item = T>,
     T: std::fmt::Debug,
@@ -243,14 +247,20 @@ where
 {
     let file = OpenOptions::new().append(true).create(true).open(file_path);
     if let Ok(file_writer) = file {
-        file_writer.set_len(0).expect("Error setting file length to zero.");
-        Ok(ToFileIterable { it, write_function, file_writer })
+        file_writer
+            .set_len(0)
+            .expect("Error setting file length to zero.");
+        Ok(ToFileIterable {
+            it,
+            write_function,
+            file_writer,
+        })
     } else {
         panic!("\n File could not be created for the iterator. \n ");
     }
 }
 
-/// Function used by ToFileIterable to specify how to write each item: scalar to file. 
+/// Function used by ToFileIterable to specify how to write each item: scalar to file.
 ///
 pub fn write_scalar_to_list<T>(item: &T, file_writer: &mut std::fs::File) -> std::io::Result<()>
 where
@@ -264,7 +274,7 @@ where
     Ok(())
 }
 
-/// Function used by ToFileIterable to specify how to write each item: Vec to file. 
+/// Function used by ToFileIterable to specify how to write each item: Vec to file.
 ///
 /// Each item: Vec is separated into its own document so that opening the file as a yaml file
 /// produces an iterator in which each item is a vec.
@@ -686,8 +696,12 @@ mod tests {
         println!("The vec to be iterated: {:#?}", v);
         let v_iter = convert(v);
         let mut file_list: Vec<usize> = Vec::with_capacity(4);
-        let mut yaml_iter = list_to_file(v_iter, write_scalar_to_list, String::from("./list_to_file_test.yaml"))
-            .expect("Create File and initialize yaml_iter failed.");
+        let mut yaml_iter = list_to_file(
+            v_iter,
+            write_scalar_to_list,
+            String::from("./list_to_file_test.yaml"),
+        )
+        .expect("Create File and initialize yaml_iter failed.");
         while let Some(item) = yaml_iter.next() {
             file_list.push(*item);
         }
@@ -704,9 +718,13 @@ mod tests {
         let stream = utils::generate_step_stream(100, capacity, 0, 1);
         let stream = convert(stream);
         let res_iter = reservoir_iterable(stream, capacity, None);
-        let mut yaml_iter = list_to_file(res_iter, write_vec_to_list, String::from("./reservoir_to_yaml_test.yaml"))
-            .expect("Create File and initialize yaml_iter failed.");
-        while let Some(_item) = yaml_iter.next() {};
+        let mut yaml_iter = list_to_file(
+            res_iter,
+            write_vec_to_list,
+            String::from("./reservoir_to_yaml_test.yaml"),
+        )
+        .expect("Create File and initialize yaml_iter failed.");
+        while let Some(_item) = yaml_iter.next() {}
     }
 
     /// Tests for the ReservoirIterable adaptor
