@@ -246,18 +246,20 @@ where
     F: FnMut(&T, &mut std::fs::File) -> std::io::Result<()>,
 {
     let result = match std::fs::metadata(&file_path) {
-        Ok(_) => panic!("File to which you want to write already exists or permission does not exist."),
+        Ok(_) => {
+            panic!("File to which you want to write already exists or permission does not exist.")
+        }
         Err(_) => {
             let file_writer = OpenOptions::new()
-            .append(true)
-            .create(true)
-            .open(file_path)?;
+                .append(true)
+                .create(true)
+                .open(file_path)?;
             Ok(ToFileIterable {
                 it,
                 write_function,
                 file_writer,
             })
-        },
+        }
     };
     result
 }
