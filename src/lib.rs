@@ -2,6 +2,7 @@
 //! A demonstration of the use of StreamingIterators and their adapters to implement iterative algorithms.
 #[cfg(test)]
 extern crate quickcheck;
+extern crate yaml_rust;
 
 use rand::{Rng, SeedableRng};
 use rand_pcg::Pcg64;
@@ -12,6 +13,7 @@ use std::io::Write;
 use std::string::String;
 use std::time::{Duration, Instant};
 use streaming_iterator::*;
+use yaml_rust::{YamlEmitter, YamlLoader};
 
 pub mod algorithms;
 pub mod utils;
@@ -399,7 +401,7 @@ where
                 let h = self.rng.gen_range(0..self.capacity) as usize;
                 let datum_struct = datum.clone();
                 self.reservoir[h] = datum_struct;
-                self.w = self.w * (self.rng.gen::<f64>().ln() / (self.capacity as f64)).exp();
+                self.w *= (self.rng.gen::<f64>().ln() / (self.capacity as f64)).exp();
                 self.skip =
                     ((self.rng.gen::<f64>() as f64).ln() / (1. - self.w).ln()).floor() as usize;
             }
@@ -700,9 +702,7 @@ mod tests {
     fn list_to_file_test() {
         let test_file_path = "./list_to_file_test.yaml";
         let v = vec![0, 1, 2, 3];
-        // println!("The vec to be iterated: {:#?}", v);
         let v_iter = convert(v);
-        let mut file_list: Vec<usize> = Vec::with_capacity(4);
         let mut yaml_iter =
             list_to_file(v_iter, write_scalar_to_list, String::from(test_file_path))
                 .expect("Create File and initialize yaml_iter failed.");
