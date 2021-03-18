@@ -9,6 +9,7 @@ use std::cmp::PartialEq;
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::Write;
+use std::string::String;
 use std::time::{Duration, Instant};
 use streaming_iterator::*;
 
@@ -647,6 +648,7 @@ mod tests {
 
     use super::*;
     use crate::utils::generate_stream_with_constant_probability;
+    use std::io::Read;
     use std::iter;
 
     #[test]
@@ -696,20 +698,24 @@ mod tests {
     /// It should be improved by asserting that the contents of the file are correct.
     #[test]
     fn list_to_file_test() {
+        let test_file_path = "./list_to_file_test.yaml";
         let v = vec![0, 1, 2, 3];
-        println!("The vec to be iterated: {:#?}", v);
+        // println!("The vec to be iterated: {:#?}", v);
         let v_iter = convert(v);
         let mut file_list: Vec<usize> = Vec::with_capacity(4);
-        let mut yaml_iter = list_to_file(
-            v_iter,
-            write_scalar_to_list,
-            String::from("./list_to_file_test.yaml"),
-        )
-        .expect("Create File and initialize yaml_iter failed.");
-        while let Some(item) = yaml_iter.next() {
-            file_list.push(*item);
-        }
-        println!("file_list: {:#?}", file_list);
+        let mut yaml_iter =
+            list_to_file(v_iter, write_scalar_to_list, String::from(test_file_path))
+                .expect("Create File and initialize yaml_iter failed.");
+        while let Some(_) = yaml_iter.next() {}
+        let mut read_file =
+            File::open("./list_to_file_test.yaml").expect("Could not open file with test data.");
+        let mut contents = String::new();
+        read_file
+            .read_to_string(&mut contents)
+            .expect("Could not read contents of file.");
+        // Improve this to use a yaml reader to obtain a vec or list etc.
+        assert_eq!("- 0 \n- 1 \n- 2 \n- 3 \n", &contents);
+        std::fs::remove_file(test_file_path).expect("Could not remove data file for test.");
     }
 
     /// ToFileIterable Test: Write reservoirs (Vecs) to yaml
@@ -718,17 +724,15 @@ mod tests {
     /// It should be improved by asserting that the contents of the file are correct.
     #[test]
     fn reservoirs_to_yaml_test() {
+        let test_file_path = "./reservoir_to_yaml_test.yaml";
         let capacity = 2;
         let stream = utils::generate_step_stream(100, capacity, 0, 1);
         let stream = convert(stream);
         let res_iter = reservoir_iterable(stream, capacity, None);
-        let mut yaml_iter = list_to_file(
-            res_iter,
-            write_vec_to_list,
-            String::from("./reservoir_to_yaml_test.yaml"),
-        )
-        .expect("Create File and initialize yaml_iter failed.");
+        let mut yaml_iter = list_to_file(res_iter, write_vec_to_list, String::from(test_file_path))
+            .expect("Create File and initialize yaml_iter failed.");
         while let Some(_item) = yaml_iter.next() {}
+        std::fs::remove_file(test_file_path).expect("Could not remove data file for test.");
     }
 
     /// Tests for the ReservoirIterable adaptor
