@@ -245,19 +245,21 @@ where
     T: std::fmt::Debug,
     F: FnMut(&T, &mut std::fs::File) -> std::io::Result<()>,
 {
-    let file = OpenOptions::new().append(true).create(true).open(file_path);
-    if let Ok(file_writer) = file {
-        file_writer
-            .set_len(0)
-            .expect("Error setting file length to zero.");
-        Ok(ToFileIterable {
-            it,
-            write_function,
-            file_writer,
-        })
-    } else {
-        panic!("\n File could not be created for the iterator. \n ");
-    }
+    let result = match std::fs::metadata(&file_path) {
+        Ok(_) => panic!("File to which you want to write already exists or permission does not exist."),
+        Err(_) => {
+            let file_writer = OpenOptions::new()
+            .append(true)
+            .create(true)
+            .open(file_path)?;
+            Ok(ToFileIterable {
+                it,
+                write_function,
+                file_writer,
+            })
+        },
+    };
+    result
 }
 
 /// Function used by ToFileIterable to specify how to write each item: scalar to file.
