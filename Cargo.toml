@@ -23,3 +23,6 @@ default-features = false
 
 [dev-dependencies]
 quickcheck = "= 1.0.1"
+
+[dependencies.yaml-rust]
+git = "https://github.com/chyh1990/yaml-rust.git"
