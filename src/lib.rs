@@ -283,6 +283,15 @@ impl YamlDataType for f64 {
     }
 }
 
+// impl<S> YamlDataType for Vec<S> 
+// {
+//     fn create_yaml_object(&self) -> Yaml {
+//         let v: Vec<S: YamlDataType> = Vec::new();
+        
+//         Yaml::Array(*self)
+//     }
+// }
+
 /// Function used by ToFileIterable to specify how to write each item: scalar to file.
 ///
 pub fn write_to_yaml<T>(item: &T, file_writer: &mut std::fs::File) -> std::io::Result<()>
