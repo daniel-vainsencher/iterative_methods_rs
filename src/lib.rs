@@ -13,7 +13,7 @@ use std::io::Write;
 use std::string::String;
 use std::time::{Duration, Instant};
 use streaming_iterator::*;
-use yaml_rust::{YamlEmitter, YamlLoader};
+use yaml_rust::{Yaml, YamlEmitter, YamlLoader};
 
 pub mod algorithms;
 pub mod utils;
@@ -267,16 +267,36 @@ where
     result
 }
 
+pub trait YamlDataType {
+    fn create_yaml_object(&self) -> Yaml;
+}
+
+impl YamlDataType for i64 {
+    fn create_yaml_object(&self) -> Yaml {
+        Yaml::Integer(*self)
+    }
+}
+
+impl YamlDataType for f64 {
+    fn create_yaml_object(&self) -> Yaml {
+        Yaml::Real((*self).to_string())
+    }
+}
+
 /// Function used by ToFileIterable to specify how to write each item: scalar to file.
 ///
-pub fn write_scalar_to_list<T>(item: &T, file_writer: &mut std::fs::File) -> std::io::Result<()>
+pub fn write_to_yaml<T>(item: &T, file_writer: &mut std::fs::File) -> std::io::Result<()>
 where
-    T: std::string::ToString + std::fmt::Debug,
+    T: YamlDataType,
 {
-    let item = item.to_string();
-    let val = ["-", &item, "\n"].join(" ");
+    let yaml_item = item.create_yaml_object();
+    let mut out_str = String::new();
+    let mut emitter = YamlEmitter::new(&mut out_str);
+    emitter.dump(&yaml_item).expect("Could not convert item to yaml object.");
+    // let item = item.to_string();
+    // let val = ["-", &item, "\n"].join(" ");
     file_writer
-        .write_all(val.as_bytes())
+        .write_all(out_str.as_bytes())
         .expect("Writing value to file failed.");
     Ok(())
 }
@@ -697,14 +717,15 @@ mod tests {
     /// ToFileIterable Test: Write list to yaml
     ///
     /// This writes a vec to a yaml file using ToFileIterable iterable.
-    /// It should be improved by asserting that the contents of the file are correct.
+    /// It fails if the file path used to write the data already exists
+    /// due to the functionality of list_to_file(). 
     #[test]
     fn list_to_file_test() {
         let test_file_path = "./list_to_file_test.yaml";
-        let v = vec![0, 1, 2, 3];
-        let v_iter = convert(v);
+        let v: Vec<i64> = vec![0, 1, 2, 3];
+        let v_iter = convert(v.clone());
         let mut yaml_iter =
-            list_to_file(v_iter, write_scalar_to_list, String::from(test_file_path))
+            list_to_file(v_iter, write_to_yaml, String::from(test_file_path))
                 .expect("Create File and initialize yaml_iter failed.");
         while let Some(_) = yaml_iter.next() {}
         let mut read_file =
@@ -713,9 +734,12 @@ mod tests {
         read_file
             .read_to_string(&mut contents)
             .expect("Could not read contents of file.");
-        // Improve this to use a yaml reader to obtain a vec or list etc.
-        assert_eq!("- 0 \n- 1 \n- 2 \n- 3 \n", &contents);
+        // This could be used instead of Yaml::from_str; not sure of tradeoffs.
+        // let docs = YamlLoader::load_from_str(&contents).expect("Could not load contents of file to yaml object.");
+        let docs = Yaml::from_str(&contents);
+        // Remove the file for the next run of the test.
         std::fs::remove_file(test_file_path).expect("Could not remove data file for test.");
+        assert_eq!("---\n0---\n1---\n2---\n3", &contents);
     }
 
     /// ToFileIterable Test: Write reservoirs (Vecs) to yaml
