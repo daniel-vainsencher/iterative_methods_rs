@@ -283,18 +283,19 @@ impl YamlDataType for f64 {
     }
 }
 
+// Could the following type of impl unify the write to yaml fns?
 // impl<S> YamlDataType for Vec<S> 
 // {
 //     fn create_yaml_object(&self) -> Yaml {
 //         let v: Vec<S: YamlDataType> = Vec::new();
-        
+
 //         Yaml::Array(*self)
 //     }
 // }
 
 /// Function used by ToFileIterable to specify how to write each item: scalar to file.
 ///
-pub fn write_to_yaml<T>(item: &T, file_writer: &mut std::fs::File) -> std::io::Result<()>
+pub fn write_scalar_to_yaml<T>(item: &T, file_writer: &mut std::fs::File) -> std::io::Result<()>
 where
     T: YamlDataType,
 {
@@ -302,8 +303,6 @@ where
     let mut out_str = String::new();
     let mut emitter = YamlEmitter::new(&mut out_str);
     emitter.dump(&yaml_item).expect("Could not convert item to yaml object.");
-    // let item = item.to_string();
-    // let val = ["-", &item, "\n"].join(" ");
     file_writer
         .write_all(out_str.as_bytes())
         .expect("Writing value to file failed.");
@@ -312,8 +311,24 @@ where
 
 /// Function used by ToFileIterable to specify how to write each item: Vec to file.
 ///
-/// Each item: Vec is separated into its own document so that opening the file as a yaml file
-/// produces an iterator in which each item is a vec.
+pub fn write_vec_to_yaml<'r, U>(item: &'r &Vec<U>, file_writer: &mut std::fs::File) -> std::io::Result<()>
+where
+    U: YamlDataType,
+{
+    let mut yaml_item = Vec::with_capacity(item.len());
+    for element in *item {
+        yaml_item.push(element.create_yaml_object());
+    }
+    let yaml_item = Yaml::Array(yaml_item);
+    let mut out_str = String::new();
+    let mut emitter = YamlEmitter::new(&mut out_str);
+    emitter.dump(&yaml_item).expect("Could not convert item to yaml object.");
+    file_writer
+        .write_all(out_str.as_bytes())
+        .expect("Writing value to file failed.");
+    Ok(())
+}
+
 pub fn write_vec_to_list<T>(item: &Vec<T>, file_writer: &mut std::fs::File) -> std::io::Result<()>
 where
     T: std::string::ToString + std::fmt::Debug,
@@ -734,7 +749,7 @@ mod tests {
         let v: Vec<i64> = vec![0, 1, 2, 3];
         let v_iter = convert(v.clone());
         let mut yaml_iter =
-            list_to_file(v_iter, write_to_yaml, String::from(test_file_path))
+            list_to_file(v_iter, write_scalar_to_yaml, String::from(test_file_path))
                 .expect("Create File and initialize yaml_iter failed.");
         while let Some(_) = yaml_iter.next() {}
         let mut read_file =
@@ -749,6 +764,18 @@ mod tests {
         // Remove the file for the next run of the test.
         std::fs::remove_file(test_file_path).expect("Could not remove data file for test.");
         assert_eq!("---\n0---\n1---\n2---\n3", &contents);
+    }
+
+    #[test]
+    fn write_vec_to_yaml_test() {
+        let test_file_path = "./vec_to_file_test.yaml";
+        let v: Vec<Vec<i64>> = vec![vec![0,1],vec![2,3]];
+        println!("{:#?}", v);
+        let vc = v.clone();
+        let vc = vc.iter();
+        let vc = convert(vc);
+        let mut vc = list_to_file(vc, write_vec_to_yaml, String::from(test_file_path)).expect("Vec to Yaml: Create File and initialize yaml_iter failed.");
+        while let Some(_) = vc.next() {}
     }
 
     /// ToFileIterable Test: Write reservoirs (Vecs) to yaml
