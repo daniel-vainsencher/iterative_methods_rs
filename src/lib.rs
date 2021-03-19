@@ -238,7 +238,7 @@ pub struct ToFileIterable<I, F> {
     file_writer: File,
 }
 
-pub fn list_to_file<I, T, F>(
+pub fn item_to_file<I, T, F>(
     it: I,
     write_function: F,
     file_path: String,
@@ -367,23 +367,6 @@ where
     file_writer
         .write_all(out_str.as_bytes())
         .expect("Writing value to file failed.");
-    Ok(())
-}
-
-pub fn write_vec_to_list<T>(item: &Vec<T>, file_writer: &mut std::fs::File) -> std::io::Result<()>
-where
-    T: std::string::ToString + std::fmt::Debug,
-{
-    for val in item.iter() {
-        let mut val = val.to_string();
-        val = ["-", &val, "\n"].join(" ");
-        file_writer
-            .write_all(val.as_bytes())
-            .expect("Writing value to file failed.");
-    }
-    file_writer
-        .write_all(b"--- # new reservoir \n")
-        .expect("Writing New Document line failed.");
     Ok(())
 }
 
@@ -784,14 +767,14 @@ mod tests {
     ///
     /// This writes a stream of scalars to a yaml file using ToFileIterable iterable.
     /// It would fail if the file path used to write the data already existed
-    /// due to the functionality of list_to_file().
+    /// due to the functionality of item_to_file().
     #[test]
-    fn list_to_file_test() {
-        let test_file_path = "./list_to_file_test.yaml";
+    fn item_to_file_test() {
+        let test_file_path = "./item_to_file_test.yaml";
         let v: Vec<i64> = vec![0, 1, 2, 3];
         let v_iter = convert(v.clone());
         let mut yaml_iter =
-            list_to_file(v_iter, write_scalar_to_yaml, String::from(test_file_path))
+            item_to_file(v_iter, write_scalar_to_yaml, String::from(test_file_path))
                 .expect("Create File and initialize yaml_iter failed.");
         while let Some(_) = yaml_iter.next() {}
         let mut read_file =
@@ -813,7 +796,7 @@ mod tests {
     ///
     /// This writes a stream of vecs to a yaml file using ToFileIterable iterable.
     /// It would fail if the file path used to write the data already existed
-    /// due to the functionality of list_to_file().
+    /// due to the functionality of item_to_file().
     #[test]
     fn write_vec_to_yaml_test() {
         let test_file_path = "./vec_to_file_test.yaml";
@@ -822,7 +805,7 @@ mod tests {
         let vc = v.clone();
         let vc = vc.iter();
         let vc = convert(vc);
-        let mut vc = list_to_file(vc, write_vec_to_yaml, String::from(test_file_path))
+        let mut vc = item_to_file(vc, write_vec_to_yaml, String::from(test_file_path))
             .expect("Vec to Yaml: Create File and initialize yaml_iter failed.");
         while let Some(_) = vc.next() {}
         let mut read_file =
@@ -853,7 +836,7 @@ mod tests {
         let v: Vec<Vec<Vec<i64>>> = vec![data_1_vec, data_2_vec];
         let v = v.iter();
         let v = convert(v);
-        let mut v = list_to_file(v, write_vec_vec_to_yaml, String::from(test_file_path))
+        let mut v = item_to_file(v, write_vec_vec_to_yaml, String::from(test_file_path))
             .expect("Vec to Yaml: Create File and initialize yaml_iter failed.");
         while let Some(_) = v.next() {}
         let mut read_file =
@@ -865,23 +848,6 @@ mod tests {
         println!("{:#?}", contents);
         std::fs::remove_file(test_file_path).expect("Could not remove data file for test.");
         assert_eq!("---\n- - 0\n  - 3\n- - 1\n  - 6\n- - 2\n  - 9\n---\n- - 0\n  - 5\n- - 1\n  - 10\n- - 2\n  - 15\n", &contents);
-    }
-
-    /// ToFileIterable Test: Write reservoirs (Vecs) to yaml
-    ///
-    /// This writes a sequence of reservoirs (Vecs) to a yaml file using ToFileIterable iterable.
-    /// It should be improved by asserting that the contents of the file are correct.
-    #[test]
-    fn reservoirs_to_yaml_test() {
-        let test_file_path = "./reservoir_to_yaml_test.yaml";
-        let capacity = 2;
-        let stream = utils::generate_step_stream(100, capacity, 0, 1);
-        let stream = convert(stream);
-        let res_iter = reservoir_iterable(stream, capacity, None);
-        let mut yaml_iter = list_to_file(res_iter, write_vec_to_list, String::from(test_file_path))
-            .expect("Create File and initialize yaml_iter failed.");
-        while let Some(_item) = yaml_iter.next() {}
-        std::fs::remove_file(test_file_path).expect("Could not remove data file for test.");
     }
 
     /// Tests for the ReservoirIterable adaptor
