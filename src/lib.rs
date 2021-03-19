@@ -13,7 +13,7 @@ use std::io::Write;
 use std::string::String;
 use std::time::{Duration, Instant};
 use streaming_iterator::*;
-use yaml_rust::{Yaml, YamlEmitter, YamlLoader};
+use yaml_rust::{Yaml, YamlEmitter};
 
 pub mod algorithms;
 pub mod utils;
@@ -284,7 +284,7 @@ impl YamlDataType for f64 {
 }
 
 // Could the following type of impl unify the write to yaml fns?
-// impl<S> YamlDataType for Vec<S> 
+// impl<S> YamlDataType for Vec<S>
 // {
 //     fn create_yaml_object(&self) -> Yaml {
 //         let v: Vec<S: YamlDataType> = Vec::new();
@@ -302,7 +302,9 @@ where
     let yaml_item = item.create_yaml_object();
     let mut out_str = String::new();
     let mut emitter = YamlEmitter::new(&mut out_str);
-    emitter.dump(&yaml_item).expect("Could not convert item to yaml object.");
+    emitter
+        .dump(&yaml_item)
+        .expect("Could not convert item to yaml object.");
     file_writer
         .write_all(out_str.as_bytes())
         .expect("Writing value to file failed.");
@@ -311,7 +313,10 @@ where
 
 /// Function used by ToFileIterable to specify how to write each item: Vec to file.
 ///
-pub fn write_vec_to_yaml<'r, U>(item: &'r &Vec<U>, file_writer: &mut std::fs::File) -> std::io::Result<()>
+pub fn write_vec_to_yaml<'r, U>(
+    item: &'r &Vec<U>,
+    file_writer: &mut std::fs::File,
+) -> std::io::Result<()>
 where
     U: YamlDataType,
 {
@@ -322,7 +327,41 @@ where
     let yaml_item = Yaml::Array(yaml_item);
     let mut out_str = String::new();
     let mut emitter = YamlEmitter::new(&mut out_str);
-    emitter.dump(&yaml_item).expect("Could not convert item to yaml object.");
+    emitter
+        .dump(&yaml_item)
+        .expect("Could not convert item to yaml object.");
+    // Putting this \n by hand is inelegant. How do we use the yaml emitter more efficiently?
+    out_str.push_str("\n");
+    file_writer
+        .write_all(out_str.as_bytes())
+        .expect("Writing value to file failed.");
+    Ok(())
+}
+
+/// Function used by ToFileIterable to specify how to write each item: Vec to file.
+///
+pub fn write_vec_vec_to_yaml<'r, U>(
+    item: &'r &Vec<Vec<U>>,
+    file_writer: &mut std::fs::File,
+) -> std::io::Result<()>
+where
+    U: YamlDataType,
+{
+    let mut yaml_item = Vec::with_capacity(item.len());
+    for element in *item {
+        let mut yaml_sub_item = Vec::with_capacity(element.len());
+        for scalar in element {
+            yaml_sub_item.push(scalar.create_yaml_object());
+        }
+        let yaml_sub_item = Yaml::Array(yaml_sub_item);
+        yaml_item.push(yaml_sub_item);
+    }
+    let yaml_item = Yaml::Array(yaml_item);
+    let mut out_str = String::new();
+    let mut emitter = YamlEmitter::new(&mut out_str);
+    emitter
+        .dump(&yaml_item)
+        .expect("Could not convert item to yaml object.");
     // Putting this \n by hand is inelegant. How do we use the yaml emitter more efficiently?
     out_str.push_str("\n");
     file_writer
@@ -696,6 +735,7 @@ mod tests {
 
     use super::*;
     use crate::utils::generate_stream_with_constant_probability;
+    use std::convert::TryInto;
     use std::io::Read;
     use std::iter;
 
@@ -744,7 +784,7 @@ mod tests {
     ///
     /// This writes a stream of scalars to a yaml file using ToFileIterable iterable.
     /// It would fail if the file path used to write the data already existed
-    /// due to the functionality of list_to_file(). 
+    /// due to the functionality of list_to_file().
     #[test]
     fn list_to_file_test() {
         let test_file_path = "./list_to_file_test.yaml";
@@ -760,9 +800,10 @@ mod tests {
         read_file
             .read_to_string(&mut contents)
             .expect("Could not read data from file.");
+        // The following line is to be used when the test is revised to read the contents of the file.
+        // let docs = Yaml::from_str(&contents);
         // This could be used instead of Yaml::from_str; not sure of tradeoffs.
         // let docs = YamlLoader::load_from_str(&contents).expect("Could not load contents of file to yaml object.");
-        let docs = Yaml::from_str(&contents);
         // Remove the file for the next run of the test.
         std::fs::remove_file(test_file_path).expect("Could not remove data file for test.");
         assert_eq!("---\n0---\n1---\n2---\n3", &contents);
@@ -772,22 +813,58 @@ mod tests {
     ///
     /// This writes a stream of vecs to a yaml file using ToFileIterable iterable.
     /// It would fail if the file path used to write the data already existed
-    /// due to the functionality of list_to_file(). 
+    /// due to the functionality of list_to_file().
     #[test]
     fn write_vec_to_yaml_test() {
         let test_file_path = "./vec_to_file_test.yaml";
-        let v: Vec<Vec<i64>> = vec![vec![0,1],vec![2,3]];
+        let v: Vec<Vec<i64>> = vec![vec![0, 1], vec![2, 3]];
         // println!("{:#?}", v);
         let vc = v.clone();
         let vc = vc.iter();
         let vc = convert(vc);
-        let mut vc = list_to_file(vc, write_vec_to_yaml, String::from(test_file_path)).expect("Vec to Yaml: Create File and initialize yaml_iter failed.");
+        let mut vc = list_to_file(vc, write_vec_to_yaml, String::from(test_file_path))
+            .expect("Vec to Yaml: Create File and initialize yaml_iter failed.");
         while let Some(_) = vc.next() {}
-        let mut read_file = File::open(test_file_path).expect("Could not open file with test data to asserteq.");
+        let mut read_file =
+            File::open(test_file_path).expect("Could not open file with test data to asserteq.");
         let mut contents = String::new();
-        read_file.read_to_string(&mut contents).expect("Could not read data from file.");
+        read_file
+            .read_to_string(&mut contents)
+            .expect("Could not read data from file.");
         std::fs::remove_file(test_file_path).expect("Could not remove data file for test.");
         assert_eq!("---\n- 0\n- 1\n---\n- 2\n- 3\n", &contents);
+    }
+
+    #[test]
+    fn write_vec_vec_to_yaml_test() {
+        let test_file_path = "./vec_vec_to_file_test.yaml";
+        let data_1: Vec<i64> = vec![3, 6, 9];
+        let data_2: Vec<i64> = vec![5, 10, 15];
+        let data_1 = data_1.iter().enumerate();
+        let data_2 = data_2.iter().enumerate();
+        let mut data_1_vec: Vec<Vec<i64>> = Vec::new();
+        let mut data_2_vec: Vec<Vec<i64>> = Vec::new();
+        for (a, b) in data_1 {
+            data_1_vec.push(vec![a.try_into().unwrap(), *b])
+        }
+        for (a, b) in data_2 {
+            data_2_vec.push(vec![a.try_into().unwrap(), *b])
+        }
+        let v: Vec<Vec<Vec<i64>>> = vec![data_1_vec, data_2_vec];
+        let v = v.iter();
+        let v = convert(v);
+        let mut v = list_to_file(v, write_vec_vec_to_yaml, String::from(test_file_path))
+            .expect("Vec to Yaml: Create File and initialize yaml_iter failed.");
+        while let Some(_) = v.next() {}
+        let mut read_file =
+            File::open(test_file_path).expect("Could not open file with test data to asserteq.");
+        let mut contents = String::new();
+        read_file
+            .read_to_string(&mut contents)
+            .expect("Could not read data from file.");
+        println!("{:#?}", contents);
+        std::fs::remove_file(test_file_path).expect("Could not remove data file for test.");
+        assert_eq!("---\n- - 0\n  - 3\n- - 1\n  - 6\n- - 2\n  - 9\n---\n- - 0\n  - 5\n- - 1\n  - 10\n- - 2\n  - 15\n", &contents);
     }
 
     /// ToFileIterable Test: Write reservoirs (Vecs) to yaml
