@@ -323,6 +323,8 @@ where
     let mut out_str = String::new();
     let mut emitter = YamlEmitter::new(&mut out_str);
     emitter.dump(&yaml_item).expect("Could not convert item to yaml object.");
+    // Putting this \n by hand is inelegant. How do we use the yaml emitter more efficiently?
+    out_str.push_str("\n");
     file_writer
         .write_all(out_str.as_bytes())
         .expect("Writing value to file failed.");
