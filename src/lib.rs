@@ -229,13 +229,11 @@ where
     }
 }
 
-/// Write scalar items of StreamingIterator to a list in a file.
-///
-/// Add error handling!
+/// Write items of StreamingIterator to a file.
 pub struct ToFileIterable<I, F> {
-    it: I,
-    write_function: F,
-    file_writer: File,
+    pub it: I,
+    pub write_function: F,
+    pub file_writer: File,
 }
 
 pub fn item_to_file<I, T, F>(
@@ -277,11 +275,33 @@ impl YamlDataType for i64 {
     }
 }
 
+impl YamlDataType for &i64 {
+    fn create_yaml_object(&self) -> Yaml {
+        Yaml::Integer(**self)
+    }
+}
+
 impl YamlDataType for f64 {
     fn create_yaml_object(&self) -> Yaml {
         Yaml::Real((*self).to_string())
     }
 }
+
+impl<T> YamlDataType for Numbered<T>
+where
+    T: YamlDataType,
+{
+    fn create_yaml_object(&self) -> Yaml {
+        let t = (self.item).as_ref().unwrap();
+        Yaml::Array(vec![Yaml::Integer(self.count), t.create_yaml_object()])
+    }
+}
+
+// impl YamlDataType for TupleType {
+//     fn create_yaml_object(&self) -> Yaml {
+//         Yaml::Array((*self).to_string())
+//     }
+// }
 
 // Could the following type of impl unify the write to yaml fns?
 // impl<S> YamlDataType for Vec<S>
@@ -311,6 +331,24 @@ where
     Ok(())
 }
 
+// /// Function used by ToFileIterable to specify how to write each item: Numbered to file.
+// ///
+// pub fn write_numbered_to_yaml<T>(item: &Numbered<T>, file_writer: &mut std::fs::File) -> std::io::Result<()>
+// where
+//     T: YamlDataType,
+// {
+//     let yaml_item = item.create_yaml_object();
+//     let mut out_str = String::new();
+//     let mut emitter = YamlEmitter::new(&mut out_str);
+//     emitter
+//         .dump(&yaml_item)
+//         .expect("Could not convert item to yaml object.");
+//     file_writer
+//         .write_all(out_str.as_bytes())
+//         .expect("Writing value to file failed.");
+//     Ok(())
+// }
+
 /// Function used by ToFileIterable to specify how to write each item: Vec to file.
 ///
 pub fn write_vec_to_yaml<'r, U>(
@@ -322,6 +360,31 @@ where
 {
     let mut yaml_item = Vec::with_capacity(item.len());
     for element in *item {
+        yaml_item.push(element.create_yaml_object());
+    }
+    let yaml_item = Yaml::Array(yaml_item);
+    let mut out_str = String::new();
+    let mut emitter = YamlEmitter::new(&mut out_str);
+    emitter
+        .dump(&yaml_item)
+        .expect("Could not convert item to yaml object.");
+    // Putting this \n by hand is inelegant. How do we use the yaml emitter more efficiently?
+    out_str.push_str("\n");
+    file_writer
+        .write_all(out_str.as_bytes())
+        .expect("Writing value to file failed.");
+    Ok(())
+}
+
+pub fn write_vec_to_yaml_no_lifetime<U>(
+    item: &Vec<U>,
+    file_writer: &mut std::fs::File,
+) -> std::io::Result<()>
+where
+    U: YamlDataType,
+{
+    let mut yaml_item = Vec::with_capacity(item.len());
+    for element in &*item {
         yaml_item.push(element.create_yaml_object());
     }
     let yaml_item = Yaml::Array(yaml_item);
@@ -370,6 +433,38 @@ where
     Ok(())
 }
 
+/// Function used by ToFileIterable to specify how to write each item: Vec to file.
+///
+pub fn write_vec_vec_to_yaml_no_lifetime<U>(
+    item: &Vec<Vec<U>>,
+    file_writer: &mut std::fs::File,
+) -> std::io::Result<()>
+where
+    U: YamlDataType,
+{
+    let mut yaml_item = Vec::with_capacity(item.len());
+    for element in &*item.clone() {
+        let mut yaml_sub_item = Vec::with_capacity(element.len());
+        for scalar in element {
+            yaml_sub_item.push(scalar.create_yaml_object());
+        }
+        let yaml_sub_item = Yaml::Array(yaml_sub_item);
+        yaml_item.push(yaml_sub_item);
+    }
+    let yaml_item = Yaml::Array(yaml_item);
+    let mut out_str = String::new();
+    let mut emitter = YamlEmitter::new(&mut out_str);
+    emitter
+        .dump(&yaml_item)
+        .expect("Could not convert item to yaml object.");
+    // Putting this \n by hand is inelegant. How do we use the yaml emitter more efficiently?
+    out_str.push_str("\n");
+    file_writer
+        .write_all(out_str.as_bytes())
+        .expect("Writing value to file failed.");
+    Ok(())
+}
+
 impl<I, T, F> StreamingIterator for ToFileIterable<I, F>
 where
     I: Sized + StreamingIterator<Item = T>,
@@ -391,6 +486,79 @@ where
     #[inline]
     fn get(&self) -> Option<&I::Item> {
         self.it.get()
+    }
+}
+
+/// Enumerate items in a StreamingIterator.
+#[derive(Clone, Debug, std::cmp::PartialEq)]
+pub struct Numbered<T> {
+    pub count: i64,
+    pub item: Option<T>,
+}
+
+pub struct Enumerate<I, T> {
+    pub current: Option<Numbered<T>>,
+    pub it: I,
+}
+
+// impl<I, T> Enumerate<I, T>
+// where
+//     I: StreamingIterator<Item = T>,
+// {
+//     pub fn new(it: I) -> Enumerate<I, T> {
+//         Enumerate {
+//             current: Some(Numbered {
+//                 count: -1,
+//                 item: None,
+//             }),
+//             it: it,
+//         }
+//     }
+// }
+
+pub fn enumerate<I, T>(it: I) -> Enumerate<I, T>
+where
+    I: StreamingIterator<Item = T>,
+{
+    Enumerate {
+        current: Some(Numbered {
+            count: -1,
+            item: None,
+        }),
+        it: it,
+    }
+}
+
+impl<I, T> StreamingIterator for Enumerate<I, T>
+where
+    I: StreamingIterator<Item = T>,
+    T: Clone,
+{
+    type Item = Numbered<T>;
+
+    fn advance(&mut self) {
+        self.it.advance();
+        self.current = match self.it.get() {
+            Some(t) => {
+                if let Some(n) = &self.current {
+                    let c = n.count + 1;
+                    Some(Numbered {
+                        count: c,
+                        item: Some(t.clone()),
+                    })
+                } else {
+                    None
+                }
+            }
+            None => None,
+        }
+    }
+
+    fn get(&self) -> Option<&Self::Item> {
+        match &self.current {
+            Some(t) => Some(&t),
+            None => None,
+        }
     }
 }
 
@@ -816,6 +984,45 @@ mod tests {
             .expect("Could not read data from file.");
         std::fs::remove_file(test_file_path).expect("Could not remove data file for test.");
         assert_eq!("---\n- 0\n- 1\n---\n- 2\n- 3\n", &contents);
+    }
+
+    // Test that write_scalar_to_yaml works on Numbered
+    #[test]
+    fn numbered_to_yaml_test() {
+        let num = Numbered {
+            count: 0,
+            item: Some(0.1),
+        };
+        let test_file_path = "./numbered_test.yaml";
+        let mut file = OpenOptions::new()
+            .append(true)
+            .create(true)
+            .open(test_file_path)
+            .expect("Could not open test file.");
+        write_scalar_to_yaml(&num, &mut file).expect("write_scalar_to_yaml Failed.");
+        let contents = utils::read_yaml_to_string(test_file_path).expect("Could not read file.");
+        assert_eq!("---\n- 0\n- 0.1", &contents);
+    }
+
+    // Test that enumerate() adaptor produces items wrapped in a Numbered struct with the enumeration count.
+    #[test]
+    fn enumerate_test() {
+        let v = vec![0, 1, 2];
+        let stream = v.iter();
+        let stream = convert(stream);
+        let mut stream = enumerate(stream);
+        let mut count = 0;
+        while let Some(item) = stream.next() {
+            println!("item: {:#?} \n count: {}\n\n", item, count);
+            assert_eq!(
+                *item,
+                Numbered {
+                    count: count,
+                    item: Some(&count)
+                }
+            );
+            count += 1;
+        }
     }
 
     #[test]
