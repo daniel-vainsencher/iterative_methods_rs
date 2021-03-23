@@ -304,14 +304,16 @@ where
 // }
 
 // Could the following type of impl unify the write to yaml fns?
-// impl<S> YamlDataType for Vec<S>
-// {
-//     fn create_yaml_object(&self) -> Yaml {
-//         let v: Vec<S: YamlDataType> = Vec::new();
-
-//         Yaml::Array(*self)
-//     }
-// }
+impl<T> YamlDataType for Vec<T>
+{
+    fn create_yaml_object(&self) -> Yaml {
+        let v: Vec<T: YamlDataType> = Vec::new();
+        for item in self.iter() {
+            v.push(item.create_yaml_object())
+        }
+        Yaml::Array(v)
+    }
+}
 
 /// Function used by ToFileIterable to specify how to write each item: scalar to file.
 ///
