@@ -1023,7 +1023,7 @@ mod tests {
             .read_to_string(&mut contents)
             .expect("Could not read data from file.");
         std::fs::remove_file(test_file_path).expect("Could not remove data file for test.");
-        assert_eq!("---\n- 0\n- 1\n---\n- 2\n- 3\n", &contents);
+        assert_eq!("---\n- 0\n- 1---\n- 2\n- 3", &contents);
     }
 
     // Test that write_scalar_to_yaml works on Numbered
