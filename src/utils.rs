@@ -2,8 +2,8 @@ use crate::algorithms::cg_method::*;
 use crate::*;
 use ndarray::{rcarr1, rcarr2};
 use std::collections::HashMap;
-use std::iter;
 use std::io::Read;
+use std::iter;
 
 /// Utility Functions for the Conjugate Gradient Method
 
