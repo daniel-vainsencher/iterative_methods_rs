@@ -328,7 +328,7 @@ where
 
 /// Function used by ToFileIterable to specify how to write each item: scalar to file.
 ///
-pub fn write_scalar_to_yaml<T>(item: &T, file_writer: &mut std::fs::File) -> std::io::Result<()>
+pub fn write_yaml_object<T>(item: &T, file_writer: &mut std::fs::File) -> std::io::Result<()>
 where
     T: YamlDataType,
 {
@@ -956,7 +956,7 @@ mod tests {
         let v: Vec<i64> = vec![0, 1, 2, 3];
         let v_iter = convert(v.clone());
         let mut yaml_iter =
-            item_to_file(v_iter, write_scalar_to_yaml, String::from(test_file_path))
+            item_to_file(v_iter, write_yaml_object, String::from(test_file_path))
                 .expect("Create File and initialize yaml_iter failed.");
         while let Some(_) = yaml_iter.next() {}
         let mut read_file =
@@ -1013,7 +1013,7 @@ mod tests {
         let vc = v.clone();
         let vc = vc.iter();
         let vc = convert(vc);
-        let mut vc = item_to_file(vc, write_scalar_to_yaml, String::from(test_file_path))
+        let mut vc = item_to_file(vc, write_yaml_object, String::from(test_file_path))
             .expect("Vec to Yaml using YamlDataType: Create File and initialize yaml_iter failed.");
         while let Some(_) = vc.next() {}
         let mut read_file =
@@ -1026,7 +1026,7 @@ mod tests {
         assert_eq!("---\n- 0\n- 1---\n- 2\n- 3", &contents);
     }
 
-    // Test that write_scalar_to_yaml works on Numbered
+    // Test that write_yaml_object works on Numbered
     #[test]
     fn numbered_to_yaml_test() {
         let num = Numbered {
@@ -1039,7 +1039,7 @@ mod tests {
             .create(true)
             .open(test_file_path)
             .expect("Could not open test file.");
-        write_scalar_to_yaml(&num, &mut file).expect("write_scalar_to_yaml Failed.");
+        write_yaml_object(&num, &mut file).expect("write_yaml_object Failed.");
         let contents = utils::read_yaml_to_string(test_file_path).expect("Could not read file.");
         assert_eq!("---\n- 0\n- 0.1", &contents);
     }
