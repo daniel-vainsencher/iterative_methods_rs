@@ -71,9 +71,9 @@ pub fn generate_stream_with_constant_probability(
 pub fn generate_step_stream(
     stream_length: usize,
     capacity: usize,
-    initial_value: usize,
-    final_value: usize,
-) -> impl Iterator<Item = usize> {
+    initial_value: i64,
+    final_value: i64,
+) -> impl Iterator<Item = i64> {
     // Create capacity of items with initial weight and value.
     let initial_iter = iter::repeat(initial_value).take(capacity);
     if capacity > stream_length {
@@ -116,4 +116,16 @@ where
     }
     file.flush()?;
     Ok(())
+}
+
+pub fn read_yaml_to_string(file_path: &str) -> Result<std::string::String, std::io::Error> {
+    let mut read_file =
+        File::open(file_path).expect("Could not open file with test data to asserteq.");
+    let mut contents = String::new();
+    read_file
+        .read_to_string(&mut contents)
+        .expect("Could not read data from file.");
+    // println!("Contents: \n \n {:#?}", contents);
+    std::fs::remove_file(file_path).expect("Could not remove data file for test.");
+    Ok(contents)
 }
