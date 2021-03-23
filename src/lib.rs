@@ -265,7 +265,6 @@ where
     result
 }
 
-
 /// Define a trait object for converting to Yaml objects.
 pub trait YamlDataType {
     fn create_yaml_object(&self) -> Yaml;
