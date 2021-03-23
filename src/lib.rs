@@ -988,33 +988,8 @@ mod tests {
         assert_eq!("---\n- 0\n- 1---\n- 2\n- 3", &contents);
     }
 
-    /// ToFileIterable Test: Write stream of vecs to yaml using YamlDataType impl for Vec
-    ///
-    /// This writes a stream of vecs to a yaml file using ToFileIterable iterable.
-    /// It would fail if the file path used to write the data already existed
-    /// due to the functionality of item_to_file().
-    #[test]
-    fn write_vec_yamldatatype_to_yaml_test() {
-        let test_file_path = "./vec_yamldatatest_to_file_test.yaml";
-        let v: Vec<Vec<i64>> = vec![vec![0, 1], vec![2, 3]];
-        // println!("{:#?}", v);
-        let vc = v.clone();
-        let vc = vc.iter();
-        let vc = convert(vc);
-        let mut vc = item_to_file(vc, write_yaml_object, String::from(test_file_path))
-            .expect("Vec to Yaml using YamlDataType: Create File and initialize yaml_iter failed.");
-        while let Some(_) = vc.next() {}
-        let mut read_file =
-            File::open(test_file_path).expect("Could not open file with test data to asserteq.");
-        let mut contents = String::new();
-        read_file
-            .read_to_string(&mut contents)
-            .expect("Could not read data from file.");
-        std::fs::remove_file(test_file_path).expect("Could not remove data file for test.");
-        assert_eq!("---\n- 0\n- 1---\n- 2\n- 3", &contents);
-    }
-
-    // Test that write_yaml_object works on Numbered
+    /// Test that write_yaml_object works on Numbered.
+    /// More generally, this shows that that write_yaml_object works on a custom struct.
     #[test]
     fn numbered_to_yaml_test() {
         let num = Numbered {
@@ -1071,18 +1046,19 @@ mod tests {
         let v: Vec<Vec<Vec<i64>>> = vec![data_1_vec, data_2_vec];
         let v = v.iter();
         let v = convert(v);
-        let mut v = item_to_file(v, write_vec_vec_to_yaml, String::from(test_file_path))
+        let mut v = item_to_file(v, write_yaml_object, String::from(test_file_path))
             .expect("Vec to Yaml: Create File and initialize yaml_iter failed.");
-        while let Some(_) = v.next() {}
+        while let Some(item) = v.next() {
+            println!("{:#?}", item);
+        }
         let mut read_file =
             File::open(test_file_path).expect("Could not open file with test data to asserteq.");
         let mut contents = String::new();
         read_file
             .read_to_string(&mut contents)
             .expect("Could not read data from file.");
-        println!("{:#?}", contents);
         std::fs::remove_file(test_file_path).expect("Could not remove data file for test.");
-        assert_eq!("---\n- - 0\n  - 3\n- - 1\n  - 6\n- - 2\n  - 9\n---\n- - 0\n  - 5\n- - 1\n  - 10\n- - 2\n  - 15\n", &contents);
+        assert_eq!("---\n- - 0\n  - 3\n- - 1\n  - 6\n- - 2\n  - 9---\n- - 0\n  - 5\n- - 1\n  - 10\n- - 2\n  - 15", &contents);
     }
 
     /// Tests for the ReservoirIterable adaptor
