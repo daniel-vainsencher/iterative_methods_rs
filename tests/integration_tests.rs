@@ -1,13 +1,11 @@
 use crate::utils::*;
 use iterative_methods::*;
 extern crate streaming_iterator;
-use crate::streaming_iterator::*;
-// mod algorithms;
 use crate::algorithms::cg_method::*;
+use crate::streaming_iterator::*;
 use ndarray::*;
+use rand::SeedableRng;
 use rand_pcg::Pcg64;
-// use rand_core::SeedableRng;
-use rand::{Rng, SeedableRng};
 
 #[test]
 fn test_timed_iterable() {
@@ -68,7 +66,7 @@ fn wd_iterable_extract_value_test() {
 
 /// Test the integration of ReservoirIterable, Enumerate, and ToFileIterable.
 ///
-/// A stream of 2 zeros and 8 ones subjected to reservoir sampling using a seeded rng. 
+/// A stream of 2 zeros and 8 ones subjected to reservoir sampling using a seeded rng.
 /// The stream of reservoirs is adapted with enumerate() and then item_to_file(). After
 /// running the iteration the contents of the file are checked against a string.
 #[test]

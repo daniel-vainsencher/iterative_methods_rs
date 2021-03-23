@@ -269,7 +269,7 @@ pub trait YamlDataType {
     fn create_yaml_object(&self) -> Yaml;
 }
 
-impl<T> YamlDataType for &T 
+impl<T> YamlDataType for &T
 where
     T: YamlDataType,
 {
@@ -343,7 +343,6 @@ where
         .expect("Writing value to file failed.");
     Ok(())
 }
-
 
 // /// Function used by ToFileIterable to specify how to write each item: Numbered to file.
 // ///
@@ -515,21 +514,23 @@ pub struct Enumerate<I, T> {
     pub it: I,
 }
 
-// impl<I, T> Enumerate<I, T>
-// where
-//     I: StreamingIterator<Item = T>,
-// {
-//     pub fn new(it: I) -> Enumerate<I, T> {
-//         Enumerate {
-//             current: Some(Numbered {
-//                 count: -1,
-//                 item: None,
-//             }),
-//             it: it,
-//         }
-//     }
-// }
+/// Define a constructor in the Enumerate context.
+impl<I, T> Enumerate<I, T>
+where
+    I: StreamingIterator<Item = T>,
+{
+    pub fn new(it: I) -> Enumerate<I, T> {
+        Enumerate {
+            current: Some(Numbered {
+                count: -1,
+                item: None,
+            }),
+            it: it,
+        }
+    }
+}
 
+/// A constructor for Enumerate.
 pub fn enumerate<I, T>(it: I) -> Enumerate<I, T>
 where
     I: StreamingIterator<Item = T>,
@@ -955,9 +956,8 @@ mod tests {
         let test_file_path = "./item_to_file_test.yaml";
         let v: Vec<i64> = vec![0, 1, 2, 3];
         let v_iter = convert(v.clone());
-        let mut yaml_iter =
-            item_to_file(v_iter, write_yaml_object, String::from(test_file_path))
-                .expect("Create File and initialize yaml_iter failed.");
+        let mut yaml_iter = item_to_file(v_iter, write_yaml_object, String::from(test_file_path))
+            .expect("Create File and initialize yaml_iter failed.");
         while let Some(_) = yaml_iter.next() {}
         let mut read_file =
             File::open(test_file_path).expect("Could not open file with test data to asserteq.");
