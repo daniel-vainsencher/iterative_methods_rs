@@ -248,7 +248,7 @@ where
 {
     let result = match std::fs::metadata(&file_path) {
         Ok(_) => {
-            panic!("File to which you want to write already exists or permission does not exist.")
+            panic!("File to which you want to write already exists or permission does not exist. Please rename or remove the file or gain permission.")
         }
         Err(_) => {
             let file_writer = OpenOptions::new()
@@ -265,10 +265,13 @@ where
     result
 }
 
+
+/// Define a trait object for converting to Yaml objects.
 pub trait YamlDataType {
     fn create_yaml_object(&self) -> Yaml;
 }
 
+/// Allow for references.
 impl<T> YamlDataType for &T
 where
     T: YamlDataType,
@@ -278,6 +281,7 @@ where
     }
 }
 
+/// Implement for basic scalar types.
 impl YamlDataType for i64 {
     fn create_yaml_object(&self) -> Yaml {
         Yaml::Integer(*self)
@@ -290,17 +294,14 @@ impl YamlDataType for f64 {
     }
 }
 
-impl<T> YamlDataType for Numbered<T>
-where
-    T: YamlDataType,
-{
+impl YamlDataType for String {
     fn create_yaml_object(&self) -> Yaml {
-        let t = (self.item).as_ref().unwrap();
-        Yaml::Array(vec![Yaml::Integer(self.count), t.create_yaml_object()])
+        Yaml::String((*self).to_string())
     }
 }
 
-// Is this clone a problem?
+// Does this clone cause memory or speed issues?
+// This circular impl was necessary to allow impl YamlDataType for Vec<T> where T impl YamlDataType.
 impl YamlDataType for Yaml {
     fn create_yaml_object(&self) -> Yaml {
         let result = self.clone();
@@ -308,16 +309,12 @@ impl YamlDataType for Yaml {
     }
 }
 
-// Could the following type of impl unify the write to yaml fns?
+/// This allows recursive wrapping of YamlDataType in Vec, e.g. Vec<Vec<Vec<T>>>.
 impl<T> YamlDataType for Vec<T>
 where
     T: YamlDataType,
 {
     fn create_yaml_object(&self) -> Yaml {
-        // let v: Vec<Box<dyn YamlDataType>> = Vec::new();
-        // for item in self.iter() {
-        //     v.push(Box::new(item.create_yaml_object()))
-        // }
         let mut v: Vec<Yaml> = Vec::new();
         for item in self.iter() {
             v.push(item.create_yaml_object())
@@ -326,7 +323,7 @@ where
     }
 }
 
-/// Function used by ToFileIterable to specify how to write each item: scalar to file.
+/// Function used by ToFileIterable to specify how to write each item to file.
 ///
 pub fn write_yaml_object<T>(item: &T, file_writer: &mut std::fs::File) -> std::io::Result<()>
 where
@@ -343,24 +340,6 @@ where
         .expect("Writing value to file failed.");
     Ok(())
 }
-
-// /// Function used by ToFileIterable to specify how to write each item: Numbered to file.
-// ///
-// pub fn write_numbered_to_yaml<T>(item: &Numbered<T>, file_writer: &mut std::fs::File) -> std::io::Result<()>
-// where
-//     T: YamlDataType,
-// {
-//     let yaml_item = item.create_yaml_object();
-//     let mut out_str = String::new();
-//     let mut emitter = YamlEmitter::new(&mut out_str);
-//     emitter
-//         .dump(&yaml_item)
-//         .expect("Could not convert item to yaml object.");
-//     file_writer
-//         .write_all(out_str.as_bytes())
-//         .expect("Writing value to file failed.");
-//     Ok(())
-// }
 
 /// Function used by ToFileIterable to specify how to write each item: Vec to file.
 ///
@@ -507,6 +486,16 @@ where
 pub struct Numbered<T> {
     pub count: i64,
     pub item: Option<T>,
+}
+
+impl<T> YamlDataType for Numbered<T>
+where
+    T: YamlDataType,
+{
+    fn create_yaml_object(&self) -> Yaml {
+        let t = (self.item).as_ref().unwrap();
+        Yaml::Array(vec![Yaml::Integer(self.count), t.create_yaml_object()])
+    }
 }
 
 pub struct Enumerate<I, T> {
