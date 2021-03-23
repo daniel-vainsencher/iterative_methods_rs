@@ -66,6 +66,11 @@ fn wd_iterable_extract_value_test() {
     }
 }
 
+/// Test the integration of ReservoirIterable, Enumerate, and ToFileIterable.
+///
+/// A stream of 2 zeros and 8 ones subjected to reservoir sampling using a seeded rng. 
+/// The stream of reservoirs is adapted with enumerate() and then item_to_file(). After
+/// running the iteration the contents of the file are checked against a string.
 #[test]
 fn enumerate_reservoirs_to_yaml_test() {
     let test_file_path = "enumerate_reservoirs_to_yaml_test.yaml";
