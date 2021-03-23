@@ -297,17 +297,25 @@ where
     }
 }
 
-// impl YamlDataType for TupleType {
-//     fn create_yaml_object(&self) -> Yaml {
-//         Yaml::Array((*self).to_string())
-//     }
-// }
+// Is this clone a problem?
+impl YamlDataType for Yaml {
+    fn create_yaml_object(&self) -> Yaml {
+        let result = self.clone();
+        result
+    }
+}
 
 // Could the following type of impl unify the write to yaml fns?
 impl<T> YamlDataType for Vec<T>
+where
+    T: YamlDataType,
 {
     fn create_yaml_object(&self) -> Yaml {
-        let v: Vec<T: YamlDataType> = Vec::new();
+        // let v: Vec<Box<dyn YamlDataType>> = Vec::new();
+        // for item in self.iter() {
+        //     v.push(Box::new(item.create_yaml_object()))
+        // }
+        let mut v: Vec<Yaml> = Vec::new();
         for item in self.iter() {
             v.push(item.create_yaml_object())
         }
