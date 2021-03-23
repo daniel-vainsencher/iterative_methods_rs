@@ -975,7 +975,7 @@ mod tests {
         let vc = v.clone();
         let vc = vc.iter();
         let vc = convert(vc);
-        let mut vc = item_to_file(vc, write_vec_to_yaml, String::from(test_file_path))
+        let mut vc = item_to_file(vc, write_yaml_object, String::from(test_file_path))
             .expect("Vec to Yaml: Create File and initialize yaml_iter failed.");
         while let Some(_) = vc.next() {}
         let mut read_file =
@@ -985,7 +985,7 @@ mod tests {
             .read_to_string(&mut contents)
             .expect("Could not read data from file.");
         std::fs::remove_file(test_file_path).expect("Could not remove data file for test.");
-        assert_eq!("---\n- 0\n- 1\n---\n- 2\n- 3\n", &contents);
+        assert_eq!("---\n- 0\n- 1---\n- 2\n- 3", &contents);
     }
 
     /// ToFileIterable Test: Write stream of vecs to yaml using YamlDataType impl for Vec
