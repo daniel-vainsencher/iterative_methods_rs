@@ -3,6 +3,7 @@ use crate::*;
 use ndarray::{rcarr1, rcarr2};
 use std::collections::HashMap;
 use std::iter;
+use std::io::Read;
 
 /// Utility Functions for the Conjugate Gradient Method
 
