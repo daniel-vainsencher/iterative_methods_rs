@@ -269,15 +269,18 @@ pub trait YamlDataType {
     fn create_yaml_object(&self) -> Yaml;
 }
 
-impl YamlDataType for i64 {
+impl<T> YamlDataType for &T 
+where
+    T: YamlDataType,
+{
     fn create_yaml_object(&self) -> Yaml {
-        Yaml::Integer(*self)
+        (*self).create_yaml_object()
     }
 }
 
-impl YamlDataType for &i64 {
+impl YamlDataType for i64 {
     fn create_yaml_object(&self) -> Yaml {
-        Yaml::Integer(**self)
+        Yaml::Integer(*self)
     }
 }
 
@@ -340,6 +343,7 @@ where
         .expect("Writing value to file failed.");
     Ok(())
 }
+
 
 // /// Function used by ToFileIterable to specify how to write each item: Numbered to file.
 // ///
@@ -985,6 +989,32 @@ mod tests {
         let vc = convert(vc);
         let mut vc = item_to_file(vc, write_vec_to_yaml, String::from(test_file_path))
             .expect("Vec to Yaml: Create File and initialize yaml_iter failed.");
+        while let Some(_) = vc.next() {}
+        let mut read_file =
+            File::open(test_file_path).expect("Could not open file with test data to asserteq.");
+        let mut contents = String::new();
+        read_file
+            .read_to_string(&mut contents)
+            .expect("Could not read data from file.");
+        std::fs::remove_file(test_file_path).expect("Could not remove data file for test.");
+        assert_eq!("---\n- 0\n- 1\n---\n- 2\n- 3\n", &contents);
+    }
+
+    /// ToFileIterable Test: Write stream of vecs to yaml using YamlDataType impl for Vec
+    ///
+    /// This writes a stream of vecs to a yaml file using ToFileIterable iterable.
+    /// It would fail if the file path used to write the data already existed
+    /// due to the functionality of item_to_file().
+    #[test]
+    fn write_vec_yamldatatype_to_yaml_test() {
+        let test_file_path = "./vec_yamldatatest_to_file_test.yaml";
+        let v: Vec<Vec<i64>> = vec![vec![0, 1], vec![2, 3]];
+        // println!("{:#?}", v);
+        let vc = v.clone();
+        let vc = vc.iter();
+        let vc = convert(vc);
+        let mut vc = item_to_file(vc, write_scalar_to_yaml, String::from(test_file_path))
+            .expect("Vec to Yaml using YamlDataType: Create File and initialize yaml_iter failed.");
         while let Some(_) = vc.next() {}
         let mut read_file =
             File::open(test_file_path).expect("Could not open file with test data to asserteq.");
