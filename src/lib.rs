@@ -265,6 +265,30 @@ where
     result
 }
 
+impl<I, T, F> StreamingIterator for ToFileIterable<I, F>
+where
+    I: Sized + StreamingIterator<Item = T>,
+    T: std::fmt::Debug,
+    F: FnMut(&T, &mut std::fs::File) -> std::io::Result<()>,
+{
+    type Item = I::Item;
+
+    #[inline]
+    fn advance(&mut self) {
+        if let Some(item) = self.it.next() {
+            (self.write_function)(&item, &mut self.file_writer)
+                .expect("Write item to file in ToFileIterable advance failed.");
+        } else {
+            self.file_writer.flush().expect("Flush of file failed.");
+        }
+    }
+
+    #[inline]
+    fn get(&self) -> Option<&I::Item> {
+        self.it.get()
+    }
+}
+
 /// Define a trait object for converting to Yaml objects.
 pub trait YamlDataType {
     fn create_yaml_object(&self) -> Yaml;
@@ -303,8 +327,7 @@ impl YamlDataType for String {
 // This circular impl was necessary to allow impl YamlDataType for Vec<T> where T impl YamlDataType.
 impl YamlDataType for Yaml {
     fn create_yaml_object(&self) -> Yaml {
-        let result = self.clone();
-        result
+        self.clone()
     }
 }
 
@@ -319,7 +342,39 @@ where
     }
 }
 
-/// Function used by ToFileIterable to specify how to write each item to file.
+/// Write items of StreamingIterator to a Yaml file.
+pub struct ToYamlIterable<I> {
+    pub it: I,
+    pub file_writer: File,
+}
+
+pub fn write_yaml_documents<I, T>(
+    it: I,
+    file_path: String,
+) -> Result<ToYamlIterable<I>, std::io::Error>
+where
+    I: Sized + StreamingIterator<Item = T>,
+    T: std::fmt::Debug,
+{
+    let result = match std::fs::metadata(&file_path) {
+        Ok(_) => {
+            panic!("File to which you want to write already exists or permission does not exist. Please rename or remove the file or gain permission.")
+        }
+        Err(_) => {
+            let file_writer = OpenOptions::new()
+                .append(true)
+                .create(true)
+                .open(file_path)?;
+            Ok(ToYamlIterable {
+                it,
+                file_writer,
+            })
+        }
+    };
+    result
+}
+
+/// Function used by ToYamlIterable to specify how to write each item to file.
 ///
 pub fn write_yaml_object<T>(item: &T, file_writer: &mut std::fs::File) -> std::io::Result<()>
 where
@@ -337,19 +392,18 @@ where
     Ok(())
 }
 
-impl<I, T, F> StreamingIterator for ToFileIterable<I, F>
+impl<I, T> StreamingIterator for ToYamlIterable<I>
 where
     I: Sized + StreamingIterator<Item = T>,
-    T: std::fmt::Debug,
-    F: FnMut(&T, &mut std::fs::File) -> std::io::Result<()>,
+    T: std::fmt::Debug + YamlDataType,
 {
     type Item = I::Item;
 
     #[inline]
     fn advance(&mut self) {
         if let Some(item) = self.it.next() {
-            (self.write_function)(&item, &mut self.file_writer)
-                .expect("Write item to file in ToFileIterable advance failed.");
+            (write_yaml_object)(&item, &mut self.file_writer)
+                .expect("Write item to file in ToYamlIterable advance failed.");
         } else {
             self.file_writer.flush().expect("Flush of file failed.");
         }
@@ -491,10 +545,10 @@ where
     ReservoirIterable {
         it,
         reservoir: res,
-        capacity: capacity,
+        capacity,
         w: w_initial,
         skip: ((rng.gen::<f64>() as f64).ln() / (1. - w_initial).ln()).floor() as usize,
-        rng: rng,
+        rng,
     }
 }
 
@@ -516,15 +570,12 @@ where
                     break;
                 }
             }
-        } else {
-            if let Some(datum) = self.it.nth(self.skip) {
-                let h = self.rng.gen_range(0..self.capacity) as usize;
-                let datum_struct = datum.clone();
-                self.reservoir[h] = datum_struct;
-                self.w *= (self.rng.gen::<f64>().ln() / (self.capacity as f64)).exp();
-                self.skip =
-                    ((self.rng.gen::<f64>() as f64).ln() / (1. - self.w).ln()).floor() as usize;
-            }
+        } else if let Some(datum) = self.it.nth(self.skip) {
+            let h = self.rng.gen_range(0..self.capacity) as usize;
+            let datum_struct = datum.clone();
+            self.reservoir[h] = datum_struct;
+            self.w *= (self.rng.gen::<f64>().ln() / (self.capacity as f64)).exp();
+            self.skip = ((self.rng.gen::<f64>() as f64).ln() / (1. - self.w).ln()).floor() as usize;
         }
     }
 
@@ -815,17 +866,17 @@ mod tests {
         assert_eq!(annotations, target_annotations);
     }
 
-    /// ToFileIterable Test: Write stream of scalars to yaml
+    /// ToYamlIterable Test: Write stream of scalars to yaml
     ///
-    /// This writes a stream of scalars to a yaml file using ToFileIterable iterable.
+    /// This writes a stream of scalars to a yaml file using ToYamlIterable iterable.
     /// It would fail if the file path used to write the data already existed
-    /// due to the functionality of item_to_file().
+    /// due to the functionality of write_yaml_documents().
     #[test]
-    fn item_to_file_test() {
-        let test_file_path = "./item_to_file_test.yaml";
+    fn write_yaml_documents_test() {
+        let test_file_path = "./write_yaml_documents_test.yaml";
         let v: Vec<i64> = vec![0, 1, 2, 3];
         let v_iter = convert(v.clone());
-        let mut yaml_iter = item_to_file(v_iter, write_yaml_object, String::from(test_file_path))
+        let mut yaml_iter = write_yaml_documents(v_iter, String::from(test_file_path))
             .expect("Create File and initialize yaml_iter failed.");
         while let Some(_) = yaml_iter.next() {}
         let mut read_file =
@@ -843,9 +894,9 @@ mod tests {
         assert_eq!("---\n0---\n1---\n2---\n3", &contents);
     }
 
-    /// ToFileIterable Test: Write stream of vecs to yaml
+    /// ToYamlIterable Test: Write stream of vecs to yaml
     ///
-    /// This writes a stream of vecs to a yaml file using ToFileIterable iterable.
+    /// This writes a stream of vecs to a yaml file using ToYamlIterable iterable.
     /// It would fail if the file path used to write the data already existed
     /// due to the functionality of item_to_file().
     #[test]
@@ -856,7 +907,7 @@ mod tests {
         let vc = v.clone();
         let vc = vc.iter();
         let vc = convert(vc);
-        let mut vc = item_to_file(vc, write_yaml_object, String::from(test_file_path))
+        let mut vc = write_yaml_documents(vc, String::from(test_file_path))
             .expect("Vec to Yaml: Create File and initialize yaml_iter failed.");
         while let Some(_) = vc.next() {}
         let mut read_file =
@@ -941,7 +992,7 @@ mod tests {
         let v: Vec<Vec<Vec<i64>>> = vec![data_1_vec, data_2_vec];
         let v = v.iter();
         let v = convert(v);
-        let mut v = item_to_file(v, write_yaml_object, String::from(test_file_path))
+        let mut v = write_yaml_documents(v, String::from(test_file_path))
             .expect("Vec to Yaml: Create File and initialize yaml_iter failed.");
         while let Some(item) = v.next() {
             println!("{:#?}", item);

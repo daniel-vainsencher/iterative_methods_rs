@@ -64,8 +64,7 @@ pub fn generate_stream_with_constant_probability(
             initial_weight * probability / (1.0 - probability).powi(power),
         )
     });
-    let stream = initial_iter.chain(mapped);
-    stream
+    initial_iter.chain(mapped)
 }
 
 /// Produce a stream like [a, ..., a, b, ..., b] with `capacity` copies of "a"
@@ -106,7 +105,8 @@ where
     Ok(())
 }
 
-pub fn write_vec_to_yaml<T>(avec: &Vec<T>, file_name: &str) -> std::io::Result<()>
+// pub fn write_vec_to_yaml<T>(avec: &Vec<T>, file_name: &str) -> std::io::Result<()>
+pub fn write_vec_to_yaml<T>(avec: &[T], file_name: &str) -> std::io::Result<()>
 where
     T: std::fmt::Display,
 {
