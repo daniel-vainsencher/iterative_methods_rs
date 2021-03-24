@@ -343,6 +343,7 @@ where
 }
 
 /// Write items of StreamingIterator to a Yaml file.
+#[derive(Debug)]
 pub struct ToYamlIterable<I> {
     pub it: I,
     pub file_writer: File,
