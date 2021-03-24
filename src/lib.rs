@@ -384,6 +384,7 @@ where
     emitter
         .dump(&yaml_item)
         .expect("Could not convert item to yaml object.");
+    out_str.push_str("\n");
     file_writer
         .write_all(out_str.as_bytes())
         .expect("Writing value to file failed.");
@@ -889,7 +890,7 @@ mod tests {
         // let docs = YamlLoader::load_from_str(&contents).expect("Could not load contents of file to yaml object.");
         // Remove the file for the next run of the test.
         std::fs::remove_file(test_file_path).expect("Could not remove data file for test.");
-        assert_eq!("---\n0---\n1---\n2---\n3", &contents);
+        assert_eq!("---\n0\n---\n1\n---\n2\n---\n3\n", &contents);
     }
 
     /// ToYamlIterable Test: Write stream of vecs to yaml
@@ -915,7 +916,7 @@ mod tests {
             .read_to_string(&mut contents)
             .expect("Could not read data from file.");
         std::fs::remove_file(test_file_path).expect("Could not remove data file for test.");
-        assert_eq!("---\n- 0\n- 1---\n- 2\n- 3", &contents);
+        assert_eq!("---\n- 0\n- 1\n---\n- 2\n- 3\n", &contents);
     }
 
     /// Test that write_yaml_object works on Numbered.
@@ -934,7 +935,7 @@ mod tests {
             .expect("Could not open test file.");
         write_yaml_object(&num, &mut file).expect("write_yaml_object Failed.");
         let contents = utils::read_yaml_to_string(test_file_path).expect("Could not read file.");
-        assert_eq!("---\n- 0\n- 0.1", &contents);
+        assert_eq!("---\n- 0\n- 0.1\n", &contents);
     }
 
     // Test that enumerate() adaptor produces items wrapped in a Numbered struct with the enumeration count.
@@ -1002,7 +1003,7 @@ mod tests {
             .read_to_string(&mut contents)
             .expect("Could not read data from file.");
         std::fs::remove_file(test_file_path).expect("Could not remove data file for test.");
-        assert_eq!("---\n- - 0\n  - 3\n- - 1\n  - 6\n- - 2\n  - 9---\n- - 0\n  - 5\n- - 1\n  - 10\n- - 2\n  - 15", &contents);
+        assert_eq!("---\n- - 0\n  - 3\n- - 1\n  - 6\n- - 2\n  - 9\n---\n- - 0\n  - 5\n- - 1\n  - 10\n- - 2\n  - 15\n", &contents);
     }
 
     /// Tests for the ReservoirIterable adaptor
