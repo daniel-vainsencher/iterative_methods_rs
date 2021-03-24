@@ -7,6 +7,7 @@ use ndarray::*;
 use rand::SeedableRng;
 use rand_pcg::Pcg64;
 
+#[ignore]
 #[test]
 fn test_timed_iterable() {
     let p = make_3x3_psd_system_1();
