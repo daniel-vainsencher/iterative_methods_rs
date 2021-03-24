@@ -365,7 +365,7 @@ where
                 .append(true)
                 .create(true)
                 .open(file_path)?;
-            Ok(ToYamlIterable {it, file_writer })
+            Ok(ToYamlIterable { it, file_writer })
         }
     };
     result
