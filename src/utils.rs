@@ -68,6 +68,8 @@ pub fn generate_stream_with_constant_probability(
     stream
 }
 
+/// Produce a stream like [a, ..., a, b, ..., b] with `capacity` copies of "a" 
+/// (aka `initial_value`s) and `stream_length` total values.
 /// Utility function used in examples showing convergence of reservoir mean to stream mean.
 pub fn generate_step_stream(
     stream_length: usize,

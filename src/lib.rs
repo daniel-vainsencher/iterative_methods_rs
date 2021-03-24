@@ -1024,7 +1024,21 @@ mod tests {
             count += 1;
         }
     }
-
+    /// A stream of 2 items, each of type Vec<Vec<i64>>, is written to .yaml. The stream used is:
+    /// ---
+    /// - - 0
+    ///   - 3
+    /// - - 1
+    ///   - 6
+    /// - - 2
+    ///   - 9
+    /// ---
+    /// - - 0
+    ///   - 5
+    /// - - 1
+    ///   - 10
+    /// - - 2
+    ///   - 15
     #[test]
     fn write_vec_vec_to_yaml_test() {
         let test_file_path = "./vec_vec_to_file_test.yaml";
