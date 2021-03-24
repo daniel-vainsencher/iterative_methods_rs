@@ -105,7 +105,6 @@ mod tests {
     use crate::utils::make_3x3_psd_system_1;
     use crate::utils::LinearSystem;
 
-    use streaming_iterator::*;
     extern crate nalgebra as na;
     use eigenvalues::algorithms::lanczos::HermitianLanczos;
     use eigenvalues::SpectrumTarget;

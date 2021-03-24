@@ -1,11 +1,13 @@
 use crate::utils::*;
 use iterative_methods::*;
 extern crate streaming_iterator;
-use crate::streaming_iterator::StreamingIterator;
-// mod algorithms;
 use crate::algorithms::cg_method::*;
+use crate::streaming_iterator::*;
 use ndarray::*;
+use rand::SeedableRng;
+use rand_pcg::Pcg64;
 
+#[ignore]
 #[test]
 fn test_timed_iterable() {
     let p = make_3x3_psd_system_1();
@@ -61,4 +63,30 @@ fn wd_iterable_extract_value_test() {
             assert!(val1 == val2);
         }
     }
+}
+
+/// Test the integration of ReservoirIterable, Enumerate, and ToFileIterable.
+///
+/// A stream of 2 zeros and 8 ones subjected to reservoir sampling using a seeded rng.
+/// The stream of reservoirs is adapted with enumerate() and then write_yaml_documents(). After
+/// running the iteration the contents of the file are checked against a string.
+#[test]
+fn enumerate_reservoirs_to_yaml_test() {
+    let test_file_path = "enumerate_reservoirs_to_yaml_test1.yaml";
+    let stream_length = 10usize;
+    let capacity = 2usize;
+    let initial_value = 0i64;
+    let final_value = 1i64;
+    let stream = utils::generate_step_stream(stream_length, capacity, initial_value, final_value);
+    let stream = convert(stream);
+    let stream = reservoir_iterable(stream, capacity, Some(Pcg64::seed_from_u64(0)));
+    let stream = enumerate(stream);
+    let mut stream = write_yaml_documents(stream, String::from(test_file_path))
+        .expect("Write scalar to Yaml: Create file and initialize Yaml iter failed.");
+    while let Some(t) = stream.next() {
+        println!("{:?}", t);
+    }
+    let contents = utils::read_yaml_to_string(test_file_path).expect("Could not read file.");
+    let output = String::from("---\n- 0\n- - 0\n  - 0---\n- 1\n- - 0\n  - 1---\n- 2\n- - 1\n  - 1");
+    assert_eq!(contents, output);
 }
