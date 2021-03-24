@@ -71,7 +71,7 @@ fn wd_iterable_extract_value_test() {
 /// running the iteration the contents of the file are checked against a string.
 #[test]
 fn enumerate_reservoirs_to_yaml_test() {
-    let test_file_path = "enumerate_reservoirs_to_yaml_test.yaml";
+    let test_file_path = "enumerate_reservoirs_to_yaml_test1.yaml";
     let stream_length = 10usize;
     let capacity = 2usize;
     let initial_value = 0i64;

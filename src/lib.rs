@@ -314,10 +314,7 @@ where
     T: YamlDataType,
 {
     fn create_yaml_object(&self) -> Yaml {
-        let mut v: Vec<Yaml> = Vec::new();
-        for item in self.iter() {
-            v.push(item.create_yaml_object())
-        }
+        let v: Vec<Yaml> = self.iter().map(|x| x.create_yaml_object()).collect();
         Yaml::Array(v)
     }
 }
