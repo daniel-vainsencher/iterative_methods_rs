@@ -68,7 +68,7 @@ pub fn generate_stream_with_constant_probability(
     stream
 }
 
-/// Produce a stream like [a, ..., a, b, ..., b] with `capacity` copies of "a" 
+/// Produce a stream like [a, ..., a, b, ..., b] with `capacity` copies of "a"
 /// (aka `initial_value`s) and `stream_length` total values.
 /// Utility function used in examples showing convergence of reservoir mean to stream mean.
 pub fn generate_step_stream(
@@ -77,7 +77,7 @@ pub fn generate_step_stream(
     initial_value: i64,
     final_value: i64,
 ) -> impl Iterator<Item = i64> {
-    // Create capacity of items with initial weight and value.
+    // Create capacity of items with initial weight.
     let initial_iter = iter::repeat(initial_value).take(capacity);
     if capacity > stream_length {
         panic!("Capacity must be less than or equal to stream length.");

@@ -337,122 +337,6 @@ where
     Ok(())
 }
 
-/// Function used by ToFileIterable to specify how to write each item: Vec to file.
-///
-pub fn write_vec_to_yaml<'r, U>(
-    item: &'r &Vec<U>,
-    file_writer: &mut std::fs::File,
-) -> std::io::Result<()>
-where
-    U: YamlDataType,
-{
-    let mut yaml_item = Vec::with_capacity(item.len());
-    for element in *item {
-        yaml_item.push(element.create_yaml_object());
-    }
-    let yaml_item = Yaml::Array(yaml_item);
-    let mut out_str = String::new();
-    let mut emitter = YamlEmitter::new(&mut out_str);
-    emitter
-        .dump(&yaml_item)
-        .expect("Could not convert item to yaml object.");
-    // Putting this \n by hand is inelegant. How do we use the yaml emitter more efficiently?
-    out_str.push_str("\n");
-    file_writer
-        .write_all(out_str.as_bytes())
-        .expect("Writing value to file failed.");
-    Ok(())
-}
-
-pub fn write_vec_to_yaml_no_lifetime<U>(
-    item: &Vec<U>,
-    file_writer: &mut std::fs::File,
-) -> std::io::Result<()>
-where
-    U: YamlDataType,
-{
-    let mut yaml_item = Vec::with_capacity(item.len());
-    for element in &*item {
-        yaml_item.push(element.create_yaml_object());
-    }
-    let yaml_item = Yaml::Array(yaml_item);
-    let mut out_str = String::new();
-    let mut emitter = YamlEmitter::new(&mut out_str);
-    emitter
-        .dump(&yaml_item)
-        .expect("Could not convert item to yaml object.");
-    // Putting this \n by hand is inelegant. How do we use the yaml emitter more efficiently?
-    out_str.push_str("\n");
-    file_writer
-        .write_all(out_str.as_bytes())
-        .expect("Writing value to file failed.");
-    Ok(())
-}
-
-/// Function used by ToFileIterable to specify how to write each item: Vec to file.
-///
-pub fn write_vec_vec_to_yaml<'r, U>(
-    item: &'r &Vec<Vec<U>>,
-    file_writer: &mut std::fs::File,
-) -> std::io::Result<()>
-where
-    U: YamlDataType,
-{
-    let mut yaml_item = Vec::with_capacity(item.len());
-    for element in *item {
-        let mut yaml_sub_item = Vec::with_capacity(element.len());
-        for scalar in element {
-            yaml_sub_item.push(scalar.create_yaml_object());
-        }
-        let yaml_sub_item = Yaml::Array(yaml_sub_item);
-        yaml_item.push(yaml_sub_item);
-    }
-    let yaml_item = Yaml::Array(yaml_item);
-    let mut out_str = String::new();
-    let mut emitter = YamlEmitter::new(&mut out_str);
-    emitter
-        .dump(&yaml_item)
-        .expect("Could not convert item to yaml object.");
-    // Putting this \n by hand is inelegant. How do we use the yaml emitter more efficiently?
-    out_str.push_str("\n");
-    file_writer
-        .write_all(out_str.as_bytes())
-        .expect("Writing value to file failed.");
-    Ok(())
-}
-
-/// Function used by ToFileIterable to specify how to write each item: Vec to file.
-///
-pub fn write_vec_vec_to_yaml_no_lifetime<U>(
-    item: &Vec<Vec<U>>,
-    file_writer: &mut std::fs::File,
-) -> std::io::Result<()>
-where
-    U: YamlDataType,
-{
-    let mut yaml_item = Vec::with_capacity(item.len());
-    for element in &*item.clone() {
-        let mut yaml_sub_item = Vec::with_capacity(element.len());
-        for scalar in element {
-            yaml_sub_item.push(scalar.create_yaml_object());
-        }
-        let yaml_sub_item = Yaml::Array(yaml_sub_item);
-        yaml_item.push(yaml_sub_item);
-    }
-    let yaml_item = Yaml::Array(yaml_item);
-    let mut out_str = String::new();
-    let mut emitter = YamlEmitter::new(&mut out_str);
-    emitter
-        .dump(&yaml_item)
-        .expect("Could not convert item to yaml object.");
-    // Putting this \n by hand is inelegant. How do we use the yaml emitter more efficiently?
-    out_str.push_str("\n");
-    file_writer
-        .write_all(out_str.as_bytes())
-        .expect("Writing value to file failed.");
-    Ok(())
-}
-
 impl<I, T, F> StreamingIterator for ToFileIterable<I, F>
 where
     I: Sized + StreamingIterator<Item = T>,
@@ -1092,7 +976,7 @@ mod tests {
     /// This needs to be improved so that the parameters values are chosen such that
     /// the test passes at a specified success rate.
     fn reservoir_replacement_test() {
-        let stream_length = 500usize;
+        let stream_length = 1000usize;
         // reservoir capacity:
         let capacity = 5usize;
         // Generate a stream that with items initially 0 and then 1:
