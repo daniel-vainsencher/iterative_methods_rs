@@ -21,7 +21,7 @@ with open("./target/debug/examples/reservoirs.yaml") as res_file, open("./target
     print(population)
     arr = np.full((parameters['num_res'],3),0, dtype = float)
     for i, res in enumerate(reservoirs):
-        print("res:", res)
+        print("i, res:", i, res)
         ind = max(map(itemgetter(0), res))
         arr[i,0] = ind
         arr[i,1] = np.mean(np.array(res, dtype = float), axis = 0)[1]
