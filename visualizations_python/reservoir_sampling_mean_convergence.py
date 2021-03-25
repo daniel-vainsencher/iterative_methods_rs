@@ -7,6 +7,15 @@ import plotly.express as px
 import os
 from operator import itemgetter
 
+def cleanup_test_files():
+    """
+    The Rust code panics if the files it writes to already exists. This fn
+    removes them after they have been used so that the example can be run again.
+    It also prevents files used only for the tests from accumulating in the repo.
+    """
+    os.remove("./target/debug/examples/reservoirs.yaml")
+    os.remove("./target/debug/examples/population.yaml")
+
 parameters = {}
 with open("./visualizations_python/parameters.yaml") as parameters_file:
     
@@ -38,6 +47,7 @@ with open("./target/debug/examples/reservoirs.yaml") as res_file, open("./target
         os.mkdir("visualizations")
     fig.write_image("visualizations/reservoir_and_stream_means.png")
 
+cleanup_test_files()
 
     
     
