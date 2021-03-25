@@ -51,7 +51,6 @@ with open("./target/debug/examples/reservoirs.yaml") as res_file, open(
     fig.update_layout(
         title=f"Reservoir and Stream Means. <br> Stream Size={parameters['stream_size']}, Capacity={parameters['capacity']}, \n Number of Reservoirs={parameters['num_res']}"
     )
-    # fig.show()
 
     # To export a still image:
     if not os.path.exists("visualizations"):
