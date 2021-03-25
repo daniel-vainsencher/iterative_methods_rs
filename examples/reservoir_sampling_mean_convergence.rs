@@ -10,15 +10,11 @@ use streaming_iterator::*;
 /// stream has been used in each reservoir.
 fn reservoir_sampling_mean_convergence_for_step() -> std::io::Result<()> {
     // Streamline up error handling
-    let stream_size: usize = 10_i32.pow(3) as usize;
-    let capacity: usize = 50;
-    let step: usize = 1;
-    let num_bins = 3usize;
+    let stream_size: usize = 10_i32.pow(5) as usize;
+    let capacity: usize = 1000;
     let mut parameters: HashMap<&str, usize> = HashMap::new();
     parameters.insert("stream_size", stream_size);
     parameters.insert("capacity", capacity);
-    parameters.insert("step", step);
-    parameters.insert("num_bins", num_bins);
     println!(
         "The test uses a stream of size {:#?} and a reservoir capacity of {:#?}.",
         stream_size, capacity
@@ -38,7 +34,6 @@ fn reservoir_sampling_mean_convergence_for_step() -> std::io::Result<()> {
     let stream = convert(stream);
     let stream = enumerate(stream);
     let res_iter = reservoir_iterable(stream, capacity, None);
-    let res_iter = step_by(res_iter, step);
     let reservoir_samples_file = "./target/debug/examples/reservoirs.yaml";
     // Write data to file for visualization.
     let mut res_to_yaml = write_yaml_documents(res_iter, reservoir_samples_file.to_string())
