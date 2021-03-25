@@ -103,23 +103,6 @@ pub fn generate_step_stream(
     stream
 }
 
-pub fn generate_weighted_step_stream(
-    stream_length: usize,
-    capacity: usize,
-    weight: f64,
-    initial_value: usize,
-    final_value: usize,
-) -> impl Iterator<Item = WeightedDatum<usize>> {
-    // Create capacity of items with initial weight and value.
-    let initial_iter = iter::repeat(new_datum(initial_value, weight)).take(capacity);
-    if capacity > stream_length {
-        panic!("Capacity must be less than or equal to stream length.");
-    }
-    let final_iter = iter::repeat(new_datum(final_value, weight)).take(stream_length - capacity);
-    let stream = initial_iter.chain(final_iter);
-    stream
-}
-
 pub fn expose_w(count: &f64) -> f64 {
     count * count
 }
