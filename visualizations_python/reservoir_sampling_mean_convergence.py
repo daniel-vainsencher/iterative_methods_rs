@@ -1,9 +1,6 @@
 import numpy as np
-import pandas as pd
 import yaml
-from yaml import CLoader
 import plotly.graph_objects as go
-import plotly.express as px
 import os
 from operator import itemgetter
 
@@ -21,14 +18,14 @@ def cleanup_test_files():
 parameters = {}
 with open("./visualizations_python/parameters.yaml") as parameters_file:
 
-    parameters = yaml.load(parameters_file, Loader=CLoader)
+    parameters = yaml.load(parameters_file, Loader=yaml.CLoader)
 
 with open("./target/debug/examples/reservoirs.yaml") as res_file, open(
     "./target/debug/examples/population.yaml"
 ) as pop_file:
 
-    reservoirs = yaml.load_all(res_file, Loader=CLoader)
-    population = yaml.load_all(pop_file, Loader=CLoader)
+    reservoirs = yaml.load_all(res_file, Loader=yaml.CLoader)
+    population = yaml.load_all(pop_file, Loader=yaml.CLoader)
     population = [value for i, value in population]
     population = np.array(population, dtype=float)
     # print("population", population)
