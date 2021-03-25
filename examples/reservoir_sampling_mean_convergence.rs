@@ -8,7 +8,7 @@ use streaming_iterator::*;
 /// sequence of reservoir samples to yaml files. The stream
 /// uses enumerated samples in order to track how much of the
 /// stream has been used in each reservoir.
-fn reservoir_sampling_mean_convergence_for_step() -> std::io::Result<()> {
+fn reservoir_sampling_mean_convergence() -> std::io::Result<()> {
     // Streamline up error handling
     let stream_size: usize = 10_i32.pow(3) as usize;
     let num_of_initial_values = stream_size / 2;
@@ -66,7 +66,7 @@ fn make_animations_in_python() -> std::io::Result<()> {
 }
 
 fn main() -> std::io::Result<()> {
-    reservoir_sampling_mean_convergence_for_step()?;
+    reservoir_sampling_mean_convergence()?;
     make_animations_in_python()?;
     Ok(())
 }
