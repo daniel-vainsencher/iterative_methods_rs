@@ -31,17 +31,17 @@ with open("./target/debug/examples/reservoirs.yaml") as res_file, open(
     population = yaml.load_all(pop_file, Loader=CLoader)
     population = [value for i, value in population]
     population = np.array(population, dtype=float)
-    print("population", population)
+    # print("population", population)
     arr = np.full((parameters["num_res"], 3), 0, dtype=float)
     for i, res in enumerate(reservoirs):
-        print("i, res:", i, res)
+        # print("i, res:", i, res)
         ind = max(map(itemgetter(0), res))
         arr[i, 0] = ind
         arr[i, 1] = np.mean(np.array(res, dtype=float), axis=0)[1]
         arr[i, 2] = np.mean(
             population[: ind + 1]
         )  # the mean of the population from which the current reservoir is drawn
-    print("the array of indices and means: ind, res mean, pop mean\n", arr)
+    # print("the array of indices and means: ind, res mean, pop mean\n", arr)
     fig = go.Figure()
     fig.add_trace(
         go.Scatter(

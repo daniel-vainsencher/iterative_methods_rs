@@ -10,8 +10,9 @@ use streaming_iterator::*;
 /// stream has been used in each reservoir.
 fn reservoir_sampling_mean_convergence_for_step() -> std::io::Result<()> {
     // Streamline up error handling
-    let stream_size: usize = 10_i32.pow(5) as usize;
-    let capacity: usize = 1000;
+    let stream_size: usize = 10_i32.pow(3) as usize;
+    let num_of_initial_values = stream_size / 2;
+    let capacity: usize = 50;
     let mut parameters: HashMap<&str, usize> = HashMap::new();
     parameters.insert("stream_size", stream_size);
     parameters.insert("capacity", capacity);
@@ -22,7 +23,7 @@ fn reservoir_sampling_mean_convergence_for_step() -> std::io::Result<()> {
 
     // Create a copy of the stream to be written to yaml:
     let population_file = "./target/debug/examples/population.yaml";
-    let stream_to_yaml = utils::generate_step_stream(stream_size, capacity, 0, 1);
+    let stream_to_yaml = utils::generate_step_stream(stream_size, num_of_initial_values, 0, 1);
     let stream_to_yaml = convert(stream_to_yaml);
     let stream_to_yaml = enumerate(stream_to_yaml);
     let mut stream_to_yaml = write_yaml_documents(stream_to_yaml, population_file.to_string())
@@ -30,7 +31,7 @@ fn reservoir_sampling_mean_convergence_for_step() -> std::io::Result<()> {
     while let Some(_) = stream_to_yaml.next() {}
 
     // Create another copy of the stream to perform reservoir sampling and write to yaml:
-    let stream = utils::generate_step_stream(stream_size, capacity, 0, 1);
+    let stream = utils::generate_step_stream(stream_size, num_of_initial_values, 0, 1);
     let stream = convert(stream);
     let stream = enumerate(stream);
     let res_iter = reservoir_iterable(stream, capacity, None);
