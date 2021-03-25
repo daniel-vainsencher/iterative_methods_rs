@@ -5,8 +5,8 @@ use std::process::Command;
 use streaming_iterator::*;
 
 /// Create a stream of data, write the full stream and a
-/// sequence of reservoir samples to yaml files. The stream 
-/// uses enumerated samples in order to track how much of the 
+/// sequence of reservoir samples to yaml files. The stream
+/// uses enumerated samples in order to track how much of the
 /// stream has been used in each reservoir.
 fn reservoir_sampling_mean_convergence_for_step() -> std::io::Result<()> {
     // Streamline up error handling

@@ -413,7 +413,6 @@ where
     }
 }
 
-
 /// Enumerate items in a StreamingIterator.
 #[derive(Clone, Debug, std::cmp::PartialEq)]
 pub struct Numbered<T> {

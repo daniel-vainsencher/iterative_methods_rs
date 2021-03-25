@@ -7,6 +7,7 @@ import plotly.express as px
 import os
 from operator import itemgetter
 
+
 def cleanup_test_files():
     """
     The Rust code panics if the files it writes to already exists. This fn
@@ -16,30 +17,43 @@ def cleanup_test_files():
     os.remove("./target/debug/examples/reservoirs.yaml")
     os.remove("./target/debug/examples/population.yaml")
 
+
 parameters = {}
 with open("./visualizations_python/parameters.yaml") as parameters_file:
-    
-    parameters = yaml.load(parameters_file, Loader = CLoader)
 
-with open("./target/debug/examples/reservoirs.yaml") as res_file, open("./target/debug/examples/population.yaml") as pop_file:
+    parameters = yaml.load(parameters_file, Loader=CLoader)
+
+with open("./target/debug/examples/reservoirs.yaml") as res_file, open(
+    "./target/debug/examples/population.yaml"
+) as pop_file:
 
     reservoirs = yaml.load_all(res_file, Loader=CLoader)
-    population = yaml.load_all(pop_file, Loader = CLoader)
+    population = yaml.load_all(pop_file, Loader=CLoader)
     population = [value for i, value in population]
-    population = np.array(population, dtype = float)
+    population = np.array(population, dtype=float)
     print(population)
-    arr = np.full((parameters['num_res'],3),0, dtype = float)
+    arr = np.full((parameters["num_res"], 3), 0, dtype=float)
     for i, res in enumerate(reservoirs):
         print("i, res:", i, res)
         ind = max(map(itemgetter(0), res))
-        arr[i,0] = ind
-        arr[i,1] = np.mean(np.array(res, dtype = float), axis = 0)[1]
-        arr[i,2] = np.mean(population[:ind+1]) # the mean of the population from which the current reservoir is drawn
+        arr[i, 0] = ind
+        arr[i, 1] = np.mean(np.array(res, dtype=float), axis=0)[1]
+        arr[i, 2] = np.mean(
+            population[: ind + 1]
+        )  # the mean of the population from which the current reservoir is drawn
     # print("the array of indices and means:\n", arr)
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x = arr[:,0], y = arr[:,1], name = "Reservoir Means", mode = "lines+markers"))
-    fig.add_trace(go.Scatter(x = arr[:,0], y = arr[:,2], name = "Stream Means", mode = "lines+markers"))
-    fig.update_layout(title = f"Reservoir and Stream Means. Stream Size={parameters['stream_size']}, Capacity={parameters['capacity']}, Number of Reservoirs={parameters['num_res']}")
+    fig.add_trace(
+        go.Scatter(
+            x=arr[:, 0], y=arr[:, 1], name="Reservoir Means", mode="lines+markers"
+        )
+    )
+    fig.add_trace(
+        go.Scatter(x=arr[:, 0], y=arr[:, 2], name="Stream Means", mode="lines+markers")
+    )
+    fig.update_layout(
+        title=f"Reservoir and Stream Means. <br> Stream Size={parameters['stream_size']}, Capacity={parameters['capacity']}, \n Number of Reservoirs={parameters['num_res']}"
+    )
     # fig.show()
 
     # To export a still image:
@@ -48,10 +62,3 @@ with open("./target/debug/examples/reservoirs.yaml") as res_file, open("./target
     fig.write_image("visualizations/reservoir_and_stream_means.png")
 
 cleanup_test_files()
-
-    
-    
-
-
-
-
