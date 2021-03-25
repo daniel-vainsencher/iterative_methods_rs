@@ -87,6 +87,7 @@ fn enumerate_reservoirs_to_yaml_test() {
         println!("{:?}", t);
     }
     let contents = utils::read_yaml_to_string(test_file_path).expect("Could not read file.");
-    let output = String::from("---\n- 0\n- - 0\n  - 0---\n- 1\n- - 0\n  - 1---\n- 2\n- - 1\n  - 1");
+    let output =
+        String::from("---\n- 0\n- - 0\n  - 0\n---\n- 1\n- - 0\n  - 1\n---\n- 2\n- - 1\n  - 1\n");
     assert_eq!(contents, output);
 }
