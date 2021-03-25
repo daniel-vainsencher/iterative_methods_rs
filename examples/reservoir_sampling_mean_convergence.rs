@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::process::Command;
 use streaming_iterator::*;
 
-/// Write the full stream and a sequence of reservoir samples 
+/// Write the full stream and a sequence of reservoir samples
 /// to yaml files. The stream
 /// is enumerated in order to track how much of the
 /// stream has been used in each reservoir.
