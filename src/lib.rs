@@ -10,7 +10,6 @@ use std::cmp::PartialEq;
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::Write;
-use std::string::String;
 use std::time::{Duration, Instant};
 use streaming_iterator::*;
 use yaml_rust::{Yaml, YamlEmitter};

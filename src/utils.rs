@@ -105,22 +105,6 @@ where
     Ok(())
 }
 
-// pub fn write_vec_to_yaml<T>(avec: &Vec<T>, file_name: &str) -> std::io::Result<()>
-pub fn write_vec_to_yaml<T>(avec: &[T], file_name: &str) -> std::io::Result<()>
-where
-    T: std::fmt::Display,
-{
-    let mut file = File::create(file_name)?;
-    file.set_len(0)?;
-    for val in avec {
-        let mut val = val.to_string();
-        val = ["-", &val, "\n"].join(" ");
-        file.write_all(val.as_bytes())?;
-    }
-    file.flush()?;
-    Ok(())
-}
-
 pub fn read_yaml_to_string(file_path: &str) -> Result<std::string::String, std::io::Error> {
     let mut read_file =
         File::open(file_path).expect("Could not open file with test data to asserteq.");
