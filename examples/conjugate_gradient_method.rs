@@ -3,12 +3,12 @@ extern crate nalgebra as na;
 use streaming_iterator::*;
 
 use iterative_methods::algorithms::cg_method::CGIterable;
-use iterative_methods::utils::make_3x3_psd_system_2;
+use iterative_methods::utils::{make_3x3_pd_system_1, make_3x3_pd_system_2};
 use iterative_methods::*;
 
 /// Demonstrate usage and convergence of conjugate gradient as a streaming-iterator.
 fn cg_demo() {
-    let p = make_3x3_psd_system_2();
+    let p = make_3x3_pd_system_2();
     println!("a: \n{}", &p.a);
     let cg_iter = CGIterable::conjugate_gradient(p);
     // Upper bound the number of iterations
@@ -59,6 +59,37 @@ fn cg_demo() {
     while let Some(_cgi) = cg_print_iter.next() {}
 }
 
+fn cg_demo_pt1() {
+    // First we generate a problem, which consists of the pair (A,b).
+    let p = make_3x3_pd_system_2();
+
+    // Next convert it into an iterator
+    let mut cg_iter = CGIterable::conjugate_gradient(p);
+
+    // and loop over intermediate solutions.
+    // Note `next` is provided by the StreamingIterator trait using
+    // `advance` then `get`.
+    while let Some(result) = cg_iter.next() {
+        // We want to find x such that a.dot(x) = b
+        // then the difference between the two sides (called the residual),
+        // is a good measure of the error in a solution.
+        let res = result.a.dot(&result.x) - &result.b;
+
+        // The (squared) length of the residual is a cost, a number
+        // summarizing how bad a solution is. When working on iterative
+        // methods, we want to see these number decrease quickly.
+        let res_squared_length = res.dot(&res);
+
+        // || ... ||_2 is notation for euclidean length of what
+        // lies between the vertical lines.
+        println!(
+            "||Ax - b||_2 = {:.5}, for x = {:.4}",
+            res_squared_length.sqrt(),
+            result.x
+        )
+    }
+}
 fn main() {
     cg_demo();
+    cg_demo_pt1();
 }

@@ -101,8 +101,8 @@ pub mod cg_method {
 mod tests {
 
     use super::cg_method::*;
+    use crate::utils::make_3x3_pd_system_1;
     use crate::utils::make_3x3_psd_system;
-    use crate::utils::make_3x3_psd_system_1;
     use crate::utils::LinearSystem;
 
     extern crate nalgebra as na;
@@ -180,7 +180,7 @@ mod tests {
 
     #[test]
     fn cg_simple_test() {
-        let p = make_3x3_psd_system_1();
+        let p = make_3x3_pd_system_1();
         println!("Problem is: {:?}", p);
         show_progress(p.clone());
         let x = solve_approximately(p.clone());

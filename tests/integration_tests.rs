@@ -13,7 +13,7 @@ use rand_pcg::Pcg64;
 #[ignore]
 #[test]
 fn test_timed_iterable() {
-    let p = make_3x3_psd_system_1();
+    let p = make_3x3_pd_system_1();
     let cg_iter = CGIterable::conjugate_gradient(p).take(50);
     let cg_timed_iter = time(cg_iter);
     let mut start_times = Vec::new();

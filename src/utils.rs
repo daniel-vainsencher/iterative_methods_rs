@@ -17,14 +17,14 @@ pub struct LinearSystem {
     pub x0: Option<V>,
 }
 
-pub fn make_3x3_psd_system_1() -> LinearSystem {
+pub fn make_3x3_pd_system_1() -> LinearSystem {
     make_3x3_psd_system(
         rcarr2(&[[1., 2., -1.], [0., 1., 0.], [0., 0., 1.]]),
         rcarr1(&[0., 1., 0.]),
     )
 }
 
-pub fn make_3x3_psd_system_2() -> LinearSystem {
+pub fn make_3x3_pd_system_2() -> LinearSystem {
     make_3x3_psd_system(
         rcarr2(&[[1.0, 0.5, 0.0], [0.5, 1.0, 0.5], [0.0, 0.5, 1.0]]),
         rcarr1(&[0., 1., 0.]),
