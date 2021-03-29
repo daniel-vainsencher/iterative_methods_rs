@@ -358,7 +358,7 @@ where
 {
     let result = match std::fs::metadata(&file_path) {
         Ok(_) => {
-            panic!("File to which you want to write already exists or permission does not exist. Please rename or remove the file or gain permission.")
+            panic!("Failed to create or gain permission of {}, please delete it or gain permission before running this demo. If the demo runs completely, it will delete the file upon completion.", file_path)
         }
         Err(_) => {
             let file_writer = OpenOptions::new()
