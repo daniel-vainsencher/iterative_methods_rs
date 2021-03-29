@@ -78,7 +78,6 @@ fn enumerate_reservoirs_to_yaml_test() {
     let initial_value = 0i64;
     let final_value = 1i64;
     let stream = utils::generate_step_stream(stream_length, capacity, initial_value, final_value);
-    let stream = convert(stream);
     let stream = reservoir_iterable(stream, capacity, Some(Pcg64::seed_from_u64(0)));
     let stream = enumerate(stream);
     let mut stream = write_yaml_documents(stream, String::from(test_file_path))

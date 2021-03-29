@@ -23,7 +23,8 @@ fn reservoir_sampling_mean_convergence() -> std::io::Result<()> {
 
     // Create a copy of the stream to be written to yaml:
     let population_file = "./target/debug/examples/population.yaml";
-    let stream_to_yaml = utils::generate_enumerated_step_stream(stream_size, num_of_initial_values, 0, 1);
+    let stream_to_yaml =
+        utils::generate_enumerated_step_stream(stream_size, num_of_initial_values, 0, 1);
     let mut stream_to_yaml = write_yaml_documents(stream_to_yaml, population_file.to_string())
         .expect("Create File and initialize yaml iter failed.");
     while let Some(_) = stream_to_yaml.next() {}

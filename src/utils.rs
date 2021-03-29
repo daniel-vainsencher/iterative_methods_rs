@@ -38,6 +38,49 @@ pub fn make_3x3_psd_system(m: M, b: V) -> LinearSystem {
     }
 }
 
+/// Utility Functions for Reservoir Sampling
+
+/// Produce a stream like [a, ..., a, b, ..., b] with `capacity` copies of "a"
+/// (aka `initial_value`s) and `stream_length` total values.
+/// Utility function used in examples showing convergence of reservoir mean to stream mean.
+pub fn generate_step_stream(
+    stream_length: usize,
+    capacity: usize,
+    initial_value: i64,
+    final_value: i64,
+) -> impl StreamingIterator<Item = i64> {
+    // Create capacity of items with initial weight.
+    let initial_iter = iter::repeat(initial_value).take(capacity);
+    if capacity > stream_length {
+        panic!("Capacity must be less than or equal to stream length.");
+    }
+    let final_iter = iter::repeat(final_value).take(stream_length - capacity);
+    let stream = initial_iter.chain(final_iter);
+    let stream = convert(stream);
+    stream
+}
+
+/// Produce an enumerated stream like [(0,a), (1,a),..., (capacity, b), ..., (stream_length-1, b)] with `capacity` copies of "a"
+/// (aka `initial_value`s) and `stream_length` total values.
+/// Utility function used in examples showing convergence of reservoir mean to stream mean.
+pub fn generate_enumerated_step_stream(
+    stream_length: usize,
+    capacity: usize,
+    initial_value: i64,
+    final_value: i64,
+) -> impl StreamingIterator<Item = Numbered<i64>> {
+    // Create capacity of items with initial weight.
+    let initial_iter = iter::repeat(initial_value).take(capacity);
+    if capacity > stream_length {
+        panic!("Capacity must be less than or equal to stream length.");
+    }
+    let final_iter = iter::repeat(final_value).take(stream_length - capacity);
+    let stream = initial_iter.chain(final_iter);
+    let stream = convert(stream);
+    let stream = enumerate(stream);
+    stream
+}
+
 /// Utility Functions for Weighted Reservoir Sampling
 
 /// utility function for testing ReservoirIterable
@@ -67,32 +110,11 @@ pub fn generate_stream_with_constant_probability(
     initial_iter.chain(mapped)
 }
 
-/// Produce a stream like [a, ..., a, b, ..., b] with `capacity` copies of "a"
-/// (aka `initial_value`s) and `stream_length` total values.
-/// Utility function used in examples showing convergence of reservoir mean to stream mean.
-pub fn generate_enumerated_step_stream(
-    stream_length: usize,
-    capacity: usize,
-    initial_value: i64,
-    final_value: i64,
-) -> impl StreamingIterator<Item = Numbered<i64>> {
-    // Create capacity of items with initial weight.
-    let initial_iter = iter::repeat(initial_value).take(capacity);
-    if capacity > stream_length {
-        panic!("Capacity must be less than or equal to stream length.");
-    }
-    let final_iter = iter::repeat(final_value).take(stream_length - capacity);
-    let stream = initial_iter.chain(final_iter);
-    let stream = convert(stream);
-    let stream = enumerate(stream);
-    stream
-}
-
 pub fn expose_w(count: &f64) -> f64 {
     count * count
 }
 
-/// Utility functions for visualizations
+/// Utility functions for writing data to yaml, including for visualizations
 ///
 /// The order of the parameters is not controlled.
 pub fn write_parameters_to_yaml<T>(params: HashMap<&str, T>, file_path: &str) -> std::io::Result<()>
