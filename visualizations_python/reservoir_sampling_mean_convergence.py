@@ -24,11 +24,17 @@ with open("./target/debug/examples/reservoirs.yaml") as res_file, open(
     "./target/debug/examples/population.yaml"
 ) as pop_file:
 
+    # create iterators containing the data from the yaml docs
     reservoirs = yaml.load_all(res_file, Loader=yaml.CLoader)
     population = yaml.load_all(pop_file, Loader=yaml.CLoader)
+    # For the population, extract the sample values; forget the enumeration.
     population = [value for i, value in population]
     population = np.array(population, dtype=float)
     # print("population", population)
+    # Initialize an array with rows [index, reservoir_mean, population_slice_mean] where:
+    # index = enumeration of the reservoirs, 
+    # reservoir_mean = mean of the reservoir
+    # population_slice_mean = mean of the slice of the population from which the reservoir sample was taken
     arr = np.full((parameters["num_res"], 3), 0, dtype=float)
     for i, res in enumerate(reservoirs):
         # print("i, res:", i, res)
@@ -37,8 +43,7 @@ with open("./target/debug/examples/reservoirs.yaml") as res_file, open(
         arr[i, 1] = np.mean(np.array(res, dtype=float), axis=0)[1]
         arr[i, 2] = np.mean(
             population[: ind + 1]
-        )  # the mean of the population from which the current reservoir is drawn
-    # print("the array of indices and means: ind, res mean, pop mean\n", arr)
+        )  
     fig = go.Figure()
     fig.add_trace(
         go.Scatter(
