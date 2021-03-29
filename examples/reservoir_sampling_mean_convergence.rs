@@ -57,7 +57,7 @@ fn make_animations_in_python() -> std::io::Result<()> {
             output
         );
     } else {
-        println!("{:#?}", output);
+        println!("Visualization exported successfully.");
     };
     Ok(())
 }
