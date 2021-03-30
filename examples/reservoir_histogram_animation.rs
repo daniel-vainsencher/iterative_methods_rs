@@ -21,10 +21,12 @@ fn reservoir_histogram_animation() -> std::io::Result<()> {
         stream_size, capacity
     );
     let sigma = 0.25f64;
-    parameters.insert("sigma",sigma.to_string());
+    parameters.insert("sigma", sigma.to_string());
     // Generate the data to use
-    let mut stream_vec = utils::generate_stream_from_normal_distribution(stream_size, 0.25f64, sigma);
-    let mut stream_vec_end = utils::generate_stream_from_normal_distribution(2*stream_size, 0.75f64, sigma);
+    let mut stream_vec =
+        utils::generate_stream_from_normal_distribution(stream_size, 0.25f64, sigma);
+    let mut stream_vec_end =
+        utils::generate_stream_from_normal_distribution(2 * stream_size, 0.75f64, sigma);
     stream_vec.append(&mut stream_vec_end);
 
     // Create a copy of the stream to be written to yaml:
@@ -35,8 +37,9 @@ fn reservoir_histogram_animation() -> std::io::Result<()> {
     let population_stream = population_stream.iter();
     let population_stream = convert(population_stream);
     let population_stream = enumerate(population_stream);
-    let mut population_stream = write_yaml_documents(population_stream, population_file.to_string())
-        .expect("Create File and initialize yaml iter failed.");
+    let mut population_stream =
+        write_yaml_documents(population_stream, population_file.to_string())
+            .expect("Create File and initialize yaml iter failed.");
     while let Some(_) = population_stream.next() {}
 
     // Create another copy of the stream to perform reservoir sampling and write to yaml:

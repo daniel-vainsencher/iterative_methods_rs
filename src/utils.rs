@@ -1,6 +1,8 @@
 use crate::algorithms::cg_method::*;
 use crate::*;
 use ndarray::{rcarr1, rcarr2};
+use rand::thread_rng;
+use rand_distr::{Distribution, Normal};
 use std::collections::HashMap;
 use std::io::Read;
 use std::iter;
@@ -81,6 +83,21 @@ pub fn generate_enumerated_step_stream(
     stream
 }
 
+/// Produce a stream from a normal distribution.
+/// Utility function used in examples of reservoir sampling
+/// histogram animation.
+pub fn generate_stream_from_normal_distribution(
+    stream_length: usize,
+    mean: f64,
+    sigma: f64,
+) -> Vec<f64> {
+    let normal = Normal::new(mean, sigma).unwrap();
+    let stream_vec: Vec<f64> = normal
+        .sample_iter(&mut thread_rng())
+        .take(stream_length)
+        .collect();
+    stream_vec
+}
 /// Utility Functions for Weighted Reservoir Sampling
 
 /// utility function for testing ReservoirIterable
@@ -140,4 +157,3 @@ pub fn read_yaml_to_string(file_path: &str) -> Result<std::string::String, std::
     std::fs::remove_file(file_path).expect("Could not remove data file for test.");
     Ok(contents)
 }
-
