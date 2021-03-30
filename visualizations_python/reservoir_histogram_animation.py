@@ -96,14 +96,37 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
             dict(
                 type="buttons",
                 buttons=[
-                    dict(label="Play", method="animate", args=[None, {"frame": {"duration": 50, "redraw": False},}]),
+                    dict(
+                        label="Play",
+                        method="animate",
+                        args=[
+                            None,
+                            {
+                                "frame": {"duration": 50, "redraw": True},
+                                "fromcurrent": True,
+                                "transition": {"duration": 0},
+                            },
+                        ],
+                    ),
+                    {
+                        "args": [
+                            [None],
+                            {
+                                "frame": {"duration": 0, "redraw": True},
+                                "mode": "immediate",
+                                "transition": {"duration": 0},
+                            },
+                        ],
+                        "label": "Pause",
+                        "method": "animate",
+                    },
                 ],
             )
         ],
         barmode="group",
         bargroupgap=0.1,
     )
-    fig.update_layout(transition_duration=0)
+    # fig.update_layout(transition_duration=0)
 
     # Overlay both histograms
     # fig.update_layout(barmode="overlay")
@@ -118,5 +141,7 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
 files_to_remove.append(parameters["reservoir_samples_file"])
 files_to_remove.append(parameters["population_file"])
 
+# for file_path in files_to_remove:
+#     print(file_path)
 
 cleanup_test_files(files_to_remove)
