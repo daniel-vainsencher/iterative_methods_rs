@@ -1,8 +1,6 @@
 import numpy as np
-import pandas as pd
 import yaml
 import plotly.graph_objects as go
-import plotly.express as px
 import os
 from operator import itemgetter
 
