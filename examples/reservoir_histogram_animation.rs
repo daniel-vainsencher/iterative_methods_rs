@@ -11,10 +11,13 @@ use streaming_iterator::*;
 fn reservoir_histogram_animation() -> std::io::Result<()> {
     // Streamline up error handling
     let stream_size: usize = 10_i32.pow(04) as usize;
-    // let num_of_initial_values = stream_size / 2;
+    let num_initial_values = stream_size / 4;
+    let num_final_values = 3 * stream_size / 4;
     let capacity: usize = 100;
     let mut parameters: HashMap<&str, String> = HashMap::new();
     parameters.insert("stream_size", stream_size.to_string());
+    parameters.insert("num_initial_values", num_initial_values.to_string());
+    parameters.insert("num_final_values", num_final_values.to_string());
     parameters.insert("capacity", capacity.to_string());
     println!(
         "The test uses a stream of size {:#?} and a reservoir capacity of {:#?}.",
@@ -26,9 +29,9 @@ fn reservoir_histogram_animation() -> std::io::Result<()> {
     parameters.insert("sigma", sigma.to_string());
     // Generate the data to use
     let mut stream_vec =
-        utils::generate_stream_from_normal_distribution(stream_size, mean_initial, sigma);
+        utils::generate_stream_from_normal_distribution(num_initial_values, mean_initial, sigma);
     let mut stream_vec_end =
-        utils::generate_stream_from_normal_distribution(2 * stream_size, mean_final, sigma);
+        utils::generate_stream_from_normal_distribution(num_final_values, mean_final, sigma);
     stream_vec.append(&mut stream_vec_end);
 
     // Create a copy of the stream to be written to yaml:
@@ -78,7 +81,22 @@ fn make_animations_in_python() -> std::io::Result<()> {
             output
         );
     } else {
-        println!("Visualization exported successfully.");
+        println!("Animation exported successfully.");
+    };
+    Ok(())
+}
+
+fn make_initial_final_histograms_in_python() -> std::io::Result<()> {
+    let output = Command::new("python3")
+        .arg("./visualizations_python/reservoir_histograms_initial_final.py")
+        .output()?;
+    if !output.status.success() {
+        println!(
+            "Running reservoir_histograms_initial_final.py did not succeed. Error: {:#?}",
+            output
+        );
+    } else {
+        println!("Still Image exported successfully.");
     };
     Ok(())
 }
@@ -86,6 +104,7 @@ fn make_animations_in_python() -> std::io::Result<()> {
 fn main() -> std::io::Result<()> {
     reservoir_histogram_animation()?;
     println!("Data is written to yaml files.");
+    make_initial_final_histograms_in_python()?;
     make_animations_in_python()?;
     Ok(())
 }
