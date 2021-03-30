@@ -72,7 +72,7 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
             name="Population Distribution",
         )
     )
-    # Note: the reservoir is constant for a long time, so animation begins well into the sequence of reservoirs
+
     fig.frames = [
         go.Frame(
             data=[
@@ -84,14 +84,24 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
                     opacity=0.75,
                     name="Reservoir Distribution",
                 )
-            ]
+            ],
+            layout = go.Layout(annotations= [dict(
+            showarrow=False,
+            x="1.",
+            y=".27",
+            text=f"Reservoir Number: {i}",
+            font_size=14,
+            xanchor="left",
+            # xshift=10,
+            opacity=1.),])
         )
         for i in range(num_res)
     ]
     fig.layout = go.Layout(
         xaxis=dict(range=[xm, xM], autorange=False, zeroline=False),
         yaxis=dict(range=[ym, yM], autorange=False, zeroline=False),
-        title_text="Drifting Distribution",
+        # title_text="Drifting Distribution: Reservoir Samples Represent the Stream Distribution",
+        # xanchor="center",
         hovermode="closest",
         updatemenus=[
             dict(
@@ -103,9 +113,9 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
                         args=[
                             None,
                             {
-                                "frame": {"duration": 50, "redraw": True},
+                                "frame": {"duration": 100, "redraw": True},
                                 "fromcurrent": True,
-                                "transition": {"duration": 0},
+                                "transition": {"duration": 100},
                             },
                         ],
                     ),
@@ -127,12 +137,12 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
         barmode="group",
         bargroupgap=0.1,
     )
-    # fig.update_layout(transition_duration=0)
 
-    # Overlay both histograms
-    # fig.update_layout(barmode="overlay")
-    # Reduce opacity to see both histograms
-    # fig.update_traces(opacity=0.5)
+    fig.update_layout(title = dict(text="The Reservoir Distribution Follows The Stream Distribution",
+            x = 0.5,
+            y = 0.9,
+        xanchor="center",
+        yanchor="top"))
 
     # To export:
     if not os.path.exists("visualizations"):
@@ -141,8 +151,5 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
 
 files_to_remove.append(parameters["reservoir_samples_file"])
 files_to_remove.append(parameters["population_file"])
-
-# for file_path in files_to_remove:
-#     print(file_path)
 
 cleanup_test_files(files_to_remove)

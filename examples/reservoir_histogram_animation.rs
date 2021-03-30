@@ -85,6 +85,7 @@ fn make_animations_in_python() -> std::io::Result<()> {
 
 fn main() -> std::io::Result<()> {
     reservoir_histogram_animation()?;
+    println!("Data is written to yaml files.");
     make_animations_in_python()?;
     Ok(())
 }
