@@ -10,9 +10,9 @@ use streaming_iterator::*;
 /// stream has been used in each reservoir.
 fn reservoir_histogram_animation() -> std::io::Result<()> {
     // Streamline up error handling
-    let stream_size: usize = 10_i32.pow(05) as usize;
+    let stream_size: usize = 10_i32.pow(04) as usize;
     // let num_of_initial_values = stream_size / 2;
-    let capacity: usize = 200;
+    let capacity: usize = 100;
     let mut parameters: HashMap<&str, String> = HashMap::new();
     parameters.insert("stream_size", stream_size.to_string());
     parameters.insert("capacity", capacity.to_string());
@@ -20,13 +20,15 @@ fn reservoir_histogram_animation() -> std::io::Result<()> {
         "The test uses a stream of size {:#?} and a reservoir capacity of {:#?}.",
         stream_size, capacity
     );
-    let sigma = 0.25f64;
+    let sigma = 0.15f64;
+    let mean_initial = 0.25f64;
+    let mean_final = 0.75f64;
     parameters.insert("sigma", sigma.to_string());
     // Generate the data to use
     let mut stream_vec =
-        utils::generate_stream_from_normal_distribution(stream_size, 0.25f64, sigma);
+        utils::generate_stream_from_normal_distribution(stream_size, mean_initial, sigma);
     let mut stream_vec_end =
-        utils::generate_stream_from_normal_distribution(2 * stream_size, 0.75f64, sigma);
+        utils::generate_stream_from_normal_distribution(2 * stream_size, mean_final, sigma);
     stream_vec.append(&mut stream_vec_end);
 
     // Create a copy of the stream to be written to yaml:
@@ -76,7 +78,7 @@ fn make_animations_in_python() -> std::io::Result<()> {
             output
         );
     } else {
-        println!("{:#?}", output);
+        println!("Visualization exported successfully.");
     };
     Ok(())
 }

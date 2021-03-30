@@ -47,7 +47,8 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
     xm = np.min(population) - 0.2
     xM = np.max(population) + 0.2
     ym = 0
-    yM = 1 / np.sqrt(2 * np.pi * sigma)
+    # yM = 1 / (np.sqrt(2 * np.pi) * np.sqrt(2) * sigma)
+    yM = 0.4
     num_bins = 20
 
     fig = go.Figure()
