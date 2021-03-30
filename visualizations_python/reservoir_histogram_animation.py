@@ -83,15 +83,20 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
                     name="Reservoir Distribution",
                 )
             ],
-            layout = go.Layout(annotations= [dict(
-            showarrow=False,
-            x="1.",
-            y=".27",
-            text=f"Reservoir Number: {i}",
-            font_size=14,
-            xanchor="left",
-            # xshift=10,
-            opacity=1.),])
+            layout=go.Layout(
+                annotations=[
+                    dict(
+                        showarrow=False,
+                        x="1.",
+                        y=".27",
+                        text=f"Reservoir Number: {i}",
+                        font_size=14,
+                        xanchor="left",
+                        # xshift=10,
+                        opacity=1.0,
+                    ),
+                ]
+            ),
         )
         for i in range(num_res)
     ]
@@ -136,11 +141,15 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
         bargroupgap=0.1,
     )
 
-    fig.update_layout(title = dict(text="The Reservoir Distribution Follows The Stream Distribution",
-            x = 0.5,
-            y = 0.9,
-        xanchor="center",
-        yanchor="top"))
+    fig.update_layout(
+        title=dict(
+            text="The Reservoir Distribution Follows The Stream Distribution",
+            x=0.5,
+            y=0.9,
+            xanchor="center",
+            yanchor="top",
+        )
+    )
 
     # To export:
     if not os.path.exists("visualizations"):

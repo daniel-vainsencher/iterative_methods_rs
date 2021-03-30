@@ -58,14 +58,17 @@ with open(parameters["population_file"]) as pop_file:
         bargroupgap=0.1,
     )
 
-    fig.update_layout(title = dict(text="The Initial and Final Reservoir Distributions",
-            x = 0.5,
-            y = 0.9,
-        xanchor="center",
-        yanchor="top"))
+    fig.update_layout(
+        title=dict(
+            text="The Initial and Final Reservoir Distributions",
+            x=0.5,
+            y=0.9,
+            xanchor="center",
+            yanchor="top",
+        )
+    )
 
     # To export:
     if not os.path.exists("visualizations"):
         os.mkdir("visualizations")
     fig.write_html("visualizations/reservoir_histograms_initial_final.html")
-
