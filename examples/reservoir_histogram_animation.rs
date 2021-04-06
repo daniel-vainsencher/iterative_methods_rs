@@ -8,7 +8,7 @@ use streaming_iterator::*;
 /// to yaml files. The stream
 /// is enumerated in order to track how much of the
 /// stream has been used in each reservoir.
-fn reservoir_histogram_animation() -> std::io::Result<()> {
+fn reservoir_histogram_animation() -> Result<Vec<String>, std::io::Error> {
     // Streamline up error handling
     let stream_size: usize = 10_i32.pow(04) as usize;
     let num_initial_values = stream_size / 4;
@@ -20,6 +20,7 @@ fn reservoir_histogram_animation() -> std::io::Result<()> {
     let reservoir_samples_file = "./target/debug/examples/reservoirs_for_histogram.yaml";
     let parameters_file_path = "./visualizations_python/parameters_for_histogram.yaml";
     let reservoir_means_file = "./target/debug/examples/reservoir_means.yaml";
+    let file_list = vec![population_file.to_string(), reservoir_samples_file.to_string(), parameters_file_path.to_string(), reservoir_means_file.to_string()];
 
     parameters.insert("stream_size", stream_size.to_string());
     parameters.insert("num_initial_values", num_initial_values.to_string());
@@ -80,6 +81,36 @@ fn reservoir_histogram_animation() -> std::io::Result<()> {
     }
     parameters.insert("num_res", num_res.to_string());
     utils::write_parameters_to_yaml(parameters, parameters_file_path)?;
+    Ok(file_list)
+}
+
+fn make_initial_final_histograms_in_python() -> std::io::Result<()> {
+    let output = Command::new("python3")
+        .arg("./visualizations_python/reservoir_histograms_initial_final.py")
+        .output()?;
+    if !output.status.success() {
+        println!(
+            "Running reservoir_histograms_initial_final.py did not succeed. Error: {:#?}",
+            output
+        );
+    } else {
+        println!("Still Image exported successfully.");
+    };
+    Ok(())
+}
+
+fn make_reservoir_means_plot_in_python() -> std::io::Result<()> {
+    let output = Command::new("python3")
+        .arg("./visualizations_python/reservoir_means.py")
+        .output()?;
+    if !output.status.success() {
+        println!(
+            "Running reservoir_means.py did not succeed. Error: {:#?}",
+            output
+        );
+    } else {
+        println!("Still Image exported successfully.");
+    };
     Ok(())
 }
 
@@ -98,25 +129,27 @@ fn make_animations_in_python() -> std::io::Result<()> {
     Ok(())
 }
 
-fn make_initial_final_histograms_in_python() -> std::io::Result<()> {
-    let output = Command::new("python3")
-        .arg("./visualizations_python/reservoir_histograms_initial_final.py")
-        .output()?;
-    if !output.status.success() {
-        println!(
-            "Running reservoir_histograms_initial_final.py did not succeed. Error: {:#?}",
-            output
-        );
-    } else {
-        println!("Still Image exported successfully.");
-    };
+fn remove_up_yaml_files(file_list: Vec<String>) -> std::io::Result<()> {
+    for file in file_list {
+        let output = Command::new("rm").arg(file).output()?;
+        if !output.status.success() {
+            println!(
+                "Running reservoir_histogram_animation.py did not succeed. Error: {:#?}",
+                output
+            );
+        } else {
+            println!("Yaml file {:#?} removed.", output);
+        };
+    }
     Ok(())
 }
 
 fn main() -> std::io::Result<()> {
-    reservoir_histogram_animation()?;
+    let file_list = reservoir_histogram_animation()?;
     println!("Data is written to yaml files.");
     make_initial_final_histograms_in_python()?;
+    make_reservoir_means_plot_in_python()?;
     make_animations_in_python()?;
+    remove_up_yaml_files(file_list)?;
     Ok(())
 }

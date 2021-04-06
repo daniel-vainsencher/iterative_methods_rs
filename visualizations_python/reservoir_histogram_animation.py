@@ -5,17 +5,6 @@ import os
 from operator import itemgetter
 
 
-def cleanup_test_files(files_to_remove: list):
-    """
-    The Rust code panics if the files it writes to already exists. This fn
-    removes them after they have been used so that the example can be run again.
-    It also prevents files used only for the tests from accumulating in the repo.
-    """
-    for file in files_to_remove:
-        os.remove(file)
-
-
-files_to_remove = []
 parameters = {}
 with open("./visualizations_python/parameters_for_histogram.yaml") as parameters_file:
 
@@ -160,4 +149,4 @@ files_to_remove.append(parameters["reservoir_samples_file"])
 files_to_remove.append(parameters["population_file"])
 files_to_remove.append(parameters["reservoir_means_file"])
 
-cleanup_test_files(files_to_remove)
+
