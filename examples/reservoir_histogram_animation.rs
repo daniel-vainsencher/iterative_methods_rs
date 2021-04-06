@@ -37,7 +37,6 @@ fn reservoir_histogram_animation() -> std::io::Result<()> {
     // Create a copy of the stream to be written to yaml:
     let population_file = "./target/debug/examples/population_for_histogram.yaml";
     parameters.insert("population_file", population_file.to_string());
-    // let stream_to_yaml = utils::generate_step_stream(stream_size, num_of_initial_values, 0, 1);
     let population_stream = stream_vec.clone();
     let population_stream = population_stream.iter();
     let population_stream = convert(population_stream);
@@ -48,7 +47,6 @@ fn reservoir_histogram_animation() -> std::io::Result<()> {
     while let Some(_) = population_stream.next() {}
 
     // Create another copy of the stream to perform reservoir sampling and write to yaml:
-    // let stream = utils::generate_step_stream(stream_size, num_of_initial_values, 0, 1);
     let stream = stream_vec.iter();
     let stream = convert(stream);
     let stream = enumerate(stream);
