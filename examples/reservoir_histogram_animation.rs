@@ -15,10 +15,18 @@ fn reservoir_histogram_animation() -> std::io::Result<()> {
     let num_final_values = 3 * stream_size / 4;
     let capacity: usize = 100;
     let mut parameters: HashMap<&str, String> = HashMap::new();
+    // Define file paths for yaml data
+    let population_file = "./target/debug/examples/population_for_histogram.yaml";
+    let reservoir_samples_file = "./target/debug/examples/reservoirs_for_histogram.yaml";
+    let parameters_file_path = "./visualizations_python/parameters_for_histogram.yaml";
+
     parameters.insert("stream_size", stream_size.to_string());
     parameters.insert("num_initial_values", num_initial_values.to_string());
     parameters.insert("num_final_values", num_final_values.to_string());
     parameters.insert("capacity", capacity.to_string());
+    parameters.insert("population_file", population_file.to_string());
+    parameters.insert("reservoir_samples_file", reservoir_samples_file.to_string());
+    parameters.insert("parameters_file_path", parameters_file_path.to_string());
     println!(
         "The test uses a stream of size {:#?} and a reservoir capacity of {:#?}.",
         stream_size, capacity
@@ -27,44 +35,28 @@ fn reservoir_histogram_animation() -> std::io::Result<()> {
     let mean_initial = 0.25f64;
     let mean_final = 0.75f64;
     parameters.insert("sigma", sigma.to_string());
-    // Generate the data to use
+    
+    // Generate the data as a vec
     let mut stream_vec =
         utils::generate_stream_from_normal_distribution(num_initial_values, mean_initial, sigma);
     let mut stream_vec_end =
         utils::generate_stream_from_normal_distribution(num_final_values, mean_final, sigma);
     stream_vec.append(&mut stream_vec_end);
 
-    // Create a copy of the stream to be written to yaml:
-    let population_file = "./target/debug/examples/population_for_histogram.yaml";
-    parameters.insert("population_file", population_file.to_string());
-    let population_stream = stream_vec.clone();
-    let population_stream = population_stream.iter();
-    let population_stream = convert(population_stream);
-    let population_stream = enumerate(population_stream);
-    let mut population_stream =
-        write_yaml_documents(population_stream, population_file.to_string())
-            .expect("Create File and initialize yaml iter failed.");
-    while let Some(_) = population_stream.next() {}
-
-    // Create another copy of the stream to perform reservoir sampling and write to yaml:
+    // Convert the data to a StreamingIterator and adapt
     let stream = stream_vec.iter();
     let stream = convert(stream);
     let stream = enumerate(stream);
-    let res_iter = reservoir_iterable(stream, capacity, None);
-    let res_iter = step_by(res_iter, 20);
-    let reservoir_samples_file = "./target/debug/examples/reservoirs_for_histogram.yaml";
-    parameters.insert("reservoir_samples_file", reservoir_samples_file.to_string());
-    // Write data to file for visualization.
-    let mut res_to_yaml = write_yaml_documents(res_iter, reservoir_samples_file.to_string())
-        .expect("Create File and initialize yaml iter failed.");
+    let stream = write_yaml_documents(stream, population_file.to_string()).expect("Create File and initialize yaml iter failed.");
+    let stream = reservoir_iterable(stream, capacity, None);
+    let stream = step_by(stream, 20);
+    let mut stream = write_yaml_documents(stream, reservoir_samples_file.to_string()).expect("Create File and initialize yaml iter failed.");
     // num_res is used in the python script for visualizations to initialize the size of the array that will hold that data to visualize.
     let mut num_res = 0;
-    while let Some(_item) = res_to_yaml.next() {
+    while let Some(_item) = stream.next() {
         num_res += 1
     }
     parameters.insert("num_res", num_res.to_string());
-    let parameters_file_path = "./visualizations_python/parameters_for_histogram.yaml";
-    parameters.insert("parameters_file_path", parameters_file_path.to_string());
     utils::write_parameters_to_yaml(parameters, parameters_file_path)?;
     Ok(())
 }
