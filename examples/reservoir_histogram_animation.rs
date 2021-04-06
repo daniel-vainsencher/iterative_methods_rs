@@ -13,12 +13,13 @@ fn reservoir_histogram_animation() -> std::io::Result<()> {
     let stream_size: usize = 10_i32.pow(04) as usize;
     let num_initial_values = stream_size / 4;
     let num_final_values = 3 * stream_size / 4;
-    let capacity: usize = 10;
+    let capacity: usize = 100;
     let mut parameters: HashMap<&str, String> = HashMap::new();
     // Define file paths for yaml data
     let population_file = "./target/debug/examples/population_for_histogram.yaml";
     let reservoir_samples_file = "./target/debug/examples/reservoirs_for_histogram.yaml";
     let parameters_file_path = "./visualizations_python/parameters_for_histogram.yaml";
+    let reservoir_means_file = "./target/debug/examples/reservoir_means.yaml";
 
     parameters.insert("stream_size", stream_size.to_string());
     parameters.insert("num_initial_values", num_initial_values.to_string());
@@ -27,6 +28,7 @@ fn reservoir_histogram_animation() -> std::io::Result<()> {
     parameters.insert("population_file", population_file.to_string());
     parameters.insert("reservoir_samples_file", reservoir_samples_file.to_string());
     parameters.insert("parameters_file_path", parameters_file_path.to_string());
+    parameters.insert("reservoir_means_file", reservoir_means_file.to_string());
     println!(
         "The test uses a stream of size {:#?} and a reservoir capacity of {:#?}.",
         stream_size, capacity
@@ -35,7 +37,7 @@ fn reservoir_histogram_animation() -> std::io::Result<()> {
     let mean_initial = 0.25f64;
     let mean_final = 0.75f64;
     parameters.insert("sigma", sigma.to_string());
-    
+
     // Generate the data as a vec
     let mut stream_vec =
         utils::generate_stream_from_normal_distribution(num_initial_values, mean_initial, sigma);
@@ -47,19 +49,33 @@ fn reservoir_histogram_animation() -> std::io::Result<()> {
     let stream = stream_vec.iter();
     let stream = convert(stream);
     let stream = enumerate(stream);
-    let stream = write_yaml_documents(stream, population_file.to_string()).expect("Create File and initialize yaml iter failed.");
+    let stream = write_yaml_documents(stream, population_file.to_string())
+        .expect("Create File and initialize yaml iter failed.");
     let stream = reservoir_iterable(stream, capacity, None);
     let stream = step_by(stream, 20);
-    let mut stream = write_yaml_documents(stream, reservoir_samples_file.to_string()).expect("Create File and initialize yaml iter failed.");
+    let stream = write_yaml_documents(stream, reservoir_samples_file.to_string())
+        .expect("Create File and initialize yaml iter failed.");
+    let stream = stream.map(|reservoir| {
+        let max_index = reservoir
+            .iter()
+            .map(|numbered| numbered.count)
+            .max()
+            .unwrap();
+        let mean: f64 = reservoir
+            .iter()
+            .map(|numbered| numbered.item.unwrap())
+            .sum();
+        let mean = mean / (capacity as f64);
+        Numbered {
+            count: max_index,
+            item: Some(mean),
+        }
+    });
+    let mut stream = write_yaml_documents(stream, reservoir_means_file.to_string())
+        .expect("Create File and initialize yaml iter failed.");
     // num_res is used in the python script for visualizations to initialize the size of the array that will hold that data to visualize.
     let mut num_res = 0;
-    while let Some(item) = stream.next() {
-        if num_res < 3 {
-            let max_index = item.iter().map(|numbered| numbered.count).max();
-            let mean: f64 = item.iter().map(|numbered| numbered.item.unwrap()).sum();
-            let mean = mean / (capacity as f64);
-            println!("Mean: {} Max Index: {:#?}", mean, max_index);
-        }
+    while let Some(_item) = stream.next() {
         num_res += 1
     }
     parameters.insert("num_res", num_res.to_string());

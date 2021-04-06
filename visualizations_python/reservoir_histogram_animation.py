@@ -158,5 +158,6 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
 
 files_to_remove.append(parameters["reservoir_samples_file"])
 files_to_remove.append(parameters["population_file"])
+files_to_remove.append(parameters["reservoir_means_file"])
 
 cleanup_test_files(files_to_remove)
