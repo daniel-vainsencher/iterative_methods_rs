@@ -13,7 +13,7 @@ fn reservoir_histogram_animation() -> std::io::Result<()> {
     let stream_size: usize = 10_i32.pow(04) as usize;
     let num_initial_values = stream_size / 4;
     let num_final_values = 3 * stream_size / 4;
-    let capacity: usize = 100;
+    let capacity: usize = 10;
     let mut parameters: HashMap<&str, String> = HashMap::new();
     // Define file paths for yaml data
     let population_file = "./target/debug/examples/population_for_histogram.yaml";
@@ -53,7 +53,13 @@ fn reservoir_histogram_animation() -> std::io::Result<()> {
     let mut stream = write_yaml_documents(stream, reservoir_samples_file.to_string()).expect("Create File and initialize yaml iter failed.");
     // num_res is used in the python script for visualizations to initialize the size of the array that will hold that data to visualize.
     let mut num_res = 0;
-    while let Some(_item) = stream.next() {
+    while let Some(item) = stream.next() {
+        if num_res < 3 {
+            let max_index = item.iter().map(|numbered| numbered.count).max();
+            let mean: f64 = item.iter().map(|numbered| numbered.item.unwrap()).sum();
+            let mean = mean / (capacity as f64);
+            println!("Mean: {} Max Index: {:#?}", mean, max_index);
+        }
         num_res += 1
     }
     parameters.insert("num_res", num_res.to_string());
