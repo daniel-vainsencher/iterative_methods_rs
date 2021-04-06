@@ -10,8 +10,6 @@ with open("./visualizations_python/parameters_for_histogram.yaml") as parameters
 
     parameters = yaml.load(parameters_file, Loader=yaml.CLoader)
 
-files_to_remove.append(parameters["parameters_file_path"])
-
 with open(parameters["reservoir_samples_file"]) as res_file, open(
     parameters["population_file"]
 ) as pop_file:
@@ -144,9 +142,3 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
     if not os.path.exists("visualizations"):
         os.mkdir("visualizations")
     fig.write_html("visualizations/reservoir_histogram_animation.html")
-
-files_to_remove.append(parameters["reservoir_samples_file"])
-files_to_remove.append(parameters["population_file"])
-files_to_remove.append(parameters["reservoir_means_file"])
-
-

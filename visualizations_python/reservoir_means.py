@@ -5,12 +5,10 @@ import os
 from operator import itemgetter
 
 
-
-
 parameters = {}
 with open("./visualizations_python/parameters_for_histogram.yaml") as parameters_file:
 
-    parameters = yaml.load(parameters_file, Loader=yaml.CLoader) 
+    parameters = yaml.load(parameters_file, Loader=yaml.CLoader)
 
 with open("./target/debug/examples/reservoir_means.yaml") as res_file, open(
     "./target/debug/examples/population_for_histogram.yaml"
@@ -50,4 +48,3 @@ with open("./target/debug/examples/reservoir_means.yaml") as res_file, open(
     if not os.path.exists("visualizations"):
         os.mkdir("visualizations")
     fig.write_image("visualizations/reservoir_means.png")
-
