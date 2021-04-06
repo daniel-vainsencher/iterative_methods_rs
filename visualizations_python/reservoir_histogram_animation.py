@@ -32,9 +32,9 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
     xm = np.min(population) - 0.2
     xM = np.max(population) + 0.2
     ym = 0
-    # yM = 1 / (np.sqrt(2 * np.pi) * np.sqrt(2) * sigma)
-    yM = 0.4
-    num_bins = 20
+    # yM = 1 / (np.sqrt(2 * np.pi) * sigma)
+    yM = 0.2
+    num_bins = parameters["num_bins"]
 
     fig = go.Figure()
     fig.add_trace(
@@ -74,11 +74,11 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
                 annotations=[
                     dict(
                         showarrow=False,
-                        x="1.",
+                        x=".5",
                         y=".27",
                         text=f"Reservoir Number: {i}",
                         font_size=14,
-                        xanchor="left",
+                        xanchor="center",
                         # xshift=10,
                         opacity=1.0,
                     ),

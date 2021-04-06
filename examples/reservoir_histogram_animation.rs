@@ -10,10 +10,11 @@ use streaming_iterator::*;
 /// stream has been used in each reservoir.
 fn reservoir_histogram_animation() -> Result<Vec<String>, std::io::Error> {
     // Streamline up error handling
-    let stream_size: usize = 10_i32.pow(04) as usize;
+    let stream_size: usize = 10_i32.pow(05) as usize;
     let num_initial_values = stream_size / 4;
     let num_final_values = 3 * stream_size / 4;
-    let capacity: usize = 100;
+    let capacity: usize = 500;
+    let num_bins: usize = 50;
     let mut parameters: HashMap<&str, String> = HashMap::new();
     // Define file paths for yaml data
     let population_file = "./target/debug/examples/population_for_histogram.yaml";
@@ -35,6 +36,7 @@ fn reservoir_histogram_animation() -> Result<Vec<String>, std::io::Error> {
     parameters.insert("reservoir_samples_file", reservoir_samples_file.to_string());
     parameters.insert("parameters_file_path", parameters_file_path.to_string());
     parameters.insert("reservoir_means_file", reservoir_means_file.to_string());
+    parameters.insert("num_bins", num_bins.to_string());
     println!(
         "The test uses a stream of size {:#?} and a reservoir capacity of {:#?}.",
         stream_size, capacity

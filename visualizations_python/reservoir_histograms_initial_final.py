@@ -20,11 +20,13 @@ with open(parameters["population_file"]) as pop_file:
     population = [value for i, value in population]
     population = np.array(population, dtype=float)
 
+    sigma = float(parameters["sigma"])
     xm = np.min(population) - 0.2
     xM = np.max(population) + 0.2
     ym = 0
-    yM = 0.4
-    num_bins = 20
+    yM = 0.2
+    # yM = 1 / (np.sqrt(2 * np.pi) * sigma)
+    num_bins = parameters["num_bins"]
 
     fig = go.Figure()
     fig.add_trace(
