@@ -80,13 +80,12 @@ fn reservoir_histogram_animation() -> Result<Vec<String>, std::io::Error> {
         }
     };
     let stream = stream.map(reservoir_mean_and_max_index);
-    let stream = write_yaml_documents(stream, reservoir_means_file.to_string())
+    let mut stream = write_yaml_documents(stream, reservoir_means_file.to_string())
         .expect("Create File and initialize yaml iter failed.");
     // num_res is used in the python script for visualizations to initialize the size of the array that will hold that data to visualize.
     let mut num_res = 0i64;
-    let mut stream = enumerate(stream);
-    while let Some(item) = stream.next() {
-        num_res = item.count + 1;
+    while let Some(_item) = stream.next() {
+        num_res += 1;
     }
     parameters.insert("num_res", num_res.to_string());
     utils::write_parameters_to_yaml(parameters, parameters_file_path)?;
