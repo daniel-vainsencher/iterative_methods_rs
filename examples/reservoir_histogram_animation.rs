@@ -3,6 +3,7 @@ use iterative_methods::*;
 use std::collections::HashMap;
 use std::process::Command;
 use streaming_iterator::*;
+use std::cmp;
 
 /// Write the full stream and a sequence of reservoir samples
 /// to yaml files. The stream
@@ -69,7 +70,7 @@ fn reservoir_histogram_animation() -> Result<Vec<String>, std::io::Error> {
             .iter()
             .map(|numbered| 
                 {
-                max_index = std::cmp::max(max_index, numbered.count);
+                max_index = cmp::max(max_index, numbered.count);
                 numbered.item.unwrap()
                 })
             .sum();
