@@ -63,20 +63,19 @@ fn reservoir_histogram_animation() -> Result<Vec<String>, std::io::Error> {
     let stream = step_by(stream, 20);
     let stream = write_yaml_documents(stream, reservoir_samples_file.to_string())
         .expect("Create File and initialize yaml iter failed.");
-    // Define a named closure to compute the max index and reservoir mean
     let reservoir_mean_and_max_index = |reservoir: &Vec<Numbered<&f64>>| -> Numbered<f64> {
-        let max_index = &reservoir
-            .iter()
-            .map(|numbered| numbered.count)
-            .max()
-            .unwrap();
+        let mut max_index = 0i64;
         let mean: f64 = reservoir
             .iter()
-            .map(|numbered| numbered.item.unwrap())
+            .map(|numbered| 
+                {
+                max_index = std::cmp::max(max_index, numbered.count);
+                numbered.item.unwrap()
+                })
             .sum();
         let mean = mean / (capacity as f64);
         Numbered {
-            count: *max_index,
+            count: max_index,
             item: Some(mean),
         }
     };
