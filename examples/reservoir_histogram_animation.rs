@@ -1,9 +1,9 @@
 use crate::utils;
 use iterative_methods::*;
+use std::cmp;
 use std::collections::HashMap;
 use std::process::Command;
 use streaming_iterator::*;
-use std::cmp;
 
 /// Write the full stream and a sequence of reservoir samples
 /// to yaml files. The stream
@@ -68,11 +68,10 @@ fn reservoir_histogram_animation() -> Result<Vec<String>, std::io::Error> {
         let mut max_index = 0i64;
         let mean: f64 = reservoir
             .iter()
-            .map(|numbered| 
-                {
+            .map(|numbered| {
                 max_index = cmp::max(max_index, numbered.count);
                 numbered.item.unwrap()
-                })
+            })
             .sum();
         let mean = mean / (capacity as f64);
         Numbered {
@@ -93,7 +92,6 @@ fn reservoir_histogram_animation() -> Result<Vec<String>, std::io::Error> {
     utils::write_parameters_to_yaml(parameters, parameters_file_path)?;
     Ok(file_list)
 }
-
 
 fn make_initial_final_histograms_in_python() -> std::io::Result<()> {
     let output = Command::new("python3")
