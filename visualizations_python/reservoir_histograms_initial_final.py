@@ -36,7 +36,7 @@ with open(parameters["population_file"]) as pop_file:
             histnorm="probability",
             marker_color="#539A99",
             opacity=0.75,
-            name=f"Initial Population Distribution: \nFirst {num_initial_values} Samples",
+            name=f"Initial Population Distribution: First {num_initial_values} Samples",
         )
     )
     fig.add_trace(
@@ -46,7 +46,7 @@ with open(parameters["population_file"]) as pop_file:
             histnorm="probability",
             marker_color="#FCA000",
             opacity=0.75,
-            name=f"Final Population Distribution: \nAll {stream_size} Samples",
+            name=f"Final Population Distribution: All {stream_size} Samples",
         )
     )
 
