@@ -36,7 +36,7 @@ with open(parameters["population_file"]) as pop_file:
             histnorm="probability",
             marker_color="#539A99",
             opacity=0.75,
-            name=f"Initial Population Distribution: First {num_initial_values} Samples",
+            name=f"Initial Population Distribution: \nFirst {num_initial_values} Samples",
         )
     )
     fig.add_trace(
@@ -46,7 +46,7 @@ with open(parameters["population_file"]) as pop_file:
             histnorm="probability",
             marker_color="#FCA000",
             opacity=0.75,
-            name=f"Final Population Distribution: All {stream_size} Samples",
+            name=f"Final Population Distribution: \nAll {stream_size} Samples",
         )
     )
 
@@ -74,6 +74,8 @@ with open(parameters["population_file"]) as pop_file:
     if not os.path.exists("visualizations"):
         os.mkdir("visualizations")
     config = {"staticPlot":True, "displayModeBar": False}
+    # fig.update_layout(autosize=True)
+    # fig.update_layout(width = 400, height=300)
     fig.write_html(
         file="visualizations/reservoir_histograms_initial_final.html", config=config
     )
