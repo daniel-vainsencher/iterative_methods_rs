@@ -88,8 +88,8 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
         for i in range(num_res)
     ]
     fig.layout = go.Layout(
-        xaxis=dict(range=[xm, xM], autorange=False, zeroline=False),
-        yaxis=dict(range=[ym, yM], autorange=False, zeroline=False),
+        xaxis=dict(range=[xm, xM], autorange=False, zeroline=False, fixedrange=True),
+        yaxis=dict(range=[ym, yM], autorange=False, zeroline=False, fixedrange=True),
         # title_text="Drifting Distribution: Reservoir Samples Represent the Stream Distribution",
         # xanchor="center",
         hovermode="closest",
@@ -141,4 +141,9 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
     # To export:
     if not os.path.exists("visualizations"):
         os.mkdir("visualizations")
-    fig.write_html("visualizations/reservoir_histogram_animation.html")
+    config = {"displayModeBar": False}
+    fig.write_html(
+        file="visualizations/reservoir_histogram_animation.html",
+        config=config,
+        auto_play=False,
+    )

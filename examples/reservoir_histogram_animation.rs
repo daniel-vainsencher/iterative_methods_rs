@@ -11,7 +11,7 @@ use streaming_iterator::*;
 /// stream has been used in each reservoir.
 fn reservoir_histogram_animation() -> Result<Vec<String>, std::io::Error> {
     // Streamline up error handling
-    let stream_size: usize = 10_i32.pow(05) as usize;
+    let stream_size: usize = 10_i32.pow(04) as usize;
     let num_initial_values = stream_size / 4;
     let num_final_values = 3 * stream_size / 4;
     let capacity: usize = 500;

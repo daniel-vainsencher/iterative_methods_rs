@@ -51,8 +51,8 @@ with open(parameters["population_file"]) as pop_file:
     )
 
     fig.layout = go.Layout(
-        xaxis=dict(range=[xm, xM], autorange=False, zeroline=False),
-        yaxis=dict(range=[ym, yM], autorange=False, zeroline=False),
+        xaxis=dict(range=[xm, xM], autorange=False, zeroline=False, fixedrange=True),
+        yaxis=dict(range=[ym, yM], autorange=False, zeroline=False, fixedrange=True),
         # title_text="Drifting Distribution: Reservoir Samples Represent the Stream Distribution",
         # xanchor="center",
         hovermode="closest",
@@ -73,4 +73,7 @@ with open(parameters["population_file"]) as pop_file:
     # To export:
     if not os.path.exists("visualizations"):
         os.mkdir("visualizations")
-    fig.write_html("visualizations/reservoir_histograms_initial_final.html")
+    config = {"displayModeBar": False}
+    fig.write_html(
+        file="visualizations/reservoir_histograms_initial_final.html", config=config
+    )

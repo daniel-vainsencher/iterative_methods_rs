@@ -41,10 +41,14 @@ with open("./target/debug/examples/reservoir_means.yaml") as res_file, open(
         go.Scatter(x=arr[:, 0], y=arr[:, 2], name="Stream Means", mode="lines+markers")
     )
     fig.update_layout(
-        title=f"Reservoir and Stream Means. <br> Stream Size={parameters['stream_size']}, Capacity={parameters['capacity']}, \n Number of Reservoirs={parameters['num_res']}"
+        title=f"Reservoir and Stream Means. <br> Stream Size={parameters['stream_size']}, Capacity={parameters['capacity']}, \n Number of Reservoirs={parameters['num_res']}",
+        xaxis=dict(fixedrange=True),
+        yaxis=dict(fixedrange=True)
     )
 
     # To export a still image:
     if not os.path.exists("visualizations"):
         os.mkdir("visualizations")
-    fig.write_image("visualizations/reservoir_means.png")
+
+    config = {"displayModeBar": False}
+    fig.write_html(file="visualizations/reservoir_means.html", config=config)
