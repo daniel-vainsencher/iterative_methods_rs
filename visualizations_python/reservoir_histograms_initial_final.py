@@ -73,7 +73,7 @@ with open(parameters["population_file"]) as pop_file:
     # To export:
     if not os.path.exists("visualizations"):
         os.mkdir("visualizations")
-    config = {"displayModeBar": False}
+    config = {"staticPlot":True, "displayModeBar": False}
     fig.write_html(
         file="visualizations/reservoir_histograms_initial_final.html", config=config
     )

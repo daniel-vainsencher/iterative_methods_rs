@@ -141,7 +141,7 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
     # To export:
     if not os.path.exists("visualizations"):
         os.mkdir("visualizations")
-    config = {"displayModeBar": False}
+    config = {"staticPlot":True, "displayModeBar": False}
     fig.write_html(
         file="visualizations/reservoir_histogram_animation.html",
         config=config,

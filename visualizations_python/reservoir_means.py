@@ -50,5 +50,5 @@ with open("./target/debug/examples/reservoir_means.yaml") as res_file, open(
     if not os.path.exists("visualizations"):
         os.mkdir("visualizations")
 
-    config = {"displayModeBar": False}
+    config = {"staticPlot":True, "displayModeBar": False}
     fig.write_html(file="visualizations/reservoir_means.html", config=config)
