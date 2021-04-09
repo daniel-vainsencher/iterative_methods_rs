@@ -20,14 +20,14 @@ with open("./target/debug/examples/reservoir_means.yaml") as res_file, open(
     # For the population, extract the sample values; forget the enumeration.
     population = [value for i, value in population]
     population = np.array(population, dtype=float)
-    # print("population", population)
-    # Initialize an array with rows [index, reservoir_mean, population_slice_mean] where:
-    # index = enumeration of the reservoirs,
-    # reservoir_mean = mean of the reservoir
-    # population_slice_mean = mean of the slice of the population from which the reservoir sample was taken
+    """
+    Initialize an array with rows [index, reservoir_mean, population_slice_mean] where:
+        index = enumeration of the reservoirs,
+        reservoir_mean = mean of the reservoir
+        population_slice_mean = mean of the slice of the population from which the reservoir sample was taken
+    """
     arr = np.full((parameters["num_res"], 3), 0, dtype=float)
     for i, (ind, res) in enumerate(reservoir_means):
-        # print("i, res:", i, res)
         arr[i, 0] = ind
         arr[i, 1] = res
         arr[i, 2] = np.mean(population[: ind + 1])
@@ -41,14 +41,15 @@ with open("./target/debug/examples/reservoir_means.yaml") as res_file, open(
         go.Scatter(x=arr[:, 0], y=arr[:, 2], name="Stream Means", mode="lines+markers")
     )
     fig.update_layout(
-        # title=f"Reservoir and Stream Means. <br> Stream Size={parameters['stream_size']}, Capacity={parameters['capacity']}, \n Number of Reservoirs={parameters['num_res']}",
         xaxis=dict(fixedrange=True),
-        yaxis=dict(fixedrange=True)
+        yaxis=dict(fixedrange=True),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="#c2d1ef",
     )
 
     # To export a still image:
     if not os.path.exists("visualizations"):
         os.mkdir("visualizations")
 
-    config = {"staticPlot":True, "displayModeBar": False}
+    config = {"staticPlot": True, "displayModeBar": False}
     fig.write_html(file="visualizations/reservoir_means.html", config=config)

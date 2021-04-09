@@ -25,7 +25,6 @@ with open(parameters["population_file"]) as pop_file:
     xM = np.max(population) + 0.2
     ym = 0
     yM = 0.2
-    # yM = 1 / (np.sqrt(2 * np.pi) * sigma)
     num_bins = parameters["num_bins"]
 
     fig = go.Figure()
@@ -53,29 +52,18 @@ with open(parameters["population_file"]) as pop_file:
     fig.layout = go.Layout(
         xaxis=dict(range=[xm, xM], autorange=False, zeroline=False, fixedrange=True),
         yaxis=dict(range=[ym, yM], autorange=False, zeroline=False, fixedrange=True),
-        # title_text="Drifting Distribution: Reservoir Samples Represent the Stream Distribution",
-        # xanchor="center",
         hovermode="closest",
         barmode="group",
         bargroupgap=0.1,
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="#c2d1ef",
+        legend=dict(yanchor="top", y=1.00, xanchor="left", x=0.01),
     )
-
-    # fig.update_layout(
-    #     title=dict(
-    #         text="The Initial and Final Reservoir Distributions",
-    #         x=0.5,
-    #         y=0.9,
-    #         xanchor="center",
-    #         yanchor="top",
-    #     )
-    # )
 
     # To export:
     if not os.path.exists("visualizations"):
         os.mkdir("visualizations")
-    config = {"staticPlot":True, "displayModeBar": False}
-    # fig.update_layout(autosize=True)
-    # fig.update_layout(width = 400, height=300)
+    config = {"staticPlot": True, "displayModeBar": False}
     fig.write_html(
         file="visualizations/reservoir_histograms_initial_final.html", config=config
     )

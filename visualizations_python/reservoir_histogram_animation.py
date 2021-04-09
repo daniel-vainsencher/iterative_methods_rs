@@ -32,7 +32,6 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
     xm = np.min(population) - 0.2
     xM = np.max(population) + 0.2
     ym = 0
-    # yM = 1 / (np.sqrt(2 * np.pi) * sigma)
     yM = 0.2
     num_bins = parameters["num_bins"]
 
@@ -74,11 +73,11 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
                 annotations=[
                     dict(
                         showarrow=False,
-                        x=".5",
-                        y=".27",
+                        x="-.1",
+                        y=".5",
                         text=f"Reservoir Number: {i}",
                         font_size=14,
-                        xanchor="center",
+                        xanchor="right",
                         # xshift=10,
                         opacity=1.0,
                     ),
@@ -90,8 +89,6 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
     fig.layout = go.Layout(
         xaxis=dict(range=[xm, xM], autorange=False, zeroline=False, fixedrange=True),
         yaxis=dict(range=[ym, yM], autorange=False, zeroline=False, fixedrange=True),
-        # title_text="Drifting Distribution: Reservoir Samples Represent the Stream Distribution",
-        # xanchor="center",
         hovermode="closest",
         updatemenus=[
             dict(
@@ -129,32 +126,28 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
     )
 
     fig.update_layout(
-        # title=dict(
-        #     text="The Reservoir Distribution Follows The Stream Distribution",
-        #     x=0.5,
-        #     y=0.9,
-        #     xanchor="center",
-        #     yanchor="top",
-        # ),
         updatemenus=[
-        dict(
-            type = "buttons",
-            direction = "down",
-            pad={"r": 10, "t": 10},
-            showactive=True,
-            x=-0.5,
-            xanchor="left",
-            y=1.0,
-            yanchor="top"
-        ),
-    ]
-
+            dict(
+                type="buttons",
+                direction="down",
+                pad={"r": 10, "t": 10},
+                showactive=True,
+                x=-0.1,
+                xanchor="right",
+                y=1.0,
+                yanchor="top",
+            ),
+        ],
+        legend=dict(yanchor="top", y=1.00, xanchor="left", x=0.01),
     )
 
     # To export:
     if not os.path.exists("visualizations"):
         os.mkdir("visualizations")
-    config = {"staticPlot":True, "displayModeBar": False}
+
+    fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="#c2d1ef")
+
+    config = {"staticPlot": True, "displayModeBar": False}
     fig.write_html(
         file="visualizations/reservoir_histogram_animation.html",
         config=config,
