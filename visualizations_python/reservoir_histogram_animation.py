@@ -129,13 +129,26 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
     )
 
     fig.update_layout(
-        title=dict(
-            text="The Reservoir Distribution Follows The Stream Distribution",
-            x=0.5,
-            y=0.9,
-            xanchor="center",
-            yanchor="top",
-        )
+        # title=dict(
+        #     text="The Reservoir Distribution Follows The Stream Distribution",
+        #     x=0.5,
+        #     y=0.9,
+        #     xanchor="center",
+        #     yanchor="top",
+        # ),
+        updatemenus=[
+        dict(
+            type = "buttons",
+            direction = "down",
+            pad={"r": 10, "t": 10},
+            showactive=True,
+            x=-0.5,
+            xanchor="left",
+            y=1.0,
+            yanchor="top"
+        ),
+    ]
+
     )
 
     # To export:
