@@ -32,8 +32,9 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
     xm = np.min(population) - 0.2
     xM = np.max(population) + 0.2
     ym = 0
-    yM = 0.2
+    yM = 0.4
     num_bins = parameters["num_bins"]
+    bin_size = .1
 
     fig = go.Figure()
     fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="#c2d1ef")
@@ -51,7 +52,7 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
                         args=[
                             None,
                             {
-                                "frame": {"duration": 50, "redraw": True},
+                                "frame": {"duration": 100, "redraw": True},
                                 "fromcurrent": True,
                                 "transition": {"duration": 0},
                             },
@@ -98,7 +99,7 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
             dict(xref = 'x', yref = 'y',
                 showarrow=False,
                 x=.5,
-                y=.17,
+                y=.35,
                 text=f"Reservoir Number: {0}",
                 font=dict(color='black'),
                 font_size=14,
@@ -112,18 +113,21 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
     fig.add_trace(
         go.Histogram(
             x=population[:capacity],
-            nbinsx=num_bins,
+            # nbinsx=num_bins,
+            xbins_size = bin_size,
             histnorm="probability",
-            bingroup=1,
+            # bingroup=1,
             marker_color="#EB89B5",
             opacity=0.75,
-            name="Population Distribution",
+            name="Stream Distribution",
         )
     )
+    
     fig.add_trace(
         go.Histogram(
             x=arr[: capacity, 1],
-            nbinsx=num_bins,
+            # nbinsx=num_bins,
+            xbins_size = bin_size,
             histnorm="probability",
             bingroup=2,
             marker_color="#330C73",
@@ -138,23 +142,25 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
         go.Frame(
             data=[
                 go.Histogram(
+                        x=population[:int(arr[i*capacity,0])],
+                        # nbinsx=num_bins,
+                        xbins_size = bin_size,
+                        histnorm="probability",
+                        # bingroup=1,
+                        marker_color="#EB89B5",
+                        opacity=0.75,
+                        name="Stream Distribution",
+                    ),
+                go.Histogram(
                     x=arr[i * capacity : (i + 1) * capacity, 1],
-                    nbinsx=num_bins,
+                    # nbinsx=num_bins,
+                    xbins_size = bin_size,
                     histnorm="probability",
-                    bingroup=2,
+                    # bingroup=2,
                     marker_color="#330C73",
                     opacity=0.75,
                     name="Reservoir Distribution",
                 ),
-                go.Histogram(
-                    x=population[:int(arr[i*capacity,0])],
-                    nbinsx=num_bins,
-                    histnorm="probability",
-                    bingroup=1,
-                    marker_color="#EB89B5",
-                    opacity=0.75,
-                    name="Stream Distribution",
-                )
             ],
 
             layout=go.Layout(

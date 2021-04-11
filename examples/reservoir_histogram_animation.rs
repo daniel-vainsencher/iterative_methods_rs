@@ -16,7 +16,7 @@ fn reservoir_histogram_animation(file_list: Vec<String>) -> std::io::Result<()> 
     let num_initial_values = stream_size / 4;
     let num_final_values = 3 * stream_size / 4;
     let capacity: usize = 500;
-    let num_bins: usize = 50;
+    let num_bins: usize = 20;
     let mut parameters: HashMap<String, String> = HashMap::new();
 
     parameters.insert("stream_size".to_string(), stream_size.to_string());
