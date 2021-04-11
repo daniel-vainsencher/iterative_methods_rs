@@ -134,7 +134,7 @@ pub fn expose_w(count: &f64) -> f64 {
 /// Utility functions for writing data to yaml, including for visualizations
 ///
 /// The order of the parameters is not controlled.
-pub fn write_parameters_to_yaml<T>(params: HashMap<&str, T>, file_path: &str) -> std::io::Result<()>
+pub fn write_parameters_to_yaml<T>(params: HashMap<String, T>, file_path: &str) -> std::io::Result<()>
 where
     T: std::string::ToString,
 {
