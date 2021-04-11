@@ -36,56 +36,7 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
     num_bins = parameters["num_bins"]
 
     fig = go.Figure()
-    fig.add_trace(
-        go.Histogram(
-            x=population,
-            nbinsx=num_bins,
-            histnorm="probability",
-            marker_color="#EB89B5",
-            opacity=0.75,
-            name="Population Distribution",
-        )
-    )
-    fig.add_trace(
-        go.Histogram(
-            x=population,
-            nbinsx=num_bins,
-            histnorm="probability",
-            marker_color="#EB89B5",
-            opacity=0.75,
-            name="Population Distribution",
-        )
-    )
-
-    fig.frames = [
-        go.Frame(
-            data=[
-                go.Histogram(
-                    x=arr[i * capacity : (i + 1) * capacity, 1],
-                    nbinsx=num_bins,
-                    histnorm="probability",
-                    marker_color="#330C73",
-                    opacity=0.75,
-                    name="Reservoir Distribution",
-                )
-            ],
-            layout=go.Layout(
-                annotations=[
-                    dict(
-                        showarrow=False,
-                        x="-.1",
-                        y=".5",
-                        text=f"Reservoir Number: {i}",
-                        font_size=14,
-                        xanchor="right",
-                        # xshift=10,
-                        opacity=1.0,
-                    ),
-                ]
-            ),
-        )
-        for i in range(num_res)
-    ]
+    fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="#c2d1ef")
     fig.layout = go.Layout(
         xaxis=dict(range=[xm, xM], autorange=False, zeroline=False, fixedrange=True),
         yaxis=dict(range=[ym, yM], autorange=False, zeroline=False, fixedrange=True),
@@ -100,9 +51,9 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
                         args=[
                             None,
                             {
-                                "frame": {"duration": 100, "redraw": True},
+                                "frame": {"duration": 50, "redraw": True},
                                 "fromcurrent": True,
-                                "transition": {"duration": 100},
+                                "transition": {"duration": 0},
                             },
                         ],
                     ),
@@ -125,6 +76,7 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
         bargroupgap=0.1,
     )
 
+    # to adjust position of play/pause buttons
     fig.update_layout(
         updatemenus=[
             dict(
@@ -138,16 +90,101 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
                 yanchor="top",
             ),
         ],
-        legend=dict(yanchor="top", y=1.00, xanchor="left", x=0.01),
+        legend=dict(yanchor="top", y=1.00, xanchor="left", x=0.01, bgcolor='rgba(0,0,0,0)'),
     )
+
+    fig.update_layout(
+        annotations=[
+            dict(xref = 'x', yref = 'y',
+                showarrow=False,
+                x=.5,
+                y=.17,
+                text=f"Reservoir Number: {0}",
+                font=dict(color='black'),
+                font_size=14,
+                xanchor="center",
+                # xshift=10,
+                opacity=1.0,
+            ),
+        ]
+    ),
+
+    fig.add_trace(
+        go.Histogram(
+            x=population[:capacity],
+            nbinsx=num_bins,
+            histnorm="probability",
+            bingroup=1,
+            marker_color="#EB89B5",
+            opacity=0.75,
+            name="Population Distribution",
+        )
+    )
+    fig.add_trace(
+        go.Histogram(
+            x=arr[: capacity, 1],
+            nbinsx=num_bins,
+            histnorm="probability",
+            bingroup=2,
+            marker_color="#330C73",
+            opacity=0.75,
+            name="Reservoir Distribution",
+        )
+    )
+
+
+
+    fig.frames = [
+        go.Frame(
+            data=[
+                go.Histogram(
+                    x=arr[i * capacity : (i + 1) * capacity, 1],
+                    nbinsx=num_bins,
+                    histnorm="probability",
+                    bingroup=2,
+                    marker_color="#330C73",
+                    opacity=0.75,
+                    name="Reservoir Distribution",
+                ),
+                go.Histogram(
+                    x=population[:int(arr[i*capacity,0])],
+                    nbinsx=num_bins,
+                    histnorm="probability",
+                    bingroup=1,
+                    marker_color="#EB89B5",
+                    opacity=0.75,
+                    name="Stream Distribution",
+                )
+            ],
+
+            layout=go.Layout(
+                annotations=[
+                    dict(xref = 'x', yref = 'y',
+                        showarrow=False,
+                        x=.5,
+                        y=.17,
+                        text=f"Reservoir Number: {i}",
+                        font=dict(color='black'),
+                        font_size=14,
+                        xanchor="center",
+                        # xshift=10,
+                        opacity=1.0,
+                    ),
+                ]
+            ),
+        )
+        for i in range(num_res)
+    ]
+    
 
     # To export:
     if not os.path.exists("visualizations"):
         os.mkdir("visualizations")
 
-    fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="#c2d1ef")
 
-    config = {"staticPlot": True, "displayModeBar": False}
+    config = {
+    "staticPlot": True, 
+    "displayModeBar": False}
     fig.write_html(
         file="visualizations/reservoir_histogram_animation.html",
         config=config,
