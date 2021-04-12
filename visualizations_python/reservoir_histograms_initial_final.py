@@ -24,14 +24,16 @@ with open(parameters["population_file"]) as pop_file:
     xm = np.min(population) - 0.2
     xM = np.max(population) + 0.2
     ym = 0
-    yM = 0.2
+    yM = 0.4
     num_bins = parameters["num_bins"]
+    bin_size = parameters["bin_size"]
 
     fig = go.Figure()
     fig.add_trace(
         go.Histogram(
             x=population[:num_initial_values],
-            nbinsx=num_bins,
+            # nbinsx=num_bins,
+            xbins_size = bin_size,
             histnorm="probability",
             marker_color="#539A99",
             opacity=0.75,
@@ -41,7 +43,8 @@ with open(parameters["population_file"]) as pop_file:
     fig.add_trace(
         go.Histogram(
             x=population,
-            nbinsx=num_bins,
+            # nbinsx=num_bins,
+            xbins_size = bin_size,
             histnorm="probability",
             marker_color="#FCA000",
             opacity=0.75,

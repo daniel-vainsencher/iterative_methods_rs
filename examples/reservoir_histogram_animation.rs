@@ -12,11 +12,12 @@ use std::fs;
 /// stream has been used in each reservoir.
 fn reservoir_histogram_animation(file_list: Vec<String>) -> std::io::Result<()>  {
     // Streamline up error handling
-    let stream_size: usize = 5*10_i32.pow(02) as usize;
+    let stream_size: usize = 10_i32.pow(04) as usize;
     let num_initial_values = stream_size / 4;
     let num_final_values = 3 * stream_size / 4;
-    let capacity: usize = 20;
+    let capacity: usize = 100;
     let num_bins: usize = 20;
+    let bin_size: f64 = 0.1;
     let mut parameters: HashMap<String, String> = HashMap::new();
 
     parameters.insert("stream_size".to_string(), stream_size.to_string());
@@ -24,6 +25,7 @@ fn reservoir_histogram_animation(file_list: Vec<String>) -> std::io::Result<()> 
     parameters.insert("num_final_values".to_string(), num_final_values.to_string());
     parameters.insert("capacity".to_string(), capacity.to_string());
     parameters.insert("num_bins".to_string(), num_bins.to_string());
+    parameters.insert("bin_size".to_string(), bin_size.to_string());
     
 
     for file in file_list {
