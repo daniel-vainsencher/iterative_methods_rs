@@ -16,6 +16,7 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
 
     capacity = int(parameters["capacity"])
     num_res = int(parameters["num_res"])
+    stream_size = int(parameters["stream_size"])
     print("capacity, num_res:", capacity, num_res)
     reservoirs = yaml.load_all(res_file, Loader=yaml.CLoader)
     population = yaml.load_all(pop_file, Loader=yaml.CLoader)
@@ -36,6 +37,20 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
     num_bins = parameters["num_bins"]
     bin_size = .1
 
+    # initialize the reservoir
+    current_res = arr[:capacity,1]
+    def make_res(ind):
+        """
+        This function returns the most recent reservoir given the 
+        index "ind" of the portion of the stream that has been processed.
+        Used in creating the histograms in the frames of the animation.
+        """
+        if ind > current_res[0]:
+            res = arr[arr[:,0] == ind,1]
+            if res.size > 0:
+                return res
+        return current_res
+
     fig = go.Figure()
     fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="#c2d1ef")
     fig.layout = go.Layout(
@@ -52,7 +67,7 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
                         args=[
                             None,
                             {
-                                "frame": {"duration": 100, "redraw": True},
+                                "frame": {"duration": 20, "redraw": True},
                                 "fromcurrent": True,
                                 "transition": {"duration": 0},
                             },
@@ -136,13 +151,13 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
         )
     )
 
-
-
-    fig.frames = [
-        go.Frame(
+    fig_frames = []
+    for i in range(capacity-1,stream_size):
+        current_res = make_res(i)
+        fig_frames.append(go.Frame(
             data=[
                 go.Histogram(
-                        x=population[:int(arr[i*capacity,0])],
+                        x=population[:i],
                         # nbinsx=num_bins,
                         xbins_size = bin_size,
                         histnorm="probability",
@@ -152,7 +167,7 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
                         name="Stream Distribution",
                     ),
                 go.Histogram(
-                    x=arr[i * capacity : (i + 1) * capacity, 1],
+                    x = current_res,
                     # nbinsx=num_bins,
                     xbins_size = bin_size,
                     histnorm="probability",
@@ -177,11 +192,9 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
                         opacity=1.0,
                     ),
                 ]
-            ),
-        )
-        for i in range(num_res)
-    ]
-    
+            )
+        ))
+    fig.frames = fig_frames
 
     # To export:
     if not os.path.exists("visualizations"):
