@@ -34,11 +34,11 @@ with open("./target/debug/examples/reservoir_means.yaml") as res_file, open(
     fig = go.Figure()
     fig.add_trace(
         go.Scatter(
-            x=arr[:, 0], y=arr[:, 1], name="Reservoir Means", mode="lines+markers"
+            x=arr[:, 0], y=arr[:, 1], name="Reservoir Means", mode="lines+markers", marker_color="#539A99"
         )
     )
     fig.add_trace(
-        go.Scatter(x=arr[:, 0], y=arr[:, 2], name="Stream Means", mode="lines+markers")
+        go.Scatter(x=arr[:, 0], y=arr[:, 2], name="Stream Means", mode="lines+markers", marker_color="#FCA000")
     )
     fig.update_layout(
         xaxis=dict(fixedrange=True),

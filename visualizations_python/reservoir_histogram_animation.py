@@ -3,6 +3,7 @@ import yaml
 import plotly.graph_objects as go
 import os
 from operator import itemgetter
+import sys
 
 
 parameters = {}
@@ -33,26 +34,31 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
     xm = np.min(population) - 0.2
     xM = np.max(population) + 0.2
     ym = 0
-    yM = 0.4
+    yM = 0.3
     num_bins = parameters["num_bins"]
     bin_size = parameters["bin_size"]
 
     # initialize the reservoir
     current_res = arr[:capacity]
+
     def make_res(ind):
         """
-        This function returns the most recent reservoir given the 
+        This function returns the most recent reservoir given the
         index "ind" of the portion of the stream that has been processed.
         Used in creating the histograms in the frames of the animation.
         """
-        if ind > current_res[0,0]:
-            res = arr[arr[:,0] == ind]
+        if ind > current_res[0, 0]:
+            res = arr[arr[:, 0] == ind]
             if res.size > 0:
                 return res
         return current_res
+
     # duration of animation in milliseconds
-    total_duration = 7 * 1000 
-    frame_duration = total_duration // stream_size
+    total_duration = 10 * 1000
+    skip_size = 2000
+    num_frames = stream_size // skip_size
+    frame_duration = total_duration // num_frames
+    print("frame duration:", frame_duration)
 
     fig = go.Figure()
     fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="#c2d1ef")
@@ -109,31 +115,35 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
                 yanchor="top",
             ),
         ],
-        legend=dict(yanchor="top", y=1.00, xanchor="left", x=0.01, bgcolor='rgba(0,0,0,0)'),
+        legend=dict(
+            yanchor="top", y=1.00, xanchor="left", x=0.01, bgcolor="rgba(0,0,0,0)"
+        ),
     )
 
     fig.update_layout(
         annotations=[
-            dict(xref = 'x', yref = 'y',
+            dict(
+                xref="x",
+                yref="y",
                 showarrow=False,
-                x=.5,
-                y=.35,
+                x=0.5,
+                y=0.27,
                 text=f"Percent of Stream Processed: {0}",
-                font=dict(color='black'),
+                font=dict(color="black"),
                 font_size=14,
                 xanchor="center",
-                # xshift=10,
                 opacity=1.0,
             ),
-            dict(xref = 'x', yref = 'y',
+            dict(
+                xref="x",
+                yref="y",
                 showarrow=False,
-                x=.5,
-                y=.3,
-                text=f"Reservoir Number: {0}",
-                font=dict(color='black'),
+                x=0.5,
+                y=0.22,
+                text=f"Reservoir Index: {0}",
+                font=dict(color="black"),
                 font_size=14,
                 xanchor="center",
-                # xshift=10,
                 opacity=1.0,
             ),
         ]
@@ -142,99 +152,92 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
     fig.add_trace(
         go.Histogram(
             x=population[:capacity],
-            # nbinsx=num_bins,
-            xbins_size = bin_size,
+            xbins_size=bin_size,
             histnorm="probability",
-            # bingroup=1,
-            marker_color="#EB89B5",
+            marker_color="#FCA000",
             opacity=0.75,
-            name="Stream Distribution",
+            name=f"Stream Distribution (Stream Size: {stream_size})",
         )
     )
-    
+
     fig.add_trace(
         go.Histogram(
-            # x=arr[: capacity, 1],
-            x = current_res[:,1],
-            # nbinsx=num_bins,
-            xbins_size = bin_size,
+            x=current_res[:, 1],
+            xbins_size=bin_size,
             histnorm="probability",
             bingroup=2,
-            marker_color="#330C73",
+            marker_color="#539A99",
             opacity=0.75,
-            name="Reservoir Distribution",
+            name=f"Reservoir Distribution (Capacity: {capacity})",
         )
     )
 
     fig_frames = []
     res_num = 0
-    max_index = current_res[0,0]
-    for i in range(capacity-1,stream_size):
-        current_res = make_res(i)
-        if current_res[0,0] > max_index:
-            max_index = current_res[0,0]
+    max_index = current_res[0, 0]
+    for i in range(capacity - 1, stream_size):
+        current_res = make_res(i)        
+        if current_res[0, 0] > max_index:
+            max_index = current_res[0, 0]
             res_num += 1
-        fig_frames.append(go.Frame(
-            data=[
-                go.Histogram(
-                        x=population[:i],
-                        # nbinsx=num_bins,
-                        xbins_size = bin_size,
-                        histnorm="probability",
-                        # bingroup=1,
-                        marker_color="#EB89B5",
-                        opacity=0.75,
-                        name="Stream Distribution",
+        if i % skip_size == 0:
+            fig_frames.append(
+                go.Frame(
+                    data=[
+                        go.Histogram(
+                            x=population[:i],                            
+                            xbins_size=bin_size,
+                            histnorm="probability",                            
+                            marker_color="#FCA000",
+                            opacity=0.75,
+                            name=f"Stream Distribution (Stream Size: {stream_size})",
+                        ),
+                        go.Histogram(
+                            x=current_res[:, 1],
+                            xbins_size=bin_size,
+                            histnorm="probability",                            
+                            marker_color="#539A99",
+                            opacity=0.75,
+                            name=f"Reservoir Distribution (Capacity: {capacity})",
+                        ),
+                    ],
+                    layout=go.Layout(
+                        annotations=[
+                            dict(
+                                xref="x",
+                                yref="y",
+                                showarrow=False,
+                                x=0.5,
+                                y=0.27,
+                                text=f"Percent of Stream Processed: {(100*i) // stream_size}",
+                                font=dict(color="black"),
+                                font_size=14,
+                                xanchor="center",                                
+                                opacity=1.0,
+                            ),
+                            dict(
+                                xref="x",
+                                yref="y",
+                                showarrow=False,
+                                x=0.5,
+                                y=0.22,
+                                text=f"Reservoir Index: {res_num}",
+                                font=dict(color="black"),
+                                font_size=14,
+                                xanchor="center",                                
+                                opacity=1.0,
+                            ),
+                        ]
                     ),
-                go.Histogram(
-                    x = current_res[:,1],
-                    # nbinsx=num_bins,
-                    xbins_size = bin_size,
-                    histnorm="probability",
-                    # bingroup=2,
-                    marker_color="#330C73",
-                    opacity=0.75,
-                    name="Reservoir Distribution",
-                ),
-            ],
-
-            layout=go.Layout(
-                annotations=[
-                    dict(xref = 'x', yref = 'y',
-                        showarrow=False,
-                        x=.5,
-                        y=.35,
-                        text=f"Percent of Stream Processed: {(100*i) // stream_size}",
-                        font=dict(color='black'),
-                        font_size=14,
-                        xanchor="center",
-                        # xshift=10,
-                        opacity=1.0,
-                    ),
-                    dict(xref = 'x', yref = 'y',
-                        showarrow=False,
-                        x=.5,
-                        y=.3,
-                        text=f"Reservoir Number: {res_num}",
-                        font=dict(color='black'),
-                        font_size=14,
-                        xanchor="center",
-                        # xshift=10,
-                        opacity=1.0,
-                    ),
-                ]
+                )
             )
-        ))
     fig.frames = fig_frames
 
     # To export:
     if not os.path.exists("visualizations"):
         os.mkdir("visualizations")
 
-
-    config = {
-    "staticPlot": True, 
-    "displayModeBar": False}
+    config = {"staticPlot": True, "displayModeBar": False}
     fig.write_html(
         file="visualizations/reservoir_histogram_animation.html",
         config=config,
