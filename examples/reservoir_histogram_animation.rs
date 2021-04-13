@@ -12,10 +12,10 @@ use std::fs;
 /// stream has been used in each reservoir.
 fn reservoir_histogram_animation(file_list: Vec<String>) -> std::io::Result<()>  {
     // Streamline up error handling
-    let stream_size: usize = 10_i32.pow(05) as usize;
+    let stream_size: usize = 10_i32.pow(04) as usize;
     let num_initial_values = stream_size / 4;
     let num_final_values = 3 * stream_size / 4;
-    let capacity: usize = 200;
+    let capacity: usize = 100;
     let num_bins: usize = 20;
     let bin_size: f64 = 0.05;
     let mut parameters: HashMap<String, String> = HashMap::new();
@@ -60,7 +60,7 @@ fn reservoir_histogram_animation(file_list: Vec<String>) -> std::io::Result<()> 
     let stream = write_yaml_documents(stream, parameters["population_file"].to_string())
         .expect("Create File and initialize yaml iter failed.");
     let stream = reservoir_iterable(stream, capacity, None);
-    let stream = step_by(stream, 20);
+    // let stream = step_by(stream, 20);
     let stream = write_yaml_documents(stream, parameters["reservoir_samples_file"].to_string())
         .expect("Create File and initialize yaml iter failed.");
     let reservoir_mean_and_max_index = |reservoir: &Vec<Numbered<&f64>>| -> Numbered<f64> {
@@ -98,7 +98,23 @@ fn make_initial_final_histograms_in_python() -> std::io::Result<()> {
         .output()?;
     if !output.status.success() {
         println!(
-            "Running reservoir_histograms_initial_final.py did not succeed. Error: {:#?}",
+            "Running reservoir_histograms_initial_final.py did not succeed. Error: {:#?}.\n
+
+            If you received error messages indicating that you do not have the modules needed, you can install them using the following steps:\n
+            0) If you don't already have it, install Python3 following the instructions at https://www.python.org/downloads/.\n
+
+            1) Install pip and virtual env according to the instructions here:\n
+            
+            https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/#:~:text=Installing%20virtualenv&text=venv%20is%20included%20in%20the,Python%20packages%20for%20different%20projects.\n
+
+            2) set up a virtual environment that will contain the dependencies:\n
+            `$ virtualenv <name>`\n
+
+            3) install the requirements using the requirements.txt file:\n
+            `$ pip install -r ./visualizations_python/requirements.txt`\n
+
+            4) Rerun the examples.\n
+            ",
             output
         );
     } else {

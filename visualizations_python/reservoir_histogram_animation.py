@@ -54,14 +54,13 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
         return current_res
 
     # duration of animation in milliseconds
-    total_duration = 10 * 1000
-    skip_size = 2000
+    total_duration = 6 * 1000
+    skip_size = 20
     num_frames = stream_size // skip_size
     frame_duration = total_duration // num_frames
     print("frame duration:", frame_duration)
 
     fig = go.Figure()
-    fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="#c2d1ef")
     fig.layout = go.Layout(
         xaxis=dict(range=[xm, xM], autorange=False, zeroline=False, fixedrange=True),
         yaxis=dict(range=[ym, yM], autorange=False, zeroline=False, fixedrange=True),
@@ -127,7 +126,7 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
                 yref="y",
                 showarrow=False,
                 x=0.5,
-                y=0.27,
+                y=0.22,
                 text=f"Percent of Stream Processed: {0}",
                 font=dict(color="black"),
                 font_size=14,
@@ -139,7 +138,7 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
                 yref="y",
                 showarrow=False,
                 x=0.5,
-                y=0.22,
+                y=0.17,
                 text=f"Reservoir Index: {0}",
                 font=dict(color="black"),
                 font_size=14,
@@ -208,7 +207,7 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
                                 yref="y",
                                 showarrow=False,
                                 x=0.5,
-                                y=0.27,
+                                y=0.22,
                                 text=f"Percent of Stream Processed: {(100*i) // stream_size}",
                                 font=dict(color="black"),
                                 font_size=14,
@@ -220,7 +219,7 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
                                 yref="y",
                                 showarrow=False,
                                 x=0.5,
-                                y=0.22,
+                                y=0.17,
                                 text=f"Reservoir Index: {res_num}",
                                 font=dict(color="black"),
                                 font_size=14,
@@ -237,6 +236,7 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
     if not os.path.exists("visualizations"):
         os.mkdir("visualizations")
 
+    fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="#c2d1ef")
     config = {"staticPlot": True, "displayModeBar": False}
     fig.write_html(
         file="visualizations/reservoir_histogram_animation.html",
