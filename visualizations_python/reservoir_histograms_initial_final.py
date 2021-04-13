@@ -1,9 +1,29 @@
-import numpy as np
-import yaml
-import plotly.graph_objects as go
+import sys
 import os
 from operator import itemgetter
+try:
+    import numpy as np
+    import yaml
+    import plotly.graph_objects as go
+except ModuleNotFoundError as error:
+    print(f"ModuleNotFoundError:", error, """\n 
+        You do not have the Python modules needed to generate the visualizations for this example.
+        You can install them using the following steps:
+            0) If you don't already have it, install Python3 following the instructions at https://www.python.org/downloads/.
+            
+            1) Install pip and virtual env according to the instructions here:
+            
+            https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/#:~:text=Installing%20virtualenv&text=venv%20is%20included%20in%20the,Python%20packages%20for%20different%20projects.
 
+            2) set up a virtual environment that will contain the dependencies:
+            `$ virtualenv <name>`
+
+            3) install the requirements using the requirements.txt file:
+            `$ pip install -r ./visualizations_python/requirements.txt`
+
+            4) Rerun the examples. 
+        """)
+    sys.exit(1)
 
 parameters = {}
 with open("./visualizations_python/parameters_for_histogram.yaml") as parameters_file:

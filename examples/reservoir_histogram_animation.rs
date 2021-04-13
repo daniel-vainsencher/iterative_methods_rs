@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use std::process::Command;
 use streaming_iterator::*;
 use std::fs;
+use std::io::Write;
 
 /// Write the full stream and a sequence of reservoir samples
 /// to yaml files. The stream
@@ -97,26 +98,8 @@ fn make_initial_final_histograms_in_python() -> std::io::Result<()> {
         .arg("./visualizations_python/reservoir_histograms_initial_final.py")
         .output()?;
     if !output.status.success() {
-        println!(
-            "Running reservoir_histograms_initial_final.py did not succeed. Error: {:#?}.\n
-
-            If you received error messages indicating that you do not have the modules needed, you can install them using the following steps:\n
-            0) If you don't already have it, install Python3 following the instructions at https://www.python.org/downloads/.\n
-
-            1) Install pip and virtual env according to the instructions here:\n
-            
-            https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/#:~:text=Installing%20virtualenv&text=venv%20is%20included%20in%20the,Python%20packages%20for%20different%20projects.\n
-
-            2) set up a virtual environment that will contain the dependencies:\n
-            `$ virtualenv <name>`\n
-
-            3) install the requirements using the requirements.txt file:\n
-            `$ pip install -r ./visualizations_python/requirements.txt`\n
-
-            4) Rerun the examples.\n
-            ",
-            output
-        );
+        println!("\n\n *****Running reservoir_histograms_initial_final.py did not succeed.*****\n\n");
+        std::io::stdout().write_all(&output.stdout).unwrap();
     } else {
         println!("Initial and Final Histograms exported successfully.");
     };
