@@ -6,17 +6,19 @@ use std::fs;
 use std::io::Write;
 use std::process::Command;
 use streaming_iterator::*;
+use std::env;
+use std::str::FromStr;  
 
 /// Write the full stream and a sequence of reservoir samples
 /// to yaml files. The stream
 /// is enumerated in order to track how much of the
 /// stream has been used in each reservoir.
-fn reservoir_visualizations(file_list: Vec<String>) -> std::io::Result<()> {
+fn reservoir_visualizations(file_list: Vec<String>, stream_size: usize, capacity: usize) -> std::io::Result<()> {
     // Streamline up error handling
-    let stream_size: usize = 5 * 10_i32.pow(03) as usize;
+    
+        
     let num_initial_values = stream_size / 4;
     let num_final_values = 3 * stream_size / 4;
-    let capacity: usize = 100;
     let bin_size: f64 = 0.05;
     let mut parameters: HashMap<String, String> = HashMap::new();
 
@@ -172,12 +174,38 @@ fn remove_yaml_files() -> Result<Vec<String>, std::io::Error> {
     Ok(file_list)
 }
 
+fn make_visualization() -> (bool, usize, usize) {
+    let args: Vec<String> = env::args().collect();
+    let mut visualize: bool = true;
+    if args.len() > 1 {
+        visualize = bool::from_str(&args[1]).expect("Invalid argument. Please use with 'true', 'false', or no argument.");
+    }
+    let mut stream_size: usize = 5 * 10_i32.pow(03) as usize;
+    let mut capacity: usize = 100;
+    if !visualize {
+        stream_size = 12;
+        capacity = 2;
+    } 
+    (visualize, stream_size, capacity)
+}
+
 fn main() -> std::io::Result<()> {
+    let (visualize, stream_size, capacity) = make_visualization();
     let file_list = remove_yaml_files()?;
-    reservoir_visualizations(file_list)?;
+    reservoir_visualizations(file_list, stream_size, capacity)?;
     println!("Data is written to yaml files.");
-    make_initial_final_histograms_in_python()?;
-    make_reservoir_means_plot_in_python()?;
-    make_animations_in_python()?;
+    if visualize {
+        make_initial_final_histograms_in_python()?;
+        make_reservoir_means_plot_in_python()?;
+        make_animations_in_python()?;
+    } else {
+        println!("The following .yaml files have been created:\n
+            ./target/debug/examples/population_for_histogram.yaml \n  
+            ./target/debug/examples/reservoirs_for_histogram.yaml \n
+            ./target/debug/examples/reservoir_means.yaml \n 
+            ./target/debug/examples/stream_for_histogram.yaml \n
+            ");
+    }
     Ok(())
+    
 }
