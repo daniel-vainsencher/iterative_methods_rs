@@ -2,18 +2,18 @@ use crate::utils;
 use iterative_methods::*;
 use std::cmp;
 use std::collections::HashMap;
-use std::process::Command;
-use streaming_iterator::*;
 use std::fs;
 use std::io::Write;
+use std::process::Command;
+use streaming_iterator::*;
 
 /// Write the full stream and a sequence of reservoir samples
 /// to yaml files. The stream
 /// is enumerated in order to track how much of the
 /// stream has been used in each reservoir.
-fn reservoir_histogram_animation(file_list: Vec<String>) -> std::io::Result<()>  {
+fn reservoir_visualizations(file_list: Vec<String>) -> std::io::Result<()> {
     // Streamline up error handling
-    let stream_size: usize = 5*10_i32.pow(03) as usize;
+    let stream_size: usize = 5 * 10_i32.pow(03) as usize;
     let num_initial_values = stream_size / 4;
     let num_final_values = 3 * stream_size / 4;
     let capacity: usize = 100;
@@ -21,21 +21,35 @@ fn reservoir_histogram_animation(file_list: Vec<String>) -> std::io::Result<()> 
     let mut parameters: HashMap<String, String> = HashMap::new();
 
     parameters.insert("stream_size".to_string(), stream_size.to_string());
-    parameters.insert("num_initial_values".to_string(), num_initial_values.to_string());
+    parameters.insert(
+        "num_initial_values".to_string(),
+        num_initial_values.to_string(),
+    );
     parameters.insert("num_final_values".to_string(), num_final_values.to_string());
     parameters.insert("capacity".to_string(), capacity.to_string());
     parameters.insert("bin_size".to_string(), bin_size.to_string());
-    
 
     for file in file_list {
         parameters.insert(file.clone(), file);
     }
 
-    parameters.insert("stream_file".to_string(), "./target/debug/examples/stream_for_histogram.yaml".to_string());
-    parameters.insert("reservoir_samples_file".to_string(), "./target/debug/examples/reservoirs_for_histogram.yaml".to_string());
-    parameters.insert("parameters_file_path".to_string(), "./visualizations_python/parameters_for_histogram.yaml".to_string());
-    parameters.insert("reservoir_means_file".to_string(), "./target/debug/examples/reservoir_means.yaml".to_string());
-    
+    parameters.insert(
+        "stream_file".to_string(),
+        "./target/debug/examples/stream_for_histogram.yaml".to_string(),
+    );
+    parameters.insert(
+        "reservoir_samples_file".to_string(),
+        "./target/debug/examples/reservoirs_for_histogram.yaml".to_string(),
+    );
+    parameters.insert(
+        "parameters_file_path".to_string(),
+        "./visualizations_python/parameters_for_histogram.yaml".to_string(),
+    );
+    parameters.insert(
+        "reservoir_means_file".to_string(),
+        "./target/debug/examples/reservoir_means.yaml".to_string(),
+    );
+
     println!(
         "The test uses a stream of size {:#?} and a reservoir capacity of {:#?}.",
         stream_size, capacity
@@ -91,12 +105,15 @@ fn reservoir_histogram_animation(file_list: Vec<String>) -> std::io::Result<()> 
     Ok(())
 }
 
+/// Call a Python script to make histograms of the initial and final stream.
 fn make_initial_final_histograms_in_python() -> std::io::Result<()> {
     let output = Command::new("python3")
         .arg("./visualizations_python/reservoir_histograms_initial_final.py")
         .output()?;
     if !output.status.success() {
-        println!("\n\n *****Running reservoir_histograms_initial_final.py did not succeed.*****\n\n");
+        println!(
+            "\n\n *****Running reservoir_histograms_initial_final.py did not succeed.*****\n\n"
+        );
         std::io::stdout().write_all(&output.stdout).unwrap();
     } else {
         println!("Initial and Final Histograms exported successfully.");
@@ -104,6 +121,7 @@ fn make_initial_final_histograms_in_python() -> std::io::Result<()> {
     Ok(())
 }
 
+/// Call a Python script to plot stream means vs reservoir means.
 fn make_reservoir_means_plot_in_python() -> std::io::Result<()> {
     let output = Command::new("python3")
         .arg("./visualizations_python/reservoir_means.py")
@@ -117,6 +135,8 @@ fn make_reservoir_means_plot_in_python() -> std::io::Result<()> {
     Ok(())
 }
 
+/// Call a Python script to create an animation showing the stream histogram and reservoir histogram
+/// as the stream is processed.
 fn make_animations_in_python() -> std::io::Result<()> {
     let output = Command::new("python3")
         .arg("./visualizations_python/reservoir_histogram_animation.py")
@@ -130,6 +150,7 @@ fn make_animations_in_python() -> std::io::Result<()> {
     Ok(())
 }
 
+/// A utility fn to remove the yaml files full of the data generated.
 fn remove_yaml_files() -> Result<Vec<String>, std::io::Error> {
     // Define file paths for yaml data
     let stream_file = "./target/debug/examples/stream_for_histogram.yaml";
@@ -146,14 +167,14 @@ fn remove_yaml_files() -> Result<Vec<String>, std::io::Error> {
     for file in file_list.iter() {
         if let Ok(_) = fs::metadata(file) {
             Command::new("rm").arg(file).output()?;
-        } 
+        }
     }
     Ok(file_list)
 }
 
 fn main() -> std::io::Result<()> {
     let file_list = remove_yaml_files()?;
-    reservoir_histogram_animation(file_list)?;
+    reservoir_visualizations(file_list)?;
     println!("Data is written to yaml files.");
     make_initial_final_histograms_in_python()?;
     make_reservoir_means_plot_in_python()?;
