@@ -13,7 +13,7 @@ use streaming_iterator::*;
 /// to yaml files. The stream
 /// is enumerated in order to track how much of the
 /// stream has been used in each reservoir.
-fn reservoir_visualizations(
+fn write_reservoir_visualizations_data_to_yaml(
     file_list: Vec<String>,
     stream_size: usize,
     capacity: usize,
@@ -196,7 +196,7 @@ fn make_visualization() -> (bool, usize, usize) {
 fn main() -> std::io::Result<()> {
     let (visualize, stream_size, capacity) = make_visualization();
     let file_list = remove_yaml_files()?;
-    reservoir_visualizations(file_list, stream_size, capacity)?;
+    write_reservoir_visualizations_data_to_yaml(file_list, stream_size, capacity)?;
     println!("Data is written to yaml files.");
     if visualize {
         make_initial_final_histograms_in_python()?;
