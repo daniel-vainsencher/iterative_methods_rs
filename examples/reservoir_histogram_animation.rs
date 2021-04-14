@@ -177,7 +177,7 @@ fn remove_yaml_files() -> Result<Vec<String>, std::io::Error> {
     Ok(file_list)
 }
 
-fn make_visualization() -> (bool, usize, usize) {
+fn set_visualization_parameters() -> (bool, usize, usize) {
     let args: Vec<String> = env::args().collect();
     let mut visualize: bool = true;
     if args.len() > 1 {
@@ -194,7 +194,7 @@ fn make_visualization() -> (bool, usize, usize) {
 }
 
 fn main() -> std::io::Result<()> {
-    let (visualize, stream_size, capacity) = make_visualization();
+    let (visualize, stream_size, capacity) = set_visualization_parameters();
     let file_list = remove_yaml_files()?;
     write_reservoir_visualizations_data_to_yaml(file_list, stream_size, capacity)?;
     println!("Data is written to yaml files.");
