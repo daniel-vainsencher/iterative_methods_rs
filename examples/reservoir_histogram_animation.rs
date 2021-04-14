@@ -13,11 +13,10 @@ use std::io::Write;
 /// stream has been used in each reservoir.
 fn reservoir_histogram_animation(file_list: Vec<String>) -> std::io::Result<()>  {
     // Streamline up error handling
-    let stream_size: usize = 10_i32.pow(04) as usize;
+    let stream_size: usize = 5*10_i32.pow(03) as usize;
     let num_initial_values = stream_size / 4;
     let num_final_values = 3 * stream_size / 4;
     let capacity: usize = 100;
-    let num_bins: usize = 20;
     let bin_size: f64 = 0.05;
     let mut parameters: HashMap<String, String> = HashMap::new();
 
@@ -25,7 +24,6 @@ fn reservoir_histogram_animation(file_list: Vec<String>) -> std::io::Result<()> 
     parameters.insert("num_initial_values".to_string(), num_initial_values.to_string());
     parameters.insert("num_final_values".to_string(), num_final_values.to_string());
     parameters.insert("capacity".to_string(), capacity.to_string());
-    parameters.insert("num_bins".to_string(), num_bins.to_string());
     parameters.insert("bin_size".to_string(), bin_size.to_string());
     
 
@@ -33,7 +31,7 @@ fn reservoir_histogram_animation(file_list: Vec<String>) -> std::io::Result<()> 
         parameters.insert(file.clone(), file);
     }
 
-    parameters.insert("population_file".to_string(), "./target/debug/examples/population_for_histogram.yaml".to_string());
+    parameters.insert("stream_file".to_string(), "./target/debug/examples/stream_for_histogram.yaml".to_string());
     parameters.insert("reservoir_samples_file".to_string(), "./target/debug/examples/reservoirs_for_histogram.yaml".to_string());
     parameters.insert("parameters_file_path".to_string(), "./visualizations_python/parameters_for_histogram.yaml".to_string());
     parameters.insert("reservoir_means_file".to_string(), "./target/debug/examples/reservoir_means.yaml".to_string());
@@ -58,7 +56,7 @@ fn reservoir_histogram_animation(file_list: Vec<String>) -> std::io::Result<()> 
     let stream = stream_vec.iter();
     let stream = convert(stream);
     let stream = enumerate(stream);
-    let stream = write_yaml_documents(stream, parameters["population_file"].to_string())
+    let stream = write_yaml_documents(stream, parameters["stream_file"].to_string())
         .expect("Create File and initialize yaml iter failed.");
     let stream = reservoir_iterable(stream, capacity, None);
     // let stream = step_by(stream, 20);
@@ -111,10 +109,8 @@ fn make_reservoir_means_plot_in_python() -> std::io::Result<()> {
         .arg("./visualizations_python/reservoir_means.py")
         .output()?;
     if !output.status.success() {
-        println!(
-            "Running reservoir_means.py did not succeed. Error: {:#?}",
-            output
-        );
+        println!("\n\n *****Running reservoir_means.py did not succeed.*****\n\n");
+        std::io::stdout().write_all(&output.stdout).unwrap();
     } else {
         println!("Reservoir Means Plot exported successfully.");
     };
@@ -126,10 +122,8 @@ fn make_animations_in_python() -> std::io::Result<()> {
         .arg("./visualizations_python/reservoir_histogram_animation.py")
         .output()?;
     if !output.status.success() {
-        println!(
-            "Running reservoir_histogram_animation.py did not succeed. Error: {:#?}",
-            output
-        );
+        println!("\n\n *****Running reservoir_histogram_animation.py did not succeed.*****\n\n");
+        std::io::stdout().write_all(&output.stdout).unwrap();
     } else {
         println!("Animation exported successfully.");
     };
@@ -138,13 +132,13 @@ fn make_animations_in_python() -> std::io::Result<()> {
 
 fn remove_yaml_files() -> Result<Vec<String>, std::io::Error> {
     // Define file paths for yaml data
-    let population_file = "./target/debug/examples/population_for_histogram.yaml";
+    let stream_file = "./target/debug/examples/stream_for_histogram.yaml";
     let reservoir_samples_file = "./target/debug/examples/reservoirs_for_histogram.yaml";
     let parameters_file_path = "./visualizations_python/parameters_for_histogram.yaml";
     let reservoir_means_file = "./target/debug/examples/reservoir_means.yaml";
 
     let file_list = vec![
-        population_file.to_string(),
+        stream_file.to_string(),
         reservoir_samples_file.to_string(),
         parameters_file_path.to_string(),
         reservoir_means_file.to_string(),

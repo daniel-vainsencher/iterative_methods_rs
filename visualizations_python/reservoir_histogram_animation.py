@@ -1,9 +1,32 @@
-import numpy as np
-import yaml
-import plotly.graph_objects as go
+import sys
 import os
 from operator import itemgetter
-import sys
+try:
+    import numpy as np
+    import yaml
+    import plotly.graph_objects as go
+except ModuleNotFoundError as error:
+    print(f"ModuleNotFoundError:", error, """\n 
+        You do not have the Python modules needed to generate the visualizations for this example.
+        You can install them using the following steps:
+            0) If you don't already have it, install Python3 following the instructions at https://www.python.org/downloads/.
+            
+            1) Install pip and virtual env according to the instructions here:
+            
+            https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/#:~:text=Installing%20virtualenv&text=venv%20is%20included%20in%20the,Python%20packages%20for%20different%20projects.
+
+            2) Set up a virtual environment that will contain the dependencies:
+            `$ virtualenv <name>`
+            
+            3) Activate the environment:
+            `$ source <name>/bin/activate`
+
+            4) Install the requirements using the requirements.txt file:
+            `$ pip install -r ./visualizations_python/requirements.txt`
+
+            5) Rerun the examples. 
+        """)
+    sys.exit(1)
 
 
 parameters = {}
@@ -12,7 +35,7 @@ with open("./visualizations_python/parameters_for_histogram.yaml") as parameters
     parameters = yaml.load(parameters_file, Loader=yaml.CLoader)
 
 with open(parameters["reservoir_samples_file"]) as res_file, open(
-    parameters["population_file"]
+    parameters["stream_file"]
 ) as pop_file:
 
     capacity = int(parameters["capacity"])
@@ -20,9 +43,9 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
     stream_size = int(parameters["stream_size"])
     print("capacity, num_res:", capacity, num_res)
     reservoirs = yaml.load_all(res_file, Loader=yaml.CLoader)
-    population = yaml.load_all(pop_file, Loader=yaml.CLoader)
-    population = [value for i, value in population]
-    population = np.array(population, dtype=float)
+    stream = yaml.load_all(pop_file, Loader=yaml.CLoader)
+    stream = [value for i, value in stream]
+    stream = np.array(stream, dtype=float)
     arr = np.full((capacity * num_res, 2), 0, dtype=float)
     for i, res in enumerate(reservoirs):
         ind = max(map(itemgetter(0), res))
@@ -31,11 +54,10 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
         arr[i * capacity : (i + 1) * capacity, 1] = np.array(res)
 
     sigma = float(parameters["sigma"])
-    xm = np.min(population) - 0.2
-    xM = np.max(population) + 0.2
+    xm = np.min(stream) - 0.2
+    xM = np.max(stream) + 0.2
     ym = 0
     yM = 0.3
-    num_bins = parameters["num_bins"]
     bin_size = parameters["bin_size"]
 
     # initialize the reservoir
@@ -54,7 +76,7 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
         return current_res
 
     # duration of animation in milliseconds
-    total_duration = 6 * 1000
+    total_duration = 4 * 1000
     skip_size = 20
     num_frames = stream_size // skip_size
     frame_duration = total_duration // num_frames
@@ -150,7 +172,7 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
 
     fig.add_trace(
         go.Histogram(
-            x=population[:capacity],
+            x=stream[:capacity],
             xbins_size=bin_size,
             histnorm="probability",
             marker_color="#FCA000",
@@ -184,7 +206,7 @@ with open(parameters["reservoir_samples_file"]) as res_file, open(
                 go.Frame(
                     data=[
                         go.Histogram(
-                            x=population[:i],                            
+                            x=stream[:i],                            
                             xbins_size=bin_size,
                             histnorm="probability",                            
                             marker_color="#FCA000",

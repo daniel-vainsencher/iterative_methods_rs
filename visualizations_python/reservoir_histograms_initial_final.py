@@ -15,13 +15,16 @@ except ModuleNotFoundError as error:
             
             https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/#:~:text=Installing%20virtualenv&text=venv%20is%20included%20in%20the,Python%20packages%20for%20different%20projects.
 
-            2) set up a virtual environment that will contain the dependencies:
+            2) Set up a virtual environment that will contain the dependencies:
             `$ virtualenv <name>`
+            
+            3) Activate the environment:
+            `$ source <name>/bin/activate`
 
-            3) install the requirements using the requirements.txt file:
+            4) Install the requirements using the requirements.txt file:
             `$ pip install -r ./visualizations_python/requirements.txt`
 
-            4) Rerun the examples. 
+            5) Rerun the examples.
         """)
     sys.exit(1)
 
@@ -34,41 +37,38 @@ num_initial_values = parameters["num_initial_values"]
 num_final_values = parameters["num_final_values"]
 stream_size = parameters["stream_size"]
 
-with open(parameters["population_file"]) as pop_file:
+with open(parameters["stream_file"]) as pop_file:
 
-    population = yaml.load_all(pop_file, Loader=yaml.CLoader)
-    population = [value for i, value in population]
-    population = np.array(population, dtype=float)
+    stream = yaml.load_all(pop_file, Loader=yaml.CLoader)
+    stream = [value for i, value in stream]
+    stream = np.array(stream, dtype=float)
 
     sigma = float(parameters["sigma"])
-    xm = np.min(population) - 0.2
-    xM = np.max(population) + 0.2
+    xm = np.min(stream) - 0.2
+    xM = np.max(stream) + 0.2
     ym = 0
     yM = 0.3
-    num_bins = parameters["num_bins"]
     bin_size = parameters["bin_size"]
 
     fig = go.Figure()
     fig.add_trace(
         go.Histogram(
-            x=population[:num_initial_values],
-            # nbinsx=num_bins,
+            x=stream[:num_initial_values],
             xbins_size=bin_size,
             histnorm="probability",
             marker_color="#539A99",
             opacity=0.75,
-            name=f"Initial Population Distribution: First {num_initial_values} Samples",
+            name=f"Initial Stream Distribution: First {num_initial_values} Samples",
         )
     )
     fig.add_trace(
         go.Histogram(
-            x=population,
-            # nbinsx=num_bins,
+            x=stream,            
             xbins_size=bin_size,
             histnorm="probability",
             marker_color="#FCA000",
             opacity=0.75,
-            name=f"Final Population Distribution: All {stream_size} Samples",
+            name=f"Final Stream Distribution: All {stream_size} Samples",
         )
     )
 
