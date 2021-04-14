@@ -119,7 +119,7 @@ fn make_initial_final_histograms_in_python() -> std::io::Result<()> {
         println!(
             "\n\n *****Running reservoir_histograms_initial_final.py did not succeed.*****\n\n"
         );
-        std::io::stdout().write_all(&output.stdout).unwrap();
+        std::io::stderr().write_all(&output.stdout).unwrap();
     } else {
         println!("Initial and Final Histograms exported successfully.");
     };
@@ -133,7 +133,7 @@ fn make_reservoir_means_plot_in_python() -> std::io::Result<()> {
         .output()?;
     if !output.status.success() {
         println!("\n\n *****Running reservoir_means.py did not succeed.*****\n\n");
-        std::io::stdout().write_all(&output.stdout).unwrap();
+        std::io::stderr().write_all(&output.stdout).unwrap();
     } else {
         println!("Reservoir Means Plot exported successfully.");
     };
@@ -148,7 +148,7 @@ fn make_animations_in_python() -> std::io::Result<()> {
         .output()?;
     if !output.status.success() {
         println!("\n\n *****Running reservoir_histogram_animation.py did not succeed.*****\n\n");
-        std::io::stdout().write_all(&output.stdout).unwrap();
+        std::io::stderr().write_all(&output.stdout).unwrap();
     } else {
         println!("Animation exported successfully.");
     };
