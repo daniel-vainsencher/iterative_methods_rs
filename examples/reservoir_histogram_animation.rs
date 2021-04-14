@@ -2,21 +2,24 @@ use crate::utils;
 use iterative_methods::*;
 use std::cmp;
 use std::collections::HashMap;
+use std::env;
 use std::fs;
 use std::io::Write;
 use std::process::Command;
+use std::str::FromStr;
 use streaming_iterator::*;
-use std::env;
-use std::str::FromStr;  
 
 /// Write the full stream and a sequence of reservoir samples
 /// to yaml files. The stream
 /// is enumerated in order to track how much of the
 /// stream has been used in each reservoir.
-fn reservoir_visualizations(file_list: Vec<String>, stream_size: usize, capacity: usize) -> std::io::Result<()> {
+fn reservoir_visualizations(
+    file_list: Vec<String>,
+    stream_size: usize,
+    capacity: usize,
+) -> std::io::Result<()> {
     // Streamline up error handling
-    
-        
+
     let num_initial_values = stream_size / 4;
     let num_final_values = 3 * stream_size / 4;
     let bin_size: f64 = 0.05;
@@ -178,14 +181,15 @@ fn make_visualization() -> (bool, usize, usize) {
     let args: Vec<String> = env::args().collect();
     let mut visualize: bool = true;
     if args.len() > 1 {
-        visualize = bool::from_str(&args[1]).expect("Invalid argument. Please use with 'true', 'false', or no argument.");
+        visualize = bool::from_str(&args[1])
+            .expect("Invalid argument. Please use with 'true', 'false', or no argument.");
     }
     let mut stream_size: usize = 5 * 10_i32.pow(03) as usize;
     let mut capacity: usize = 100;
     if !visualize {
         stream_size = 12;
         capacity = 2;
-    } 
+    }
     (visualize, stream_size, capacity)
 }
 
@@ -199,13 +203,14 @@ fn main() -> std::io::Result<()> {
         make_reservoir_means_plot_in_python()?;
         make_animations_in_python()?;
     } else {
-        println!("The following .yaml files have been created:\n
+        println!(
+            "The following .yaml files have been created:\n
             ./target/debug/examples/population_for_histogram.yaml \n  
             ./target/debug/examples/reservoirs_for_histogram.yaml \n
             ./target/debug/examples/reservoir_means.yaml \n 
             ./target/debug/examples/stream_for_histogram.yaml \n
-            ");
+            "
+        );
     }
     Ok(())
-    
 }
