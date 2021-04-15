@@ -1021,14 +1021,14 @@ mod tests {
     }
 
     #[test]
-    /// Test that the initial reservoir is eventually completely replaced.
-    /// This needs to be improved so that the parameters values are chosen such that
-    /// the test passes at a specified success rate.
+    /// Test that the initial reservoir of zeros is eventually filled with at least 4 ones.
+    /// Running the test 10000 times resulted in 9997 tests passed. Thus the fail rate is significantly less
+    /// than 1 in 1000. If the test fails more than 1 in 1000 times, then a change in the library has introduced a bug.
     fn reservoir_replacement_test() {
         let stream_length = 1000usize;
         // reservoir capacity:
         let capacity = 5usize;
-        // Generate a stream that with items initially 0 and then 1:
+        // Generate a stream with items initially 0 and then 1:
         let initial_stream = iter::repeat(0).take(capacity);
         let final_stream = iter::repeat(1).take(stream_length - capacity);
         let stream = initial_stream.chain(final_stream);
@@ -1051,7 +1051,7 @@ mod tests {
             "Final reservoir after {:?} iterations: \n {:#?} \n ",
             count, final_reservoir
         );
-        assert!(final_reservoir.into_iter().all(|x| x == 1));
+        assert!(final_reservoir.into_iter().sum::<usize>() >= 4);
     }
 
     /// Tests for the WeightedReservoirIterable adaptor
