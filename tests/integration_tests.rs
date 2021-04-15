@@ -1,4 +1,4 @@
-use crate::utils::*;
+use crate::utils;
 use iterative_methods::*;
 extern crate streaming_iterator;
 use crate::algorithms::cg_method::*;
@@ -10,7 +10,7 @@ use rand_pcg::Pcg64;
 #[ignore]
 #[test]
 fn test_timed_iterable() {
-    let p = make_3x3_psd_system_1();
+    let p = utils::make_3x3_psd_system_1();
     let cg_iter = CGIterable::conjugate_gradient(p).take(50);
     let cg_timed_iter = time(cg_iter);
     let mut start_times = Vec::new();
@@ -48,11 +48,11 @@ fn test_timed_iterable() {
 
 #[test]
 fn wd_iterable_extract_value_test() {
-    let mut counter_stream: Counter = new_counter();
+    let mut counter_stream: utils::Counter = utils::new_counter();
     let counter_stream_copy = counter_stream.clone();
     let wd_iter = WDIterable {
         it: counter_stream_copy,
-        f: expose_w,
+        f: utils::expose_w,
         wd: Some(new_datum(0., 0.)),
     };
 

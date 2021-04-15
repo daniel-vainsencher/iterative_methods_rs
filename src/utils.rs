@@ -140,3 +140,25 @@ pub fn read_yaml_to_string(file_path: &str) -> Result<std::string::String, std::
     std::fs::remove_file(file_path).expect("Could not remove data file for test.");
     Ok(contents)
 }
+
+/// A simple Counter iterator to use in demos and tests.
+#[derive(Clone, Debug)]
+pub struct Counter {
+    count: f64,
+}
+
+pub fn new_counter() -> Counter {
+    Counter { count: 0. }
+}
+
+impl StreamingIterator for Counter {
+    type Item = f64;
+
+    fn advance(&mut self) {
+        self.count += 1.;
+    }
+
+    fn get(&self) -> Option<&Self::Item> {
+        Some(&self.count)
+    }
+}
