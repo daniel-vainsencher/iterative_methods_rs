@@ -64,15 +64,14 @@ fn write_reservoir_visualizations_data_to_yaml(
     let mean_final = 0.75f64;
     parameters.insert("sigma".to_string(), sigma.to_string());
 
-    // Generate the data as a vec
-    let mut stream_vec =
+    // Generate the data as an Iterator
+    let stream =
         utils::generate_stream_from_normal_distribution(num_initial_values, mean_initial, sigma);
-    let mut stream_vec_end =
+    let mut stream_end =
         utils::generate_stream_from_normal_distribution(num_final_values, mean_final, sigma);
-    stream_vec.append(&mut stream_vec_end);
+    let stream = stream.chain(&mut stream_end);
 
     // Convert the data to a StreamingIterator and adapt
-    let stream = stream_vec.iter();
     let stream = convert(stream);
     let stream = enumerate(stream);
     let stream = write_yaml_documents(stream, parameters["stream_file"].to_string())
@@ -80,7 +79,9 @@ fn write_reservoir_visualizations_data_to_yaml(
     let stream = reservoir_iterable(stream, capacity, None);
     let stream = write_yaml_documents(stream, parameters["reservoir_samples_file"].to_string())
         .expect("Create File and initialize yaml iter failed.");
-    let reservoir_mean_and_max_index = |reservoir: &Vec<Numbered<&f64>>| -> Numbered<f64> {
+
+    // This closure converts items from reservoirs to pairs Numbered{max_index, Some(reservoir_mean)}
+    let reservoir_mean_and_max_index = |reservoir: &Vec<Numbered<f64>>| -> Numbered<f64> {
         let mut max_index = 0i64;
         let mean: f64 = reservoir
             .iter()
@@ -95,6 +96,7 @@ fn write_reservoir_visualizations_data_to_yaml(
             item: Some(mean),
         }
     };
+
     let stream = stream.map(reservoir_mean_and_max_index);
     let mut stream = write_yaml_documents(stream, parameters["reservoir_means_file"].to_string())
         .expect("Create File and initialize yaml iter failed.");

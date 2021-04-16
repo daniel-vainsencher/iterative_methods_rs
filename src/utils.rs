@@ -83,21 +83,22 @@ pub fn generate_enumerated_step_stream(
     stream
 }
 
-/// Produce a stream from a normal distribution.
-/// Utility function used in examples of reservoir sampling
-/// histogram animation.
+// Produce a stream from a normal distribution.
+// Utility function used in examples of reservoir sampling
+// histogram animation.
 pub fn generate_stream_from_normal_distribution(
     stream_length: usize,
     mean: f64,
     sigma: f64,
-) -> Vec<f64> {
+) -> impl Iterator<Item = f64> {
     let normal = Normal::new(mean, sigma).unwrap();
-    let stream_vec: Vec<f64> = normal
+    let stream: Vec<f64> = normal
         .sample_iter(&mut thread_rng())
         .take(stream_length)
         .collect();
-    stream_vec
+    stream.into_iter()
 }
+
 /// Utility Functions for Weighted Reservoir Sampling
 
 /// utility function for testing ReservoirIterable
