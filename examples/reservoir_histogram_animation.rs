@@ -108,13 +108,15 @@ fn write_reservoir_visualizations_data_to_yaml(
 }
 
 /// Call a Python script to make a visualization.
-fn make_visualization_in_python(path_to_script: &str, visualization_description: &str) -> std::io::Result<()> {
-    let output = Command::new("python3")
-        .arg(path_to_script)
-        .output()?;
+fn make_visualization_in_python(
+    path_to_script: &str,
+    visualization_description: &str,
+) -> std::io::Result<()> {
+    let output = Command::new("python3").arg(path_to_script).output()?;
     if !output.status.success() {
         println!(
-            "\n\n----------Running {:?} did not succeed.----------\n", path_to_script
+            "\n\n----------Running {:?} did not succeed.----------\n",
+            path_to_script
         );
         std::io::stderr().write_all(&output.stdout).unwrap();
     } else {
@@ -126,10 +128,10 @@ fn make_visualization_in_python(path_to_script: &str, visualization_description:
 /// A utility fn to remove the yaml files full of the data generated.
 fn remove_yaml_files() -> Result<(), std::io::Error> {
     let file_list = vec![
-    "./target/debug/examples/stream_for_histogram.yaml",
-    "./target/debug/examples/reservoirs_for_histogram.yaml",
-    "./visualizations_python/parameters_for_histogram.yaml",
-    "./target/debug/examples/reservoir_means.yaml"
+        "./target/debug/examples/stream_for_histogram.yaml",
+        "./target/debug/examples/reservoirs_for_histogram.yaml",
+        "./visualizations_python/parameters_for_histogram.yaml",
+        "./target/debug/examples/reservoir_means.yaml",
     ];
     for file in file_list.iter() {
         if let Ok(_) = fs::metadata(file) {
@@ -161,9 +163,18 @@ fn main() -> std::io::Result<()> {
     write_reservoir_visualizations_data_to_yaml(stream_size, capacity)?;
     println!("Data is written to yaml files.");
     if visualize {
-        make_visualization_in_python("./visualizations_python/reservoir_histograms_initial_final.py", "Initial and Final Histograms")?;
-        make_visualization_in_python("./visualizations_python/reservoir_means.py", "Reservoir and stream means")?;
-        make_visualization_in_python("./visualizations_python/reservoir_histogram_animation.py", "Animation of reservoir and stream histograms")?;
+        make_visualization_in_python(
+            "./visualizations_python/reservoir_histograms_initial_final.py",
+            "Initial and Final Histograms",
+        )?;
+        make_visualization_in_python(
+            "./visualizations_python/reservoir_means.py",
+            "Reservoir and stream means",
+        )?;
+        make_visualization_in_python(
+            "./visualizations_python/reservoir_histogram_animation.py",
+            "Animation of reservoir and stream histograms",
+        )?;
     } else {
         println!(
             "The following .yaml files have been created:\n
