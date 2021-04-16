@@ -1,4 +1,7 @@
-use crate::utils;
+use crate::utils::{
+    expose_w, generate_step_stream, make_3x3_psd_system_1, new_counter, read_yaml_to_string,
+    Counter,
+};
 use iterative_methods::*;
 extern crate streaming_iterator;
 use crate::algorithms::cg_method::*;
@@ -10,7 +13,7 @@ use rand_pcg::Pcg64;
 #[ignore]
 #[test]
 fn test_timed_iterable() {
-    let p = utils::make_3x3_psd_system_1();
+    let p = make_3x3_psd_system_1();
     let cg_iter = CGIterable::conjugate_gradient(p).take(50);
     let cg_timed_iter = time(cg_iter);
     let mut start_times = Vec::new();
@@ -48,11 +51,11 @@ fn test_timed_iterable() {
 
 #[test]
 fn wd_iterable_extract_value_test() {
-    let mut counter_stream: utils::Counter = utils::new_counter();
+    let mut counter_stream: Counter = new_counter();
     let counter_stream_copy = counter_stream.clone();
     let wd_iter = WDIterable {
         it: counter_stream_copy,
-        f: utils::expose_w,
+        f: expose_w,
         wd: Some(new_datum(0., 0.)),
     };
 
@@ -77,7 +80,7 @@ fn enumerate_reservoirs_to_yaml_test() {
     let capacity = 2usize;
     let initial_value = 0i64;
     let final_value = 1i64;
-    let stream = utils::generate_step_stream(stream_length, capacity, initial_value, final_value);
+    let stream = generate_step_stream(stream_length, capacity, initial_value, final_value);
     let stream = reservoir_iterable(stream, capacity, Some(Pcg64::seed_from_u64(0)));
     let stream = enumerate(stream);
     let mut stream = write_yaml_documents(stream, String::from(test_file_path))
@@ -85,7 +88,7 @@ fn enumerate_reservoirs_to_yaml_test() {
     while let Some(t) = stream.next() {
         println!("{:?}", t);
     }
-    let contents = utils::read_yaml_to_string(test_file_path).expect("Could not read file.");
+    let contents = read_yaml_to_string(test_file_path).expect("Could not read file.");
     let output =
         String::from("---\n- 0\n- - 0\n  - 0\n---\n- 1\n- - 0\n  - 1\n---\n- 2\n- - 1\n  - 1\n");
     assert_eq!(contents, output);
