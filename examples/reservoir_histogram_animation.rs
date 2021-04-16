@@ -106,47 +106,18 @@ fn write_reservoir_visualizations_data_to_yaml(
     Ok(())
 }
 
-/// Call a Python script to make histograms of the initial and final stream.
-fn make_initial_final_histograms_in_python() -> std::io::Result<()> {
+/// Call a Python script to make a visualization.
+fn make_visualization_in_python(path_to_script: &str, visualization_description: &str) -> std::io::Result<()> {
     let output = Command::new("python3")
-        .arg("./visualizations_python/reservoir_histograms_initial_final.py")
+        .arg(path_to_script)
         .output()?;
     if !output.status.success() {
         println!(
-            "\n\n *****Running reservoir_histograms_initial_final.py did not succeed.*****\n\n"
+            "\n\n *****Running {:?} did not succeed.*****\n\n", path_to_script
         );
         std::io::stderr().write_all(&output.stdout).unwrap();
     } else {
-        println!("Initial and Final Histograms exported successfully.");
-    };
-    Ok(())
-}
-
-/// Call a Python script to plot stream means vs reservoir means.
-fn make_reservoir_means_plot_in_python() -> std::io::Result<()> {
-    let output = Command::new("python3")
-        .arg("./visualizations_python/reservoir_means.py")
-        .output()?;
-    if !output.status.success() {
-        println!("\n\n *****Running reservoir_means.py did not succeed.*****\n\n");
-        std::io::stderr().write_all(&output.stdout).unwrap();
-    } else {
-        println!("Reservoir Means Plot exported successfully.");
-    };
-    Ok(())
-}
-
-/// Call a Python script to create an animation showing the stream histogram and reservoir histogram
-/// as the stream is processed.
-fn make_animations_in_python() -> std::io::Result<()> {
-    let output = Command::new("python3")
-        .arg("./visualizations_python/reservoir_histogram_animation.py")
-        .output()?;
-    if !output.status.success() {
-        println!("\n\n *****Running reservoir_histogram_animation.py did not succeed.*****\n\n");
-        std::io::stderr().write_all(&output.stdout).unwrap();
-    } else {
-        println!("Animation exported successfully.");
+        println!("{:?} exported successfully.", visualization_description);
     };
     Ok(())
 }
@@ -189,9 +160,9 @@ fn main() -> std::io::Result<()> {
     write_reservoir_visualizations_data_to_yaml(stream_size, capacity)?;
     println!("Data is written to yaml files.");
     if visualize {
-        make_initial_final_histograms_in_python()?;
-        make_reservoir_means_plot_in_python()?;
-        make_animations_in_python()?;
+        make_visualization_in_python("./visualizations_python/reservoir_histograms_initial_final.py", "Initial and Final Histograms")?;
+        make_visualization_in_python("./visualizations_python/reservoir_means.py", "Reservoir and stream means")?;
+        make_visualization_in_python("./visualizations_python/reservoir_histogram_animation.py", "Animation of reservoir and stream histograms")?;
     } else {
         println!(
             "The following .yaml files have been created:\n
