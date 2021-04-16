@@ -78,7 +78,6 @@ fn write_reservoir_visualizations_data_to_yaml(
     let stream = write_yaml_documents(stream, parameters["stream_file"].to_string())
         .expect("Create File and initialize yaml iter failed.");
     let stream = reservoir_iterable(stream, capacity, None);
-    // let stream = step_by(stream, 20);
     let stream = write_yaml_documents(stream, parameters["reservoir_samples_file"].to_string())
         .expect("Create File and initialize yaml iter failed.");
     let reservoir_mean_and_max_index = |reservoir: &Vec<Numbered<&f64>>| -> Numbered<f64> {
