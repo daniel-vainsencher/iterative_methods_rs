@@ -14,7 +14,6 @@ use streaming_iterator::*;
 /// is enumerated in order to track how much of the
 /// stream has been used in each reservoir.
 fn write_reservoir_visualizations_data_to_yaml(
-    file_list: Vec<String>,
     stream_size: usize,
     capacity: usize,
 ) -> std::io::Result<()> {
@@ -33,10 +32,6 @@ fn write_reservoir_visualizations_data_to_yaml(
     parameters.insert("num_final_values".to_string(), num_final_values.to_string());
     parameters.insert("capacity".to_string(), capacity.to_string());
     parameters.insert("bin_size".to_string(), bin_size.to_string());
-
-    for file in file_list {
-        parameters.insert(file.clone(), file);
-    }
 
     parameters.insert(
         "stream_file".to_string(),
@@ -157,25 +152,19 @@ fn make_animations_in_python() -> std::io::Result<()> {
 }
 
 /// A utility fn to remove the yaml files full of the data generated.
-fn remove_yaml_files() -> Result<Vec<String>, std::io::Error> {
-    // Define file paths for yaml data
-    let stream_file = "./target/debug/examples/stream_for_histogram.yaml";
-    let reservoir_samples_file = "./target/debug/examples/reservoirs_for_histogram.yaml";
-    let parameters_file_path = "./visualizations_python/parameters_for_histogram.yaml";
-    let reservoir_means_file = "./target/debug/examples/reservoir_means.yaml";
-
+fn remove_yaml_files() -> Result<(), std::io::Error> {
     let file_list = vec![
-        stream_file.to_string(),
-        reservoir_samples_file.to_string(),
-        parameters_file_path.to_string(),
-        reservoir_means_file.to_string(),
+    "./target/debug/examples/stream_for_histogram.yaml",
+    "./target/debug/examples/reservoirs_for_histogram.yaml",
+    "./visualizations_python/parameters_for_histogram.yaml",
+    "./target/debug/examples/reservoir_means.yaml"
     ];
     for file in file_list.iter() {
         if let Ok(_) = fs::metadata(file) {
             Command::new("rm").arg(file).output()?;
         }
     }
-    Ok(file_list)
+    Ok(())
 }
 
 fn set_visualization_parameters() -> (bool, usize, usize) {
@@ -196,8 +185,8 @@ fn set_visualization_parameters() -> (bool, usize, usize) {
 
 fn main() -> std::io::Result<()> {
     let (visualize, stream_size, capacity) = set_visualization_parameters();
-    let file_list = remove_yaml_files()?;
-    write_reservoir_visualizations_data_to_yaml(file_list, stream_size, capacity)?;
+    remove_yaml_files()?;
+    write_reservoir_visualizations_data_to_yaml(stream_size, capacity)?;
     println!("Data is written to yaml files.");
     if visualize {
         make_initial_final_histograms_in_python()?;
