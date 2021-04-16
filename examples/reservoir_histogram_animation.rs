@@ -81,6 +81,7 @@ fn write_reservoir_visualizations_data_to_yaml(
         let mean: f64 = reservoir
             .iter()
             .map(|numbered| {
+                // update the max_index while computing the mean
                 max_index = cmp::max(max_index, numbered.count);
                 numbered.item.unwrap()
             })
