@@ -1,4 +1,7 @@
-use crate::utils::*;
+use crate::utils::{
+    expose_w, generate_step_stream, make_3x3_psd_system_1, new_counter, read_yaml_to_string,
+    Counter,
+};
 use iterative_methods::*;
 extern crate streaming_iterator;
 use crate::algorithms::cg_method::*;
@@ -77,7 +80,7 @@ fn enumerate_reservoirs_to_yaml_test() {
     let capacity = 2usize;
     let initial_value = 0i64;
     let final_value = 1i64;
-    let stream = utils::generate_step_stream(stream_length, capacity, initial_value, final_value);
+    let stream = generate_step_stream(stream_length, capacity, initial_value, final_value);
     let stream = reservoir_iterable(stream, capacity, Some(Pcg64::seed_from_u64(0)));
     let stream = enumerate(stream);
     let mut stream = write_yaml_documents(stream, String::from(test_file_path))
@@ -85,7 +88,7 @@ fn enumerate_reservoirs_to_yaml_test() {
     while let Some(t) = stream.next() {
         println!("{:?}", t);
     }
-    let contents = utils::read_yaml_to_string(test_file_path).expect("Could not read file.");
+    let contents = read_yaml_to_string(test_file_path).expect("Could not read file.");
     let output =
         String::from("---\n- 0\n- - 0\n  - 0\n---\n- 1\n- - 0\n  - 1\n---\n- 2\n- - 1\n  - 1\n");
     assert_eq!(contents, output);
