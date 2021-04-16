@@ -113,7 +113,7 @@ fn make_visualization_in_python(path_to_script: &str, visualization_description:
         .output()?;
     if !output.status.success() {
         println!(
-            "\n\n *****Running {:?} did not succeed.*****\n\n", path_to_script
+            "\n\n----------Running {:?} did not succeed.----------\n", path_to_script
         );
         std::io::stderr().write_all(&output.stdout).unwrap();
     } else {
