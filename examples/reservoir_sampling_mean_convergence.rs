@@ -13,9 +13,9 @@ fn reservoir_sampling_mean_convergence() -> std::io::Result<()> {
     let stream_size: usize = 10_i32.pow(3) as usize;
     let num_of_initial_values = stream_size / 2;
     let capacity: usize = 50;
-    let mut parameters: HashMap<&str, usize> = HashMap::new();
-    parameters.insert("stream_size", stream_size);
-    parameters.insert("capacity", capacity);
+    let mut parameters: HashMap<String, usize> = HashMap::new();
+    parameters.insert("stream_size".to_string(), stream_size);
+    parameters.insert("capacity".to_string(), capacity);
     println!(
         "The test uses a stream of size {:#?} and a reservoir capacity of {:#?}.",
         stream_size, capacity
@@ -41,7 +41,7 @@ fn reservoir_sampling_mean_convergence() -> std::io::Result<()> {
     while let Some(_item) = res_to_yaml.next() {
         num_res += 1
     }
-    parameters.insert("num_res", num_res);
+    parameters.insert("num_res".to_string(), num_res);
     let parameters_file_path = "./visualizations_python/parameters.yaml";
     utils::write_parameters_to_yaml(parameters, parameters_file_path)?;
     Ok(())

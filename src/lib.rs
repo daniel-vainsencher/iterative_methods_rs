@@ -43,7 +43,7 @@ where
     F: FnMut(&T) -> A,
 {
     /// Annotate every underlying item with the result of applying `f` to it.
-    fn new(it: I, f: F) -> AnnotatedIterable<I, T, F, A> {
+    pub fn new(it: I, f: F) -> AnnotatedIterable<I, T, F, A> {
         AnnotatedIterable {
             it,
             f: f,

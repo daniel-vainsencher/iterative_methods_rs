@@ -1,6 +1,8 @@
 use crate::algorithms::cg_method::*;
 use crate::*;
 use ndarray::{rcarr1, rcarr2};
+use rand::thread_rng;
+use rand_distr::{Distribution, Normal};
 use std::collections::HashMap;
 use std::io::Read;
 use std::iter;
@@ -81,6 +83,22 @@ pub fn generate_enumerated_step_stream(
     stream
 }
 
+// Produce a stream from a normal distribution.
+// Utility function used in examples of reservoir sampling
+// histogram animation.
+pub fn generate_stream_from_normal_distribution(
+    stream_length: usize,
+    mean: f64,
+    sigma: f64,
+) -> impl Iterator<Item = f64> {
+    let normal = Normal::new(mean, sigma).unwrap();
+    let stream: Vec<f64> = normal
+        .sample_iter(&mut thread_rng())
+        .take(stream_length)
+        .collect();
+    stream.into_iter()
+}
+
 /// Utility Functions for Weighted Reservoir Sampling
 
 /// utility function for testing ReservoirIterable
@@ -117,7 +135,10 @@ pub fn expose_w(count: &f64) -> f64 {
 /// Utility functions for writing data to yaml, including for visualizations
 ///
 /// The order of the parameters is not controlled.
-pub fn write_parameters_to_yaml<T>(params: HashMap<&str, T>, file_path: &str) -> std::io::Result<()>
+pub fn write_parameters_to_yaml<T>(
+    params: HashMap<String, T>,
+    file_path: &str,
+) -> std::io::Result<()>
 where
     T: std::string::ToString,
 {
