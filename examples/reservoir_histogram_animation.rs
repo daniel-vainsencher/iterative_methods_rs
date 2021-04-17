@@ -75,18 +75,27 @@ fn write_reservoir_visualizations_data_to_yaml(
     let stream = write_yaml_documents(stream, parameters["reservoir_samples_file"].to_string())
         .expect("Create File and initialize yaml iter failed.");
 
-    // This closure converts items from reservoirs to pairs Numbered{max_index, Some(reservoir_mean)}
+    // This closure converts items from reservoirs to Numbered{max_index, Some(reservoir_mean)}
     let reservoir_mean_and_max_index = |reservoir: &Vec<Numbered<f64>>| -> Numbered<f64> {
-        let mut max_index = 0i64;
-        let mean: f64 = reservoir
-            .iter()
-            .map(|numbered| {
-                // update the max_index while computing the mean
-                max_index = cmp::max(max_index, numbered.count);
-                numbered.item.unwrap()
-            })
-            .sum();
-        let mean = mean / (capacity as f64);
+        let mean_and_max_index = reservoir.iter().scan(
+            Numbered {
+                count: 0,
+                item: Some(0.),
+            },
+            |state, x| {
+                state.count = cmp::max(state.count, x.count);
+                if let Some(partial_sum) = (*state).item {
+                    *state = Numbered {
+                        count: state.count,
+                        item: Some(partial_sum + x.item.unwrap()),
+                    }
+                }
+                Some(state.clone())
+            },
+        );
+        let result = &mean_and_max_index.last();
+        let mean = result.as_ref().unwrap().item.unwrap() / (capacity as f64);
+        let max_index = result.as_ref().unwrap().count;
         Numbered {
             count: max_index,
             item: Some(mean),
