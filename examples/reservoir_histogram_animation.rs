@@ -77,25 +77,11 @@ fn write_reservoir_visualizations_data_to_yaml(
 
     // This closure converts items from reservoirs to Numbered{max_index, Some(reservoir_mean)}
     let reservoir_mean_and_max_index = |reservoir: &Vec<Numbered<f64>>| -> Numbered<f64> {
-        let mean_and_max_index = reservoir.iter().scan(
-            Numbered {
-                count: 0,
-                item: Some(0.),
-            },
-            |state, x| {
-                state.count = cmp::max(state.count, x.count);
-                if let Some(partial_sum) = (*state).item {
-                    *state = Numbered {
-                        count: state.count,
-                        item: Some(partial_sum + x.item.unwrap()),
-                    }
-                }
-                Some(state.clone())
-            },
-        );
-        let result = &mean_and_max_index.last();
-        let mean = result.as_ref().unwrap().item.unwrap() / (capacity as f64);
-        let max_index = result.as_ref().unwrap().count;
+        let result = reservoir.iter().fold((0, 0.), |acc, x| {
+            (cmp::max(acc.0, x.count), acc.1 + x.item.unwrap())
+        });
+        let max_index = result.0;
+        let mean = result.1 / (capacity as f64);
         Numbered {
             count: max_index,
             item: Some(mean),
