@@ -18,10 +18,10 @@ fn cg_demo() {
     // not just the result.
     let cg_iter = cg_iter.take_while(|cgi| cgi.rsprev.sqrt() > 1e-6);
 
-    // Note the side effect of tee is applied exactly to every x
+    // Note the side effect of inspect is applied exactly to every x
     // produced above, the sequence of which is not affected at
     // all. This is just like applying a side effect inside the while
-    // loop, except we can compose multiple tee, each with its own
+    // loop, except we can compose multiple inspect, each with its own
     // effect.
     let cg_iter = step_by(cg_iter, 2);
     let cg_iter = time(cg_iter);
@@ -34,7 +34,7 @@ fn cg_demo() {
     }
 
     let cg_iter = assess(cg_iter, score);
-    let mut cg_print_iter = tee(
+    let mut cg_print_iter = inspect(
         cg_iter,
         |AnnotatedResult {
              result:
