@@ -19,7 +19,7 @@ fn test_timed_iterable() {
     let mut start_times = Vec::new();
     let mut durations = Vec::new();
 
-    let mut cg_print_iter = tee(
+    let mut cg_print_iter = inspect(
         cg_timed_iter,
         |TimedResult {
              result: _,

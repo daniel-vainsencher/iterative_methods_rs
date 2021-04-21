@@ -93,7 +93,7 @@ where
 }
 
 /// Apply `f` to every underlying item.
-pub fn tee<I, F, T>(it: I, f: F) -> AnnotatedIterable<I, T, F, ()>
+pub fn inspect<I, F, T>(it: I, f: F) -> AnnotatedIterable<I, T, F, ()>
 where
     I: Sized + StreamingIterator<Item = T>,
     F: FnMut(&T),

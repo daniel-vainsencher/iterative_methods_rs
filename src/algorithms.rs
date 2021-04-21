@@ -1,7 +1,7 @@
 pub mod cg_method {
 
+    use crate::inspect;
     use crate::last;
-    use crate::tee;
     use crate::utils::LinearSystem;
     use ndarray::ArcArray1;
     use ndarray::ArcArray2;
@@ -81,7 +81,7 @@ pub mod cg_method {
     pub fn show_progress(p: LinearSystem) {
         let cg_iter = CGIterable::conjugate_gradient(p).take(50);
         //.take_while(|cgi| cgi.rsprev.sqrt() > 1e-6);
-        let mut cg_print_iter = tee(cg_iter, |result| {
+        let mut cg_print_iter = inspect(cg_iter, |result| {
             let res = result.a.dot(&result.x) - &result.b;
             let res_norm = res.dot(&res);
             println!(
