@@ -602,7 +602,10 @@ where
 /// Weighted Sampling
 /// The WeightedDatum struct wraps the values of a data set to include
 /// a weight for each datum. Currently, the main motivation for this
-/// is to use it for Weighted Reservoir Sampling.
+/// is to use it for Weighted Reservoir Sampling (WRS).
+///
+/// WRS is currently deprecated, but WeightedDatum and WDIterable are not.
+///
 #[derive(Debug, Clone, PartialEq)]
 pub struct WeightedDatum<U> {
     value: U,
@@ -626,6 +629,7 @@ where
 /// WDIterable holds an iterator and a function. The function is defined by the user to extract
 /// weights from the iterable and package the old items and extracted weights into items as
 /// WeightedDatum
+
 #[derive(Debug, Clone)]
 pub struct WDIterable<I, T, F>
 where
@@ -677,6 +681,7 @@ where
 }
 
 /// ExtractValue converts items from WeightedDatum<T> to T.
+
 pub struct ExtractValue<I, T>
 where
     I: StreamingIterator<Item = WeightedDatum<T>>,
@@ -708,6 +713,8 @@ where
     }
 }
 
+/// Deprecated: It is not clear that this implementation has the expected properties of Weighted Reservoir Sampling.
+///
 /// The weighted reservoir sampling algorithm of M. T. Chao is implemented.
 /// `WeightedReservoirIterable` wraps a `StreamingIterator`, `I`, whose items must be of type `WeightedDatum` and
 /// produces a `StreamingIterator` whose items are samples of size `capacity`
@@ -727,6 +734,7 @@ where
 
 /// Future work might include implementing parallellized batch processing:
 /// https://dl.acm.org/doi/10.1145/3350755.3400287
+
 #[derive(Debug, Clone)]
 pub struct WeightedReservoirIterable<I, T> {
     it: I,
@@ -737,6 +745,8 @@ pub struct WeightedReservoirIterable<I, T> {
 }
 
 /// Create a random sample of the underlying weighted stream.
+// Deprecated
+#[deprecated]
 pub fn weighted_reservoir_iterable<I, T>(
     it: I,
     capacity: usize,
