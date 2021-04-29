@@ -602,7 +602,7 @@ where
 /// Weighted Sampling
 /// The WeightedDatum struct wraps the values of a data set to include
 /// a weight for each datum. Currently, the main motivation for this
-/// is to use it for Weighted Reservoir Sampling (WRS). However, WRS is currently deprecated. 
+/// is to use it for Weighted Reservoir Sampling (WRS). However, WRS is currently deprecated.
 #[derive(Debug, Clone, PartialEq)]
 pub struct WeightedDatum<U> {
     value: U,
