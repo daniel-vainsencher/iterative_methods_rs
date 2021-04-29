@@ -341,6 +341,18 @@ where
     }
 }
 
+impl<T, A> YamlDataType for AnnotatedResult<T, A>
+where
+    T: YamlDataType,
+    A: YamlDataType,
+{
+    fn create_yaml_object(&self) -> Yaml {
+        let t = &self.result;
+        let a = &self.annotation;
+        Yaml::Array(vec![t.create_yaml_object(), a.create_yaml_object()])
+    }
+}
+
 /// Write items of StreamingIterator to a Yaml file.
 #[derive(Debug)]
 pub struct ToYamlIterable<I> {
@@ -896,8 +908,29 @@ mod tests {
         assert_eq!("---\n- 0\n- 1\n---\n- 2\n- 3\n", &contents);
     }
 
+    /// Test write_yaml_object works on AnnotatedResult
+    /// This shows that that write_yaml_object works on a custom struct.
+    #[test]
+    fn annotated_result_to_yaml_test() {
+        let ann = AnnotatedResult {
+            result: 0,
+            annotation: "zero".to_string(),
+        };
+        let test_file_path = "./annotated_result_test.yaml";
+        let mut file = OpenOptions::new()
+            .append(true)
+            .create(true)
+            .open(test_file_path)
+            .expect("Could not open test file.");
+        write_yaml_object(&ann, &mut file)
+            .expect(&format!("write_yaml_object Failed for {}", test_file_path));
+        let contents = utils::read_yaml_to_string(test_file_path)
+            .expect(&format!("Could not read {}", test_file_path));
+        assert_eq!("---\n- 0\n- zero\n", &contents);
+    }
+
     /// Test that write_yaml_object works on Numbered.
-    /// More generally, this shows that that write_yaml_object works on a custom struct.
+    /// This shows that that write_yaml_object works on a custom struct.
     #[test]
     fn numbered_to_yaml_test() {
         let num = Numbered {
