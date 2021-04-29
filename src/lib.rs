@@ -179,20 +179,24 @@ where
     }
 }
 
-/// Adapt StreamingIterator to only return values every 'step' number of times.
+/// An iterator for stepping iterators by a custom amount.
 ///
-/// This is a StreamingIterator version of Iterator::step_by
-///(https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.step_by)
+/// This is a StreamingIterator version of [std::iter::StepBy.](https://doc.rust-lang.org/std/iter/struct.StepBy.html)
 ///
 /// The iterator adaptor step_by(it, step) wraps a StreamingIterator. A
-/// 'step' is specified and only the items located every 'step' are returned.
+/// `step` is specified and only the items located every `step` are returned.
 ///
-///Iterator indices begin at 0, thus step_by() converts step -> step - 1
+/// Iterator indices begin at 0, thus step_by() converts step -> step - 1
 pub struct StepBy<I> {
     it: I,
     step: usize,
     first_take: bool,
 }
+
+/// Creates an iterator starting at the same point, but stepping by the given amount at each iteration.
+///
+/// This is a `StreamingIterator` version of [step_by](https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.step_by)
+/// in [`std::iter::Iterator`](https://doc.rust-lang.org/std/iter/trait.Iterator.html)
 
 pub fn step_by<I, T>(it: I, step: usize) -> StepBy<I>
 where
@@ -235,6 +239,7 @@ pub struct ToFileIterable<I, F> {
     pub file_writer: File,
 }
 
+/// An adaptor that writes each item to a new line of a file.
 pub fn item_to_file<I, T, F>(
     it: I,
     write_function: F,
@@ -288,7 +293,7 @@ where
     }
 }
 
-/// Define a trait object for converting to Yaml objects.
+/// Define a trait object for converting to YAML objects.
 pub trait YamlDataType {
     fn create_yaml_object(&self) -> Yaml;
 }
@@ -353,13 +358,14 @@ where
     }
 }
 
-/// Write items of StreamingIterator to a Yaml file.
+/// Write items of StreamingIterator to a YAML file.
 #[derive(Debug)]
 pub struct ToYamlIterable<I> {
     pub it: I,
     pub file_writer: File,
 }
 
+/// Adaptor that writes each item to a YAML document.
 pub fn write_yaml_documents<I, T>(
     it: I,
     file_path: String,
@@ -425,7 +431,7 @@ where
     }
 }
 
-/// Enumerate items in a StreamingIterator.
+/// A struct that wraps an `Item` as `Option<Item>` and annotates it with an `i64`. Used by `Enumerate`.
 #[derive(Clone, Debug, std::cmp::PartialEq)]
 pub struct Numbered<T> {
     pub count: i64,
@@ -442,6 +448,7 @@ where
     }
 }
 
+/// An adaptor that enumerates items.
 pub struct Enumerate<I, T> {
     pub current: Option<Numbered<T>>,
     pub it: I,
@@ -536,7 +543,8 @@ pub struct ReservoirIterable<I, T> {
     rng: Pcg64,
 }
 
-// Create a ReservoirIterable
+/// An adaptor for which the items are random samples of the underlying iterator up to the item processed.
+/// The constructor for ReservoirIterable.
 pub fn reservoir_iterable<I, T>(
     it: I,
     capacity: usize,
@@ -612,6 +620,7 @@ pub struct WeightedDatum<U> {
     weight: f64,
 }
 
+/// Constructor for WeightedDatum.
 pub fn new_datum<U>(value: U, weight: f64) -> WeightedDatum<U>
 where
     U: Clone,
@@ -640,6 +649,7 @@ where
     pub f: F,
 }
 
+/// Annotates items of an iterable with a weight using a function `f`.
 pub fn wd_iterable<I, T, F>(it: I, f: F) -> WDIterable<I, T, F>
 where
     I: StreamingIterator<Item = T>,
@@ -680,8 +690,8 @@ where
     }
 }
 
-/// ExtractValue converts items from WeightedDatum<T> to T.
-
+/// An adaptor that converts items from `WeightedDatum<T>` to `T`.
+///
 pub struct ExtractValue<I, T>
 where
     I: StreamingIterator<Item = WeightedDatum<T>>,
@@ -689,6 +699,8 @@ where
     it: I,
 }
 
+/// The constructor for ExtractValue. Apply it to a StreamingIterator with 
+/// `Item = WeightedDatum<T>` and it returns a StreamingIterator with `Item = T`.
 pub fn extract_value<I, T>(it: I) -> ExtractValue<I, T>
 where
     I: StreamingIterator<Item = WeightedDatum<T>>,
@@ -725,8 +737,7 @@ where
 /// iterator `capacity` steps. Subsequent calls of `advance` on `ReservoirIterator`
 /// advance `I` one step and will at most replace a single element of the `reservoir`.
 
-/// The random rng is of type `Pcg64` by default, which allows seeded rng. This should be
-/// extended to generic type bound by traits for implementing seeding.
+/// The random rng is of type `Pcg64` by default, which allows seeded rng.
 
 /// See https://en.wikipedia.org/wiki/Reservoir_sampling#Weighted_random_sampling,
 /// https://arxiv.org/abs/1910.11069, or for the original paper,
