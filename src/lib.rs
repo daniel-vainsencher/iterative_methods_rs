@@ -699,7 +699,7 @@ where
     it: I,
 }
 
-/// The constructor for ExtractValue. Apply it to a StreamingIterator with 
+/// The constructor for ExtractValue. Apply it to a StreamingIterator with
 /// `Item = WeightedDatum<T>` and it returns a StreamingIterator with `Item = T`.
 pub fn extract_value<I, T>(it: I) -> ExtractValue<I, T>
 where
