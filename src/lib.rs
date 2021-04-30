@@ -83,10 +83,10 @@ where
 }
 
 /// Annotate every underlying item with its score, as defined by `f`.
-pub fn assess<I, T, F>(it: I, f: F) -> AnnotatedIterable<I, T, F, f64>
+pub fn assess<I, T, F, A>(it: I, f: F) -> AnnotatedIterable<I, T, F, A>
 where
     T: Clone,
-    F: FnMut(&T) -> f64,
+    F: FnMut(&T) -> A,
     I: StreamingIterator<Item = T>,
 {
     AnnotatedIterable::new(it, f)
