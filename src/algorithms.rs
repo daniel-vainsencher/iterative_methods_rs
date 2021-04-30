@@ -12,7 +12,7 @@ pub mod cg_method {
     pub type V = ArcArray1<S>;
 
     /// The state of a conjugate gradient algorithm.
-    #[derive(Clone)]
+    #[derive(Clone, Debug)]
     pub struct CGIterable {
         pub a: M,
         pub b: V,

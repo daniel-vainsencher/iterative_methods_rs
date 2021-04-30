@@ -83,13 +83,86 @@ fn cg_demo_pt1() {
         // || ... ||_2 is notation for euclidean length of what
         // lies between the vertical lines.
         println!(
-            "||Ax - b||_2 = {:.5}, for x = {:.4}",
+            "||Ax - b||_2 = {:.5}, for x = {:.4}, residual = {:.7}",
             res_squared_length.sqrt(),
-            result.x
-        )
+            result.x,
+            res
+        );
+        if res_squared_length < 1e-10 {
+            break;
+        }
     }
 }
+
+fn residual_l2(result: &CGIterable) -> f64 {
+    let res = result.a.dot(&result.x) - &result.b;
+    res.dot(&res).sqrt()
+}
+
+fn cg_demo_pt2_1() {
+    let p = make_3x3_pd_system_2();
+    let cg_iter = CGIterable::conjugate_gradient(p);
+
+    // Annotate each approximate solution with its cost
+    let mut cg_iter = assess(cg_iter, residual_l2);
+    // Deconstruct to break back out the result from the cost 
+    while let Some(AnnotatedResult {
+        result: cgi,
+        annotation: euc,
+        }) = cg_iter.next()
+    {
+        // Now the loop body is I/O only as it should be!
+        println!(
+            "||Ax - b||_2 = {:.5}, for x = {:.4}", euc, cgi.x
+        );
+    }
+}
+
+fn residual_linf(result: &CGIterable) -> f64 {
+    (result.a.dot(&result.x) - &result.b).fold(0.0, |a, b| a.max(b.abs()))
+}
+
+fn cg_demo_pt2_2() {
+    let p = make_3x3_pd_system_2();
+    let cg_iter = CGIterable::conjugate_gradient(p);
+    // Capping the number of iterations is good for a demo...
+    // and surprisingly common elsewhere too.
+    let cg_iter = cg_iter.take(20);
+    
+    // 
+    let cg_iter = step_by(cg_iter, 1);
+    let cg_iter = time(cg_iter);
+    let cg_iter = assess(cg_iter, | TimedResult { result, .. }| {
+        (residual_l2(result), residual_linf(result))
+    });
+    fn small_residual((euc, linf): &(f64, f64)) -> bool {
+        euc < &1e-6 && linf < &1e-6
+    }
+    let mut cg_iter = cg_iter.take_while(
+        | AnnotatedResult {
+            annotation: metrics,
+            ..
+        }| !small_residual(metrics));
+
+    while let Some(AnnotatedResult {
+        result: TimedResult {
+            result: cgi,
+            start_time,
+            duration,
+        },
+        annotation: (euc, linf),
+    }) = cg_iter.next()
+    {
+        println!(
+            "{:8} : {:8} | ||Ax - b||_2 = {:.5}, ||Ax - b||_inf = {:.5}, for x = {:.4}, residual = {:.7}", start_time.as_nanos(), duration.as_nanos(),
+            euc, linf, cgi.x, cgi.r
+        );
+    }
+}
+
 fn main() {
     cg_demo();
     cg_demo_pt1();
+    cg_demo_pt2_1();
+    cg_demo_pt2_2();
 }
