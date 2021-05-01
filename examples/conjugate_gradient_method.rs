@@ -3,8 +3,11 @@ extern crate nalgebra as na;
 use streaming_iterator::*;
 
 use iterative_methods::algorithms::cg_method::CGIterable;
-use iterative_methods::utils::{make_3x3_pd_system_1, make_3x3_pd_system_2};
+use iterative_methods::utils::make_3x3_pd_system_2;
 use iterative_methods::*;
+
+use ndarray::{rcarr1, ArcArray1};
+pub type V = ArcArray1<f64>;
 
 /// Demonstrate usage and convergence of conjugate gradient as a streaming-iterator.
 fn cg_demo() {
@@ -105,17 +108,20 @@ fn cg_demo_pt2_1() {
 
     // Annotate each approximate solution with its cost
     let mut cg_iter = assess(cg_iter, residual_l2);
-    // Deconstruct to break back out the result from the cost 
+    // Deconstruct to break out the result and cost
     while let Some(AnnotatedResult {
         result: cgi,
         annotation: euc,
-        }) = cg_iter.next()
+    }) = cg_iter.next()
     {
         // Now the loop body is I/O only as it should be!
-        println!(
-            "||Ax - b||_2 = {:.5}, for x = {:.4}", euc, cgi.x
-        );
+        println!("||Ax - b||_2 = {:.5}, for x = {:.4}", euc, cgi.x);
     }
+}
+
+fn a_distance(result: &CGIterable, optimum: V) -> f64 {
+    let error = &result.x - &optimum;
+    error.dot(&result.a.dot(&error)).sqrt()
 }
 
 fn residual_linf(result: &CGIterable) -> f64 {
@@ -124,38 +130,42 @@ fn residual_linf(result: &CGIterable) -> f64 {
 
 fn cg_demo_pt2_2() {
     let p = make_3x3_pd_system_2();
+    let optimum = rcarr1(&[-4.0, 6., -4.]);
     let cg_iter = CGIterable::conjugate_gradient(p);
-    // Capping the number of iterations is good for a demo...
-    // and surprisingly common elsewhere too.
-    let cg_iter = cg_iter.take(20);
-    
-    // 
-    let cg_iter = step_by(cg_iter, 1);
+    // Cap the number of iterations.
+    let cg_iter = cg_iter.take(80);
+    // Time each iteration, only of preceding steps (the method)
+    // excluding downstream evaluation and I/O (tracking overhead), as
+    // well as elapsed clocktime (combining both).
     let cg_iter = time(cg_iter);
-    let cg_iter = assess(cg_iter, | TimedResult { result, .. }| {
-        (residual_l2(result), residual_linf(result))
+    // Record multiple measures of quality
+    let cg_iter = assess(cg_iter, |TimedResult { result, .. }| {
+        (
+            residual_l2(result),
+            residual_linf(result),
+            a_distance(result, optimum.clone()),
+        )
     });
-    fn small_residual((euc, linf): &(f64, f64)) -> bool {
+    // Stop if converged by both criteria
+    fn small_residual((euc, linf, _): &(f64, f64, f64)) -> bool {
         euc < &1e-6 && linf < &1e-6
     }
-    let mut cg_iter = cg_iter.take_while(
-        | AnnotatedResult {
-            annotation: metrics,
-            ..
-        }| !small_residual(metrics));
-
+    let mut cg_iter = cg_iter.take_while(|ar| !small_residual(&ar.annotation));
+    // Output progress
     while let Some(AnnotatedResult {
-        result: TimedResult {
-            result: cgi,
-            start_time,
-            duration,
-        },
-        annotation: (euc, linf),
+        annotation: (euc, linf, a_dist),
+        result:
+            TimedResult {
+                result,
+                start_time,
+                duration,
+            },
     }) = cg_iter.next()
     {
         println!(
-            "{:8} : {:8} | ||Ax - b||_2 = {:.5}, ||Ax - b||_inf = {:.5}, for x = {:.4}, residual = {:.7}", start_time.as_nanos(), duration.as_nanos(),
-            euc, linf, cgi.x, cgi.r
+            "{:8} : {:8} | ||Ax - b||_2 = {:.5}, ||Ax - b||_inf = {:.5}, ||x-x*||_A = {:.5}, for x = {:.4}, residual = {:.7}",
+            start_time.as_nanos(), duration.as_nanos(),
+            euc, linf, a_dist, result.x, result.r
         );
     }
 }
