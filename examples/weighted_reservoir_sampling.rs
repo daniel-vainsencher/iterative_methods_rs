@@ -18,6 +18,7 @@ fn generate_seeded_values(num_values: usize, int_range_bound: usize) -> Vec<Weig
     seeded_values
 }
 
+#[allow(deprecated)]
 fn wrs_demo() {
     let mut seeded_values = generate_seeded_values(6, 2);
     let mut stream: Vec<WeightedDatum<f64>> = Vec::new();
