@@ -793,7 +793,7 @@ where
         if self.reservoir.len() >= self.capacity {
             if let Some(datum) = self.it.next() {
                 self.weight_sum += datum.weight;
-                let p = &(datum.weight / self.weight_sum);
+                let p = &(self.capacity as f64 * datum.weight / self.weight_sum);
                 let j: f64 = self.rng.gen();
                 if j < *p {
                     let h = self.rng.gen_range(0..self.capacity) as usize;
@@ -830,6 +830,7 @@ mod tests {
 
     use super::*;
     use crate::utils::generate_stream_with_constant_probability;
+    use crate::utils::generate_step_stream;
     use std::convert::TryInto;
     use std::io::Read;
     use std::iter;
@@ -1272,7 +1273,7 @@ mod tests {
     #[test]
     #[allow(deprecated)]
     fn wrs_complete_replacement_test() {
-        let stream_length = 333usize;
+        let stream_length = 200usize;
         // reservoir capacity:
         let capacity = 15usize;
         let probability = 0.9;
@@ -1297,5 +1298,34 @@ mod tests {
         } else {
             panic!("The final reservoir was None.");
         };
+    }
+
+    // For a stream of the form [(0,1),..,(0,1),(1,1),..,(1,1)] with equal numbers 
+    // of zero and one values and all weights equal to 1, we expect weighted reservoir
+    // sampling to reduce to reservoir sampling (without weights) and thus to produce
+    // a reservoir whose mean estimates the mean of the entire stream, which in this case
+    // is 0.5. 
+    #[test]
+    #[allow(deprecated)]
+    fn wrs_mean_test() {
+        let stream_length = 1000usize;
+        let capacity = stream_length / 2;
+        let mut means: Vec<f64> = Vec::with_capacity(capacity);
+        let num_runs = 100usize;
+        for _i in 0..num_runs {
+            let stream = generate_step_stream(
+                stream_length,
+                capacity,
+                0i64,
+                1i64);
+            let stream = wd_iterable(stream, |_x| {1f64});
+            let stream = weighted_reservoir_iterable(stream, capacity, None);
+            let res = last(stream).unwrap();
+            let res: Vec<i64> = res.iter().map(|x| {x.value}).collect();
+            let mean = res.iter().sum::<i64>() as f64 / capacity as f64;
+            means.push(mean);
+        }
+        let mean_mean = means.iter().sum::<f64>() / num_runs as f64;
+        assert!(0.45 < mean_mean && mean_mean < 0.55);
     }
 }
