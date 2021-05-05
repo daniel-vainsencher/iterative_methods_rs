@@ -739,8 +739,7 @@ where
     }
 }
 
-/// Deprecated: It is not clear that this implementation has the expected properties of Weighted Reservoir Sampling.
-///
+
 /// The weighted reservoir sampling algorithm of M. T. Chao is implemented.
 /// `WeightedReservoirIterable` wraps a `StreamingIterator`, `I`, whose items must be of type `WeightedDatum` and
 /// produces a `StreamingIterator` whose items are samples of size `capacity`
@@ -755,7 +754,7 @@ where
 
 /// See https://en.wikipedia.org/wiki/Reservoir_sampling#Weighted_random_sampling,
 /// https://arxiv.org/abs/1910.11069, or for the original paper,
-/// https://doi.org/10.1093/biomet/69.3.653.
+/// https://doi.org/10.1093/biomet/69.3.653. 
 
 /// Future work might include implementing parallellized batch processing:
 /// https://dl.acm.org/doi/10.1145/3350755.3400287
@@ -1339,6 +1338,7 @@ mod tests {
         let mean_mean = estimate(num_runs);
         assert!((mean_mean - 0.5).abs() < 0.05 * 0.5);
 
+        // The following loop was used to estimate the failure rate.
         // let mut failures = 0usize;
         // let number_of_runs = 1000usize;
         // for _j in 0..number_of_runs {
