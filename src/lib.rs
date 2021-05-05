@@ -627,8 +627,8 @@ where
 ///
 #[derive(Debug, Clone, PartialEq)]
 pub struct WeightedDatum<U> {
-    value: U,
-    weight: f64,
+    pub value: U,
+    pub weight: f64,
 }
 
 /// Constructor for WeightedDatum.
