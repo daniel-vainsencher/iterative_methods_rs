@@ -11,6 +11,12 @@ use streaming_iterator::*;
 
 /// Demonstrate how weighted reservoir sampling estimates
 /// the stream distribution when all weights are 1.
+/// The first third of the stream is sampled from a normal 
+/// distribution and the last two third is sampled from a 
+/// normal distribution with a different mean. 
+/// The animation generated shows how WRS keeps a sample
+/// that is up to date with the portion of the stream that
+/// has been processed.
 ///
 /// Write the full stream and a sequence of reservoir samples
 /// to yaml files. The stream
