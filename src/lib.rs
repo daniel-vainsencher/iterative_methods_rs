@@ -365,7 +365,10 @@ where
     fn create_yaml_object(&self) -> Yaml {
         let value = &self.value;
         let weight = &self.weight;
-        Yaml::Array(vec![value.create_yaml_object(), weight.create_yaml_object()])
+        Yaml::Array(vec![
+            value.create_yaml_object(),
+            weight.create_yaml_object(),
+        ])
     }
 }
 
@@ -838,8 +841,8 @@ where
 mod tests {
 
     use super::*;
-    use crate::utils::generate_stream_with_constant_probability;
     use crate::utils::generate_step_stream;
+    use crate::utils::generate_stream_with_constant_probability;
     use std::convert::TryInto;
     use std::io::Read;
     use std::iter;
@@ -1305,38 +1308,34 @@ mod tests {
         };
     }
 
-    // For a stream of the form [(0,1),..,(0,1),(1,1),..,(1,1)] with equal numbers 
+    // For a stream of the form [(0,1),..,(0,1),(1,1),..,(1,1)] with equal numbers
     // of zero and one values and all weights equal to 1, we expect weighted reservoir
     // sampling to reduce to reservoir sampling (without weights) and thus to produce
     // a reservoir whose mean estimates the mean of the entire stream, which in this case
     // is 0.5.
     //
-    // This test was run 1000 times with zero failures (see the commented-out loop.) 
-    // Thus we estimate the failure rate to be less than 1 in 1000. 
+    // This test was run 1000 times with zero failures (see the commented-out loop.)
+    // Thus we estimate the failure rate to be less than 1 in 1000.
     #[test]
     fn wrs_mean_test() {
         let stream_length = 100usize;
         let capacity = stream_length / 2;
         let num_runs = 50usize;
-        let estimate =  |num_runs| {
+        let estimate = |num_runs| {
             let mut means: Vec<f64> = Vec::with_capacity(capacity);
             for _i in 0..num_runs {
-                let stream = generate_step_stream(
-                    stream_length,
-                    capacity,
-                    0i64,
-                    1i64);
-                let stream = wd_iterable(stream, |_x| {1f64});
+                let stream = generate_step_stream(stream_length, capacity, 0i64, 1i64);
+                let stream = wd_iterable(stream, |_x| 1f64);
                 let stream = weighted_reservoir_iterable(stream, capacity, None);
                 let res = last(stream).unwrap();
-                let res: Vec<i64> = res.iter().map(|x| {x.value}).collect();
+                let res: Vec<i64> = res.iter().map(|x| x.value).collect();
                 let mean = res.iter().sum::<i64>() as f64 / capacity as f64;
                 means.push(mean);
             }
             let mean_mean = means.iter().sum::<f64>() / num_runs as f64;
             mean_mean
         };
-        
+
         let mean_mean = estimate(num_runs);
         assert!((mean_mean - 0.5).abs() < 0.05 * 0.5);
 
