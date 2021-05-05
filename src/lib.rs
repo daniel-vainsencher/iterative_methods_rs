@@ -358,7 +358,18 @@ where
     }
 }
 
-/// Write items of StreamingIterator to a YAML file.
+impl<T> YamlDataType for WeightedDatum<T>
+where
+    T: YamlDataType,
+{
+    fn create_yaml_object(&self) -> Yaml {
+        let value = &self.value;
+        let weight = &self.weight;
+        Yaml::Array(vec![value.create_yaml_object(), weight.create_yaml_object()])
+    }
+}
+
+/// Write items of StreamingIterator to a Yaml file.
 #[derive(Debug)]
 pub struct ToYamlIterable<I> {
     pub it: I,
