@@ -11,9 +11,9 @@ use streaming_iterator::*;
 
 /// Demonstrate how weighted reservoir sampling estimates
 /// the stream distribution when all weights are 1.
-/// The first third of the stream is sampled from a normal 
-/// distribution and the last two third is sampled from a 
-/// normal distribution with a different mean. 
+/// The first third of the stream is sampled from a normal
+/// distribution and the last two third is sampled from a
+/// normal distribution with a different mean.
 /// The animation generated shows how WRS keeps a sample
 /// that is up to date with the portion of the stream that
 /// has been processed.
@@ -81,7 +81,7 @@ fn write_wrs_visualizations_data_to_yaml(
     let stream = write_yaml_documents(stream, parameters["stream_file"].to_string())
         .expect("Create File and initialize yaml iter failed.");
     // Add constant weights to all items
-    let stream = wd_iterable(stream, |_x| {1.0f64});
+    let stream = wd_iterable(stream, |_x| 1.0f64);
     let stream = weighted_reservoir_iterable(stream, capacity, None);
     // remove the weights, which were only needed for applying WRS.
     let stream = stream.map(|x| {
