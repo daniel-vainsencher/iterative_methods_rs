@@ -1171,7 +1171,7 @@ mod tests {
         // Check that the probabilities are approximately correct.
         while let Some(item) = stream.next() {
             weight_sum += item.weight;
-            let p = item.weight / weight_sum;
+            let p = capacity as f64 * item.weight / weight_sum;
             assert!((p - probability).abs() < 0.01 * probability);
         }
     }
@@ -1181,10 +1181,10 @@ mod tests {
         expected = "The weight is not finite and therefore cannot be used to compute the probability of inclusion in the reservoir."
     )]
     fn test_constant_probability_fail_from_inf_weight() {
-        let stream_length = 100usize;
+        let stream_length: usize = 10_usize.pow(4);
         // reservoir capacity:
         let capacity = 3usize;
-        let probability = 0.9999;
+        let probability = 0.999999999;
         let initial_weight = 1.0;
         // We create a stream with constant probability for all elements:
         let mut stream = generate_stream_with_constant_probability(
