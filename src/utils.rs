@@ -122,7 +122,9 @@ pub fn generate_stream_with_constant_probability(
         power += 1;
         new_datum(
             wd.value,
-            initial_weight * (probability / capacity as f64) * (capacity as f64 / (capacity as f64 - probability)).powi(power),
+            initial_weight
+                * (probability / capacity as f64)
+                * (capacity as f64 / (capacity as f64 - probability)).powi(power),
         )
     });
     initial_iter.chain(mapped)
