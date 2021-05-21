@@ -1,6 +1,10 @@
-use crate::algorithms::cg_method::*;
 use crate::*;
+use ndarray::ArcArray1;
+use ndarray::ArcArray2;
 use ndarray::{rcarr1, rcarr2};
+pub type S = f64;
+pub type V = ArcArray1<S>;
+pub type M = ArcArray2<S>;
 use rand::thread_rng;
 use rand_distr::{Distribution, Normal};
 use std::collections::HashMap;

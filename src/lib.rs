@@ -15,6 +15,7 @@ use streaming_iterator::*;
 use yaml_rust::{Yaml, YamlEmitter};
 
 pub mod algorithms;
+pub mod conjugate_gradient;
 pub mod utils;
 
 /// Store a generic annotation next to the state.
