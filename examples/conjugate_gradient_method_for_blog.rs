@@ -126,9 +126,16 @@ fn cg_demo_pt2_2() {
     }) = cg_iter.next()
     {
         println!(
-            "{:8} : {:8} | ||Ax - b||_2 = {:.5}, ||Ax - b||_inf = {:.5}, ||x-x*||_A = {:.5}, for x = {:.4}, residual = {:.7}",
-            start_time.as_nanos(), duration.as_nanos(),
-            euc, linf, a_dist, result.x, result.r
+            "{:8} : {:6}, \
+             ||Ax - b||_2 = {:.3}, ||Ax - b||_inf = {:.3}, ||x-x*||_A = {:.3}, \
+             for x = {:+.3}, residual = {:+.3}",
+            start_time.as_nanos(),
+            duration.as_nanos(),
+            euc,
+            linf,
+            a_dist,
+            result.x,
+            result.r
         );
     }
 }
