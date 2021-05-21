@@ -28,3 +28,8 @@
   - [ ] Apply feedback
 - [ ] 1.0 decision point
   - [ ] Decide whether this is a single post repo or we expand on the project.
+  - [ ] Smart timing adaptor: get desired time interval, time some
+    iterations, as long as time is < interval/2,double number of
+    iterations being timed. Report time per iterations. Definitely defer to future blog post
+
+

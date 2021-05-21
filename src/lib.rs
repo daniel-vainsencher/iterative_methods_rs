@@ -83,10 +83,10 @@ where
 }
 
 /// Annotate every underlying item with its score, as defined by `f`.
-pub fn assess<I, T, F>(it: I, f: F) -> AnnotatedIterable<I, T, F, f64>
+pub fn assess<I, T, F, A>(it: I, f: F) -> AnnotatedIterable<I, T, F, A>
 where
     T: Clone,
-    F: FnMut(&T) -> f64,
+    F: FnMut(&T) -> A,
     I: StreamingIterator<Item = T>,
 {
     AnnotatedIterable::new(it, f)
@@ -1104,6 +1104,7 @@ mod tests {
 
     /// This test asserts that the weighted reservoir is filled with the correct items.
     #[test]
+    #[allow(deprecated)]
     fn fill_weighted_reservoir_test() {
         // v is the data stream.
         let v: Vec<WeightedDatum<f64>> = vec![new_datum(0.5, 1.), new_datum(0.2, 2.)];
@@ -1128,6 +1129,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(deprecated)]
     fn stream_smaller_than_weighted_reservoir_test() {
         let stream_vec = vec![new_datum(1, 1.0), new_datum(2, 1.0)];
         let stream = convert(stream_vec);
@@ -1224,6 +1226,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(deprecated)]
     fn wrs_no_replacement_test() {
         let stream_length = 20usize;
         // reservoir capacity:
@@ -1267,6 +1270,7 @@ mod tests {
     // Consider wrapping the test in a for loop that runs the test 10^6 times
     // and counts the number of failures.
     #[test]
+    #[allow(deprecated)]
     fn wrs_complete_replacement_test() {
         let stream_length = 333usize;
         // reservoir capacity:

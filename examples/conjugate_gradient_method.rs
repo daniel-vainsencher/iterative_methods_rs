@@ -3,60 +3,88 @@ extern crate nalgebra as na;
 use streaming_iterator::*;
 
 use iterative_methods::algorithms::cg_method::CGIterable;
-use iterative_methods::utils::make_3x3_psd_system_2;
+use iterative_methods::utils::make_3x3_pd_system_2;
 use iterative_methods::*;
 
-/// Demonstrate usage and convergence of conjugate gradient as a streaming-iterator.
-fn cg_demo() {
-    let p = make_3x3_psd_system_2();
-    println!("a: \n{}", &p.a);
-    let cg_iter = CGIterable::conjugate_gradient(p);
-    // Upper bound the number of iterations
-    let cg_iter = cg_iter.take(20);
-    // Apply a quality based stopping condition; this relies on
-    // algorithm internals, requiring all state to be exposed and
-    // not just the result.
-    let cg_iter = cg_iter.take_while(|cgi| cgi.rsprev.sqrt() > 1e-6);
+use ndarray::{rcarr1, ArcArray1};
+pub type V = ArcArray1<f64>;
 
-    // Note the side effect of inspect is applied exactly to every x
-    // produced above, the sequence of which is not affected at
-    // all. This is just like applying a side effect inside the while
-    // loop, except we can compose multiple inspect, each with its own
-    // effect.
-    let cg_iter = step_by(cg_iter, 2);
+/// The usual euclidean length of the residual
+fn residual_l2(result: &CGIterable) -> f64 {
+    let res = result.a.dot(&result.x) - &result.b;
+    res.dot(&res).sqrt()
+}
+
+/// The euclidean distance induced by A, between current solution and
+/// a user provided point, which is interesting when it is the true
+/// optimum.
+fn a_distance(result: &CGIterable, optimum: V) -> f64 {
+    let error = &result.x - &optimum;
+    error.dot(&result.a.dot(&error)).sqrt()
+}
+
+/// The l-infinity norm of the residual
+fn residual_linf(result: &CGIterable) -> f64 {
+    (result.a.dot(&result.x) - &result.b).fold(0.0, |m, e| m.max(e.abs()))
+}
+
+/// Example demonstrating different uses of adaptors.
+fn cg_demo() {
+    // Set up a problem for which we happen to know the solution
+    let p = make_3x3_pd_system_2();
+    let optimum = rcarr1(&[-4.0, 6., -4.]);
+
+    // Initialize the conjugate gradient solver on this problem
+    let cg_iter = CGIterable::conjugate_gradient(p);
+
+    // Cap the number of iterations.
+    let cg_iter = cg_iter.take(80);
+
+    // Time each iteration, only of preceding steps (the method)
+    // excluding downstream evaluation and I/O (tracking overhead), as
+    // well as elapsed clocktime (combining both).
     let cg_iter = time(cg_iter);
 
-    // We are assessing after timing, which means that computing this
-    // function is excluded from the duration measurements, which is
-    // generally the right way to do it, though not important here.
-    fn score(TimedResult { result, .. }: &TimedResult<CGIterable>) -> f64 {
-        result.rs
-    }
+    // Record multiple measures of quality
+    let cg_iter = assess(cg_iter, |TimedResult { result, .. }| {
+        (
+            residual_l2(result),
+            residual_linf(result),
+            a_distance(result, optimum.clone()),
+        )
+    });
 
-    let cg_iter = assess(cg_iter, score);
-    let mut cg_print_iter = inspect(
-        cg_iter,
-        |AnnotatedResult {
-             result:
-                 TimedResult {
-                     result,
-                     start_time,
-                     duration,
-                 },
-             annotation: cost,
-         }| {
-            let res = result.a.dot(&result.x) - &result.b;
-            println!(
-            "||Ax - b ||_2^2 = {:.5}, for x = {:.4}, and Ax - b = {:.5}; iteration start {}μs, duration {}μs",
-            cost,
-            result.x,
-            res,
-            start_time.as_nanos(),
-            duration.as_nanos(),
+    // Stop if converged by both residual criteria. We could use the
+    // distance from optimum, but that would be cheating. Luckily, we
+    // know that:
+    //
+    // 1. The method converges, so distance to optimum tends to zero.
+    // 2. The solution tends to the optimum together with the residual
+    // tending to zero.
+    //
+    // Hence conditions on the residual also work.
+    fn small_residual((euc, linf, _): &(f64, f64, f64)) -> bool {
+        euc < &1e-3 && linf < &1e-3
+    }
+    let mut cg_iter = cg_iter.take_while(|ar| !small_residual(&ar.annotation));
+
+    // Actually run, and output progress
+    while let Some(AnnotatedResult {
+        annotation: (euc, linf, a_dist),
+        result:
+            TimedResult {
+                result,
+                start_time,
+                duration,
+            },
+    }) = cg_iter.next()
+    {
+        println!(
+            "{:8} : {:8} | ||Ax - b||_2 = {:.5}, ||Ax - b||_inf = {:.5}, ||x-x*||_A = {:.5}, for x = {:.4}, residual = {:.7}",
+            start_time.as_nanos(), duration.as_nanos(),
+            euc, linf, a_dist, result.x, result.r
         );
-        },
-    );
-    while let Some(_cgi) = cg_print_iter.next() {}
+    }
 }
 
 fn main() {
