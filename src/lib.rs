@@ -18,6 +18,71 @@ pub mod algorithms;
 pub mod conjugate_gradient;
 pub mod utils;
 
+/// Creates an iterator which returns initial elements until and
+/// including the first satisfying a predicate.
+#[inline]
+pub fn take_until<I, F>(i: I, f: F) -> TakeUntil<I, F>
+where
+    I: StreamingIterator,
+    F: FnMut(&I::Item) -> bool,
+{
+    TakeUntil {
+        it: i,
+        f: f,
+        state: UntilState::Unfulfilled,
+    }
+}
+
+/// An adaptor that returns initial elements until and including the
+/// first satisfying a predicate.
+#[derive(Clone)]
+pub struct TakeUntil<I, F>
+where
+    I: StreamingIterator,
+    F: FnMut(&I::Item) -> bool,
+{
+    pub it: I,
+    pub f: F,
+    pub state: UntilState,
+}
+
+#[derive(Clone, PartialEq)]
+pub enum UntilState {
+    Unfulfilled,
+    Fulfilled,
+    Done,
+}
+
+impl<I, F> StreamingIterator for TakeUntil<I, F>
+where
+    I: StreamingIterator,
+    F: FnMut(&I::Item) -> bool,
+{
+    type Item = I::Item;
+    fn advance(&mut self) {
+        match self.state {
+            UntilState::Unfulfilled => {
+                self.it.advance();
+                if let Some(v) = self.it.get() {
+                    if (self.f)(v) {
+                        self.state = UntilState::Fulfilled
+                    }
+                }
+            }
+            UntilState::Fulfilled => self.state = UntilState::Done,
+            UntilState::Done => {}
+        }
+    }
+
+    fn get(&self) -> Option<&Self::Item> {
+        if UntilState::Done == self.state {
+            None
+        } else {
+            self.it.get()
+        }
+    }
+}
+
 /// Store a generic annotation next to the state.
 #[derive(Clone)]
 pub struct AnnotatedResult<T, A> {

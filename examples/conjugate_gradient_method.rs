@@ -46,7 +46,7 @@ fn cg_demo() {
     let cg_iter = time(cg_iter);
 
     // Record multiple measures of quality
-    let mut cg_iter = assess(cg_iter, |TimedResult { result, .. }| {
+    let cg_iter = assess(cg_iter, |TimedResult { result, .. }| {
         (
             residual_l2(result),
             residual_linf(result),
@@ -66,7 +66,11 @@ fn cg_demo() {
     fn small_residual((euc, linf, _): &(f64, f64, f64)) -> bool {
         euc < &1e-3 && linf < &1e-3
     }
-    //let mut cg_iter = cg_iter.take_while(|ar| !small_residual(&ar.annotation));
+
+    // Take_until implements a stopping condition: will return all
+    // initial elements until the first that satisfies a predictate,
+    // inclusive.
+    let mut cg_iter = take_until(cg_iter, |ar| small_residual(&ar.annotation));
 
     // Actually run, and output progress
     while let Some(AnnotatedResult {

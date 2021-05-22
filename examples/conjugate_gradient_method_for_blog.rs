@@ -62,7 +62,7 @@ fn cg_demo_pt2_1() {
     // Annotate each approximate solution with its cost
     let cg_iter = assess(cg_iter, residual_l2);
     // and use it in stopping condition
-    let mut cg_iter = cg_iter.take_while(|ar| ar.annotation > 1e-3);
+    let mut cg_iter = take_until(cg_iter, |ar| ar.annotation < 1e-3);
     // Deconstruct to break out the result and cost
     while let Some(AnnotatedResult {
         result: cgi,
@@ -113,7 +113,7 @@ fn cg_demo_pt2_2() {
     fn small_residual((euc, linf, _): &(f64, f64, f64)) -> bool {
         euc < &1e-3 && linf < &1e-3
     }
-    let mut cg_iter = cg_iter.take_while(|ar| !small_residual(&ar.annotation));
+    let mut cg_iter = take_until(cg_iter, |ar| small_residual(&ar.annotation));
     // Output progress
     while let Some(AnnotatedResult {
         annotation: (euc, linf, a_dist),
