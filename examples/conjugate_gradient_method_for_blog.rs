@@ -128,14 +128,13 @@ fn cg_demo_pt2_2() {
         println!(
             "{:8} : {:6}, \
              ||Ax - b||_2 = {:.3}, ||Ax - b||_inf = {:.3}, ||x-x*||_A = {:.3}, \
-             for x = {:+.3}, residual = {:+.3}",
+             for x = {:+.3}",
             start_time.as_nanos(),
             duration.as_nanos(),
             euc,
             linf,
             a_dist,
             result.solution,
-            result.r_k
         );
     }
 }
