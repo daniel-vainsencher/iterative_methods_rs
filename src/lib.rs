@@ -18,13 +18,14 @@ pub mod algorithms;
 pub mod utils;
 
 /// Store a generic annotation next to the state.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct AnnotatedResult<T, A> {
     pub result: T,
     pub annotation: A,
 }
 
 /// An adaptor that annotates every underlying item `x` with `f(x)`.
+#[derive(Clone, Debug)]
 pub struct AnnotatedIterable<I, T, F, A>
 where
     I: Sized + StreamingIterator<Item = T>,
@@ -114,6 +115,7 @@ where
 /// Times every call to `advance` on the underlying
 /// StreamingIterator. Stores both the time at which it starts, and
 /// the duration it took to run.
+#[derive(Clone, Debug)]
 pub struct TimedIterable<I, T>
 where
     I: StreamingIterator<Item = T>,
@@ -128,7 +130,7 @@ where
 /// relative to the creation of the process generating results, and
 /// duration is relative to the start of the creation of the current
 /// result.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TimedResult<T> {
     pub result: T,
     pub start_time: Duration,
@@ -187,6 +189,7 @@ where
 /// `step` is specified and only the items located every `step` are returned.
 ///
 /// Iterator indices begin at 0, thus step_by() converts step -> step - 1
+#[derive(Clone, Debug)]
 pub struct StepBy<I> {
     it: I,
     step: usize,
@@ -233,6 +236,7 @@ where
 }
 
 /// Write items of StreamingIterator to a file.
+#[derive(Debug)]
 pub struct ToFileIterable<I, F> {
     pub it: I,
     pub write_function: F,
@@ -449,6 +453,7 @@ where
 }
 
 /// An adaptor that enumerates items.
+#[derive(Clone, Debug)]
 pub struct Enumerate<I, T> {
     pub current: Option<Numbered<T>>,
     pub it: I,
@@ -692,6 +697,7 @@ where
 
 /// An adaptor that converts items from `WeightedDatum<T>` to `T`.
 ///
+#[derive(Clone, Debug)]
 pub struct ExtractValue<I, T>
 where
     I: StreamingIterator<Item = WeightedDatum<T>>,

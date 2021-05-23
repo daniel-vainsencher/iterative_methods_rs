@@ -6,11 +6,10 @@ use rand_distr::{Distribution, Normal};
 use std::collections::HashMap;
 use std::io::Read;
 use std::iter;
-
 /// Utility Functions for the Conjugate Gradient Method
 
 /// A linear system, ax-b=0, to be solved iteratively, with an optional initial solution.
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug, Default)]
 pub struct LinearSystem {
     pub a: M,
     pub b: V,
@@ -163,7 +162,7 @@ pub fn read_yaml_to_string(file_path: &str) -> Result<std::string::String, std::
 }
 
 /// A simple Counter iterator to use in demos and tests.
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Default)]
 pub struct Counter {
     count: f64,
 }
@@ -176,7 +175,6 @@ impl Counter {
 
 impl StreamingIterator for Counter {
     type Item = f64;
-
     fn advance(&mut self) {
         self.count += 1.;
     }
