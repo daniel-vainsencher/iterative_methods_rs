@@ -21,14 +21,14 @@ pub mod utils;
 /// Creates an iterator which returns initial elements until and
 /// including the first satisfying a predicate.
 #[inline]
-pub fn take_until<I, F>(i: I, f: F) -> TakeUntil<I, F>
+pub fn take_until<I, F>(it: I, f: F) -> TakeUntil<I, F>
 where
     I: StreamingIterator,
     F: FnMut(&I::Item) -> bool,
 {
     TakeUntil {
-        it: i,
-        f: f,
+        it,
+        f,
         state: UntilState::Unfulfilled,
     }
 }
@@ -112,7 +112,7 @@ where
     pub fn new(it: I, f: F) -> AnnotatedIterable<I, T, F, A> {
         AnnotatedIterable {
             it,
-            f: f,
+            f,
             current: None,
         }
     }
@@ -210,7 +210,7 @@ where
     T: Sized + Clone,
 {
     TimedIterable {
-        it: it,
+        it,
         current: None,
         timer: Instant::now(),
     }
@@ -467,7 +467,7 @@ where
     emitter
         .dump(&yaml_item)
         .expect("Could not convert item to yaml object.");
-    out_str.push_str("\n");
+    out_str.push('\n');
     file_writer
         .write_all(out_str.as_bytes())
         .expect("Writing value to file failed.");
@@ -531,7 +531,7 @@ where
                 count: -1,
                 item: None,
             }),
-            it: it,
+            it,
         }
     }
 }
@@ -546,7 +546,7 @@ where
             count: -1,
             item: None,
         }),
-        it: it,
+        it,
     }
 }
 
@@ -678,7 +678,7 @@ where
 /// a weight for each datum. Currently, the main motivation for this
 /// is to use it for Weighted Reservoir Sampling (WRS).
 ///
-/// WRS is currently deprecated, but WeightedDatum and WDIterable are not.
+/// WRS is currently deprecated, but WeightedDatum and WdIterable are not.
 ///
 #[derive(Debug, Clone, PartialEq)]
 pub struct WeightedDatum<U> {
@@ -695,18 +695,18 @@ where
         panic!("The weight is not finite and therefore cannot be used to compute the probability of inclusion in the reservoir.");
     }
     WeightedDatum {
-        value: value,
-        weight: weight,
+        value,
+        weight,
     }
 }
 
-/// WDIterable provides an easy conversion of any iterable to one whose items are WeightedDatum.
-/// WDIterable holds an iterator and a function. The function is defined by the user to extract
+/// WdIterable provides an easy conversion of any iterable to one whose items are WeightedDatum.
+/// WdIterable holds an iterator and a function. The function is defined by the user to extract
 /// weights from the iterable and package the old items and extracted weights into items as
 /// WeightedDatum
 
 #[derive(Debug, Clone)]
-pub struct WDIterable<I, T, F>
+pub struct WdIterable<I, T, F>
 where
     I: StreamingIterator<Item = T>,
 {
@@ -716,19 +716,19 @@ where
 }
 
 /// Annotates items of an iterable with a weight using a function `f`.
-pub fn wd_iterable<I, T, F>(it: I, f: F) -> WDIterable<I, T, F>
+pub fn wd_iterable<I, T, F>(it: I, f: F) -> WdIterable<I, T, F>
 where
     I: StreamingIterator<Item = T>,
     F: FnMut(&T) -> f64,
 {
-    WDIterable {
-        it: it,
+    WdIterable {
+        it,
         wd: None,
-        f: f,
+        f,
     }
 }
 
-impl<I, T, F> StreamingIterator for WDIterable<I, T, F>
+impl<I, T, F> StreamingIterator for WdIterable<I, T, F>
 where
     I: StreamingIterator<Item = T>,
     F: FnMut(&T) -> f64,
@@ -837,13 +837,13 @@ where
         Some(rng) => rng,
         None => Pcg64::from_entropy(),
     };
-    let res: Vec<WeightedDatum<T>> = Vec::new();
+    let reservoir: Vec<WeightedDatum<T>> = Vec::new();
     WeightedReservoirIterable {
         it,
-        reservoir: res,
-        capacity: capacity,
+        reservoir,
+        capacity,
         weight_sum: 0.0,
-        rng: rng,
+        rng,
     }
 }
 

@@ -83,7 +83,7 @@ pub fn conjugate_gradient(p: &LinearSystem) -> ConjugateGradient {
     let ppap_k = NAN;
     ConjugateGradient {
         x_k: x_0.clone(),
-        solution: x_0.clone(),
+        solution: x_0,
         a: p.a.clone(),
         b: p.b.clone(),
         r_k,

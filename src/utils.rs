@@ -38,8 +38,8 @@ pub fn make_3x3_pd_system_2() -> LinearSystem {
 pub fn make_3x3_psd_system(m: M, b: V) -> LinearSystem {
     let a = (m.t().dot(&m)).into_shared();
     LinearSystem {
-        a: a,
-        b: b,
+        a,
+        b,
         x0: None,
     }
 }
@@ -62,8 +62,7 @@ pub fn generate_step_stream(
     }
     let final_iter = iter::repeat(final_value).take(stream_length - capacity);
     let stream = initial_iter.chain(final_iter);
-    let stream = convert(stream);
-    stream
+    convert(stream)    
 }
 
 /// Produce an enumerated stream like [(0,a), (1,a),..., (capacity, b), ..., (stream_length-1, b)] with `capacity` copies of "a"
@@ -83,8 +82,7 @@ pub fn generate_enumerated_step_stream(
     let final_iter = iter::repeat(final_value).take(stream_length - capacity);
     let stream = initial_iter.chain(final_iter);
     let stream = convert(stream);
-    let stream = enumerate(stream);
-    stream
+    enumerate(stream)    
 }
 
 // Produce a stream from a normal distribution.
