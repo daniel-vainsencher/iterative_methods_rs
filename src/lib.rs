@@ -694,10 +694,7 @@ where
     if !weight.is_finite() {
         panic!("The weight is not finite and therefore cannot be used to compute the probability of inclusion in the reservoir.");
     }
-    WeightedDatum {
-        value,
-        weight,
-    }
+    WeightedDatum { value, weight }
 }
 
 /// WdIterable provides an easy conversion of any iterable to one whose items are WeightedDatum.
@@ -721,11 +718,7 @@ where
     I: StreamingIterator<Item = T>,
     F: FnMut(&T) -> f64,
 {
-    WdIterable {
-        it,
-        wd: None,
-        f,
-    }
+    WdIterable { it, wd: None, f }
 }
 
 impl<I, T, F> StreamingIterator for WdIterable<I, T, F>
