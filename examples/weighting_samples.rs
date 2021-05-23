@@ -6,7 +6,7 @@ use utils::*;
 fn wd_iterable_counter_demo() {
     println!("\n\n -----WDIterable Counter Demo----- \n\n");
 
-    let counter_stream: Counter = new_counter();
+    let counter_stream = Counter::new();
     let mut counter_stream_copy = counter_stream.clone();
     let mut wd_iter = WDIterable {
         it: counter_stream,

@@ -168,8 +168,10 @@ pub struct Counter {
     count: f64,
 }
 
-pub fn new_counter() -> Counter {
-    Counter { count: 0. }
+impl Counter {
+    pub fn new() -> Self {
+        Counter { count: 0. }
+    }
 }
 
 impl StreamingIterator for Counter {

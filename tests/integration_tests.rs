@@ -1,5 +1,5 @@
 use crate::utils::{
-    expose_w, generate_step_stream, make_3x3_pd_system_1, new_counter, read_yaml_to_string, Counter,
+    expose_w, generate_step_stream, make_3x3_pd_system_1, read_yaml_to_string, Counter,
 };
 use iterative_methods::*;
 extern crate streaming_iterator;
@@ -50,7 +50,7 @@ fn test_timed_iterable() {
 
 #[test]
 fn wd_iterable_extract_value_test() {
-    let mut counter_stream: Counter = new_counter();
+    let mut counter_stream = Counter::new();
     let counter_stream_copy = counter_stream.clone();
     let wd_iter = WDIterable {
         it: counter_stream_copy,
