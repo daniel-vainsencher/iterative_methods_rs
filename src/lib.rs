@@ -358,7 +358,21 @@ where
     }
 }
 
-/// Write items of StreamingIterator to a YAML file.
+impl<T> YamlDataType for WeightedDatum<T>
+where
+    T: YamlDataType,
+{
+    fn create_yaml_object(&self) -> Yaml {
+        let value = &self.value;
+        let weight = &self.weight;
+        Yaml::Array(vec![
+            value.create_yaml_object(),
+            weight.create_yaml_object(),
+        ])
+    }
+}
+
+/// Write items of StreamingIterator to a Yaml file.
 #[derive(Debug)]
 pub struct ToYamlIterable<I> {
     pub it: I,
@@ -616,8 +630,8 @@ where
 ///
 #[derive(Debug, Clone, PartialEq)]
 pub struct WeightedDatum<U> {
-    value: U,
-    weight: f64,
+    pub value: U,
+    pub weight: f64,
 }
 
 /// Constructor for WeightedDatum.
@@ -725,8 +739,6 @@ where
     }
 }
 
-/// Deprecated: It is not clear that this implementation has the expected properties of Weighted Reservoir Sampling.
-///
 /// The weighted reservoir sampling algorithm of M. T. Chao is implemented.
 /// `WeightedReservoirIterable` wraps a `StreamingIterator`, `I`, whose items must be of type `WeightedDatum` and
 /// produces a `StreamingIterator` whose items are samples of size `capacity`
@@ -756,8 +768,6 @@ pub struct WeightedReservoirIterable<I, T> {
 }
 
 /// Create a random sample of the underlying weighted stream.
-// Deprecated
-#[deprecated]
 pub fn weighted_reservoir_iterable<I, T>(
     it: I,
     capacity: usize,
@@ -793,7 +803,7 @@ where
         if self.reservoir.len() >= self.capacity {
             if let Some(datum) = self.it.next() {
                 self.weight_sum += datum.weight;
-                let p = &(datum.weight / self.weight_sum);
+                let p = &(self.capacity as f64 * datum.weight / self.weight_sum);
                 let j: f64 = self.rng.gen();
                 if j < *p {
                     let h = self.rng.gen_range(0..self.capacity) as usize;
@@ -830,6 +840,7 @@ mod tests {
 
     use super::*;
     use crate::utils::generate_stream_with_constant_probability;
+    use crate::utils::mean_of_means_of_step_stream;
     use std::convert::TryInto;
     use std::io::Read;
     use std::iter;
@@ -1104,7 +1115,6 @@ mod tests {
 
     /// This test asserts that the weighted reservoir is filled with the correct items.
     #[test]
-    #[allow(deprecated)]
     fn fill_weighted_reservoir_test() {
         // v is the data stream.
         let v: Vec<WeightedDatum<f64>> = vec![new_datum(0.5, 1.), new_datum(0.2, 2.)];
@@ -1129,7 +1139,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(deprecated)]
     fn stream_smaller_than_weighted_reservoir_test() {
         let stream_vec = vec![new_datum(1, 1.0), new_datum(2, 1.0)];
         let stream = convert(stream_vec);
@@ -1161,7 +1170,7 @@ mod tests {
         // Check that the probabilities are approximately correct.
         while let Some(item) = stream.next() {
             weight_sum += item.weight;
-            let p = item.weight / weight_sum;
+            let p = capacity as f64 * item.weight / weight_sum;
             assert!((p - probability).abs() < 0.01 * probability);
         }
     }
@@ -1171,10 +1180,10 @@ mod tests {
         expected = "The weight is not finite and therefore cannot be used to compute the probability of inclusion in the reservoir."
     )]
     fn test_constant_probability_fail_from_inf_weight() {
-        let stream_length = 100usize;
+        let stream_length: usize = 10_usize.pow(4);
         // reservoir capacity:
         let capacity = 3usize;
-        let probability = 0.9999;
+        let probability = 0.999999999;
         let initial_weight = 1.0;
         // We create a stream with constant probability for all elements:
         let mut stream = generate_stream_with_constant_probability(
@@ -1226,7 +1235,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(deprecated)]
     fn wrs_no_replacement_test() {
         let stream_length = 20usize;
         // reservoir capacity:
@@ -1270,9 +1278,8 @@ mod tests {
     // Consider wrapping the test in a for loop that runs the test 10^6 times
     // and counts the number of failures.
     #[test]
-    #[allow(deprecated)]
     fn wrs_complete_replacement_test() {
-        let stream_length = 333usize;
+        let stream_length = 200usize;
         // reservoir capacity:
         let capacity = 15usize;
         let probability = 0.9;
@@ -1297,5 +1304,43 @@ mod tests {
         } else {
             panic!("The final reservoir was None.");
         };
+    }
+
+    // For a stream of the form [(0,1),..,(0,1),(1,1),..,(1,1)] with equal numbers
+    // of zero and one values and all weights equal to 1, we expect weighted reservoir
+    // sampling to reduce to reservoir sampling (no weights) and thus to produce
+    // a reservoir whose mean estimates the mean of the entire stream, which in this case
+    // is 0.5. A reservoir sample is generated 50 times. Each time the mean is calculated
+    // and the mean of these means is taken. It is asserted that this mean of means is
+    // within 5% of the true mean, 0.5.
+    //
+    // In wrs_mean_test_looped(), the current test (wrs_mean_test()) was run 3000 times
+    // with one failure resulting. Thus we estimate the failure rate to be approximately
+    // 1 in 3000. If this test fails more than once for you, there is likely a problem.
+    #[test]
+    fn wrs_mean_test() {
+        let mean_means = mean_of_means_of_step_stream();
+        assert!((mean_means - 0.5).abs() < 0.05 * 0.5);
+    }
+
+    // This test is used to estimate the failure rate of wrs_mean_test (see above).
+    // wrs_mean_test() is run 3000 times. In our experience this has led to one
+    // failure. Thus we estimate the failure rate of wrs_mean_test() to be approximately
+    // 1 in 3000.
+    #[test]
+    #[ignore]
+    fn wrs_mean_test_looped() {
+        let mut failures = 0usize;
+        let number_of_runs = 3_000usize;
+        for _j in 0..number_of_runs {
+            let mean_means = mean_of_means_of_step_stream();
+            if (mean_means - 0.5).abs() > 0.05 * 0.5 {
+                failures += 1;
+            };
+        }
+        println!(
+            "failures: {:?}, number of runs: {}",
+            failures, number_of_runs
+        );
     }
 }

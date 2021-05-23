@@ -42,24 +42,58 @@ pub fn make_3x3_psd_system(m: M, b: V) -> LinearSystem {
 
 /// Utility Functions for Reservoir Sampling
 
-/// Produce a stream like [a, ..., a, b, ..., b] with `capacity` copies of "a"
+/// Produce a stream like [a, ..., a, b, ..., b] with `num_of_initial_values` copies of "a"
 /// (aka `initial_value`s) and `stream_length` total values.
 /// Utility function used in examples showing convergence of reservoir mean to stream mean.
 pub fn generate_step_stream(
     stream_length: usize,
-    capacity: usize,
+    num_of_initial_values: usize,
     initial_value: i64,
     final_value: i64,
 ) -> impl StreamingIterator<Item = i64> {
     // Create capacity of items with initial weight.
-    let initial_iter = iter::repeat(initial_value).take(capacity);
-    if capacity > stream_length {
-        panic!("Capacity must be less than or equal to stream length.");
+    let initial_iter = iter::repeat(initial_value).take(num_of_initial_values);
+    if num_of_initial_values > stream_length {
+        panic!("Number of initiral values must be less than or equal to stream length.");
     }
-    let final_iter = iter::repeat(final_value).take(stream_length - capacity);
+    let final_iter = iter::repeat(final_value).take(stream_length - num_of_initial_values);
     let stream = initial_iter.chain(final_iter);
     let stream = convert(stream);
     stream
+}
+
+/// A stream of 100 weighted datum is generated using generate_step_stream. The first
+/// 50 items have value 0 and the remaining 50 have value 1. All weights are set to 1.
+/// The mean of a reservoir sample with capacity equal to half the stream length is computed
+/// and stored. This is repeated 50 times and the mean of the means is returned.
+///
+/// This is used in wrs_mean_test and wrs_mean_test_looped. The latter is used to
+/// determine the error rate of the former.
+pub fn mean_of_means_of_step_stream() -> f64 {
+    let stream_length = 100usize;
+    let num_of_initial_values = stream_length / 2;
+    let initial_value = 0i64;
+    let final_value = 1i64;
+    let capacity = num_of_initial_values;
+    let num_runs = 50usize;
+    let mut means: Vec<f64> = Vec::with_capacity(capacity);
+
+    for _i in 0..num_runs {
+        let stream = generate_step_stream(
+            stream_length,
+            num_of_initial_values,
+            initial_value,
+            final_value,
+        );
+        let stream = wd_iterable(stream, |_x| 1f64);
+        let stream = weighted_reservoir_iterable(stream, capacity, None);
+        let res = last(stream).unwrap();
+        let res: Vec<i64> = res.iter().map(|x| x.value).collect();
+        let mean = res.iter().sum::<i64>() as f64 / capacity as f64;
+        means.push(mean);
+    }
+    let mean_mean = means.iter().sum::<f64>() / num_runs as f64;
+    mean_mean
 }
 
 /// Produce an enumerated stream like [(0,a), (1,a),..., (capacity, b), ..., (stream_length-1, b)] with `capacity` copies of "a"
@@ -122,7 +156,9 @@ pub fn generate_stream_with_constant_probability(
         power += 1;
         new_datum(
             wd.value,
-            initial_weight * probability / (1.0 - probability).powi(power),
+            initial_weight
+                * (probability / capacity as f64)
+                * (capacity as f64 / (capacity as f64 - probability)).powi(power),
         )
     });
     initial_iter.chain(mapped)
