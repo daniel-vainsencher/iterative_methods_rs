@@ -1,28 +1,7 @@
 use iterative_methods::utils::expose_w;
 use iterative_methods::*;
 use streaming_iterator::*;
-
-/// A simple Counter iterator to use in demos and tests.
-#[derive(Clone, Debug)]
-pub struct Counter {
-    count: f64,
-}
-
-pub fn new_counter() -> Counter {
-    Counter { count: 0. }
-}
-
-impl StreamingIterator for Counter {
-    type Item = f64;
-
-    fn advance(&mut self) {
-        self.count += 1.;
-    }
-
-    fn get(&self) -> Option<&Self::Item> {
-        Some(&self.count)
-    }
-}
+use utils::*;
 
 fn wd_iterable_counter_demo() {
     println!("\n\n -----WDIterable Counter Demo----- \n\n");
