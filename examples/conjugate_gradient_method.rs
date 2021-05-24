@@ -84,9 +84,9 @@ fn cg_demo() {
     }) = cg_iter.next()
     {
         println!(
-            "{:8} : {:8} | ||Ax - b||_2 = {:.5}, ||Ax - b||_inf = {:.5}, ||x-x*||_A = {:.5}, for x = {:.4}, residual = {:.7}",
+            "{:8} : {:6} | ||Ax - b||_2 = {:.3}, ||Ax - b||_inf = {:.3}, ||x-x*||_A = {:.3}, for x = {:.4}",
             start_time.as_nanos(), duration.as_nanos(),
-            euc, linf, a_dist, result.solution, result.r_k
+            euc, linf, a_dist, result.solution
         );
     }
 }
