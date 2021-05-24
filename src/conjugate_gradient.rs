@@ -124,12 +124,12 @@ impl StreamingIterator for ConjugateGradient {
             //   x_{k+1} = x_k + alpha_k*p_k
             self.solution = self.x_k.clone();
             self.x_k = (self.x_k.clone() + &self.p_k * self.alpha_k).to_shared();
-        
+
             //   r_{k+1} = r_K + alpha_k*A*p_k
             self.r_k = (self.r_k.clone() + &self.ap_k * self.alpha_k).to_shared();
             self.r_km2 = self.r_k2;
             self.r_k2 = self.r_k.dot(&self.r_k);
-            
+
             //   beta_k = ||r_{k+1}||^2 / ||r_k||^2
             self.beta_k = self.r_k2 / self.r_km2;
 
