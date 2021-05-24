@@ -1,9 +1,11 @@
 [package]
 name = "iterative_methods"
-version = "0.1.0"
-authors = ["Daniel Vainsencher <daniel.vainsencher@gmail.com>"]
+version = "0.2.0"
+authors = ["Daniel Vainsencher <daniel.vainsencher@gmail.com>", "Daniel Fox <danielfox@thoughtstoodefinite.com>"]
 edition = "2018"
-
+description = "Iterative methods and associated utilities as StreamingIterators."
+license = "MIT OR Apache-2.0"
+keywords = ["math","stream","machine-learning","algorithm","optimization"]
 [lib]
 name = "iterative_methods"
 path = "src/lib.rs"
@@ -25,5 +27,3 @@ default-features = false
 
 [dev-dependencies]
 quickcheck = "= 1.0.1"
-
-
