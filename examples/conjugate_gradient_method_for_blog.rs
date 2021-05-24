@@ -1,3 +1,7 @@
+/// The examples here are used for the blog post at
+/// https://daniel-vainsencher.github.io/book/iterative_methods_part_1.html
+/// (and part 2). The first example is negative, succeeding ones
+/// increasingly take advantage of the iterative_methods_rs library.
 extern crate eigenvalues;
 extern crate nalgebra as na;
 use streaming_iterator::*;
