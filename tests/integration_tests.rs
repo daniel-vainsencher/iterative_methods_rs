@@ -1,9 +1,9 @@
 use crate::utils::{
     expose_w, generate_step_stream, make_3x3_pd_system_1, new_counter, read_yaml_to_string, Counter,
 };
+use iterative_methods::algorithms::conjugate_gradient;
 use iterative_methods::*;
 extern crate streaming_iterator;
-use crate::algorithms::cg_method::*;
 use crate::streaming_iterator::*;
 use ndarray::*;
 use rand::SeedableRng;
@@ -13,7 +13,7 @@ use rand_pcg::Pcg64;
 #[test]
 fn test_timed_iterable() {
     let p = make_3x3_pd_system_1();
-    let cg_iter = CGIterable::conjugate_gradient(p).take(50);
+    let cg_iter = conjugate_gradient(&p).take(50);
     let cg_timed_iter = time(cg_iter);
     let mut start_times = Vec::new();
     let mut durations = Vec::new();
@@ -41,9 +41,9 @@ fn test_timed_iterable() {
     assert!(st_diff.iter().all(|diff| *diff >= 0.));
 }
 
-/// Test that WDIterable followed by ExtractValue is a roundtrip.
+/// Test that WdIterable followed by ExtractValue is a roundtrip.
 ///
-/// WDIterable wraps the items of a simple Counter iterable as WeightedDatum
+/// WdIterable wraps the items of a simple Counter iterable as WeightedDatum
 /// with the square of the count as the weight. Then ExtractValue unwraps, leaving
 /// items with only the original value. The items of a clone of the original iterator
 /// and the wrapped/unwrapped iterator are checked to be equal.
@@ -52,7 +52,7 @@ fn test_timed_iterable() {
 fn wd_iterable_extract_value_test() {
     let mut counter_stream: Counter = new_counter();
     let counter_stream_copy = counter_stream.clone();
-    let wd_iter = WDIterable {
+    let wd_iter = WdIterable {
         it: counter_stream_copy,
         f: expose_w,
         wd: Some(new_datum(0., 0.)),

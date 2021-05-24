@@ -1,8 +1,12 @@
+/// The examples here are used for the blog post at
+/// https://daniel-vainsencher.github.io/book/iterative_methods_part_1.html
+/// (and part 2). The first example is negative, succeeding ones
+/// increasingly take advantage of the iterative_methods_rs library.
 extern crate eigenvalues;
 extern crate nalgebra as na;
 use streaming_iterator::*;
 
-use iterative_methods::algorithms::cg_method::CGIterable;
+use iterative_methods::conjugate_gradient::{conjugate_gradient, ConjugateGradient};
 use iterative_methods::utils::make_3x3_pd_system_2;
 use iterative_methods::*;
 
@@ -17,7 +21,7 @@ fn cg_demo_pt1() {
     let p = make_3x3_pd_system_2();
 
     // Next convert it into an iterator
-    let mut cg_iter = CGIterable::conjugate_gradient(p);
+    let mut cg_iter = conjugate_gradient(&p);
 
     // and loop over intermediate solutions.
     // Note `next` is provided by the StreamingIterator trait using
@@ -26,7 +30,7 @@ fn cg_demo_pt1() {
         // We want to find x such that a.dot(x) = b
         // then the difference between the two sides (called the residual),
         // is a good measure of the error in a solution.
-        let res = result.a.dot(&result.x) - &result.b;
+        let res = result.a.dot(&result.solution) - &result.b;
 
         // The (squared) length of the residual is a cost, a number
         // summarizing how bad a solution is. When working on iterative
@@ -38,7 +42,7 @@ fn cg_demo_pt1() {
         println!(
             "||Ax - b||_2 = {:.5}, for x = {:.4}, residual = {:.7}",
             res_squared_length.sqrt(),
-            result.x,
+            result.solution,
             res
         );
         if res_squared_length < 1e-3 {
@@ -48,8 +52,8 @@ fn cg_demo_pt1() {
 }
 
 /// The usual euclidean length of the residual
-fn residual_l2(result: &CGIterable) -> f64 {
-    let res = result.a.dot(&result.x) - &result.b;
+fn residual_l2(result: &ConjugateGradient) -> f64 {
+    let res = result.a.dot(&result.solution) - &result.b;
     res.dot(&res).sqrt()
 }
 
@@ -57,12 +61,12 @@ fn residual_l2(result: &CGIterable) -> f64 {
 /// https://daniel-vainsencher.github.io/book/iterative_methods_part_2.html
 fn cg_demo_pt2_1() {
     let p = make_3x3_pd_system_2();
-    let cg_iter = CGIterable::conjugate_gradient(p);
+    let cg_iter = conjugate_gradient(&p);
 
     // Annotate each approximate solution with its cost
     let cg_iter = assess(cg_iter, residual_l2);
     // and use it in stopping condition
-    let mut cg_iter = cg_iter.take_while(|ar| ar.annotation > 1e-3);
+    let mut cg_iter = take_until(cg_iter, |ar| ar.annotation < 1e-3);
     // Deconstruct to break out the result and cost
     while let Some(AnnotatedResult {
         result: cgi,
@@ -70,21 +74,21 @@ fn cg_demo_pt2_1() {
     }) = cg_iter.next()
     {
         // Now the loop body is I/O only as it should be!
-        println!("||Ax - b||_2 = {:.5}, for x = {:.4}", euc, cgi.x);
+        println!("||Ax - b||_2 = {:.5}, for x = {:.4}", euc, cgi.solution);
     }
 }
 
 /// The euclidean distance induced by A, between current solution and
 /// a user provided point, which is interesting when it is the true
 /// optimum.
-fn a_distance(result: &CGIterable, optimum: V) -> f64 {
-    let error = &result.x - &optimum;
+fn a_distance(result: &ConjugateGradient, optimum: V) -> f64 {
+    let error = &result.solution - &optimum;
     error.dot(&result.a.dot(&error)).sqrt()
 }
 
 /// The l-infinity norm of the residual
-fn residual_linf(result: &CGIterable) -> f64 {
-    (result.a.dot(&result.x) - &result.b).fold(0.0, |m, e| m.max(e.abs()))
+fn residual_linf(result: &ConjugateGradient) -> f64 {
+    (result.a.dot(&result.solution) - &result.b).fold(0.0, |m, e| m.max(e.abs()))
 }
 
 /// Example using adaptors from late in
@@ -94,7 +98,7 @@ fn cg_demo_pt2_2() {
     let p = make_3x3_pd_system_2();
     let optimum = rcarr1(&[-4.0, 6., -4.]);
 
-    let cg_iter = CGIterable::conjugate_gradient(p);
+    let cg_iter = conjugate_gradient(&p);
     // Cap the number of iterations.
     let cg_iter = cg_iter.take(80);
     // Time each iteration, only of preceding steps (the method)
@@ -113,7 +117,7 @@ fn cg_demo_pt2_2() {
     fn small_residual((euc, linf, _): &(f64, f64, f64)) -> bool {
         euc < &1e-3 && linf < &1e-3
     }
-    let mut cg_iter = cg_iter.take_while(|ar| !small_residual(&ar.annotation));
+    let mut cg_iter = take_until(cg_iter, |ar| small_residual(&ar.annotation));
     // Output progress
     while let Some(AnnotatedResult {
         annotation: (euc, linf, a_dist),
@@ -128,14 +132,13 @@ fn cg_demo_pt2_2() {
         println!(
             "{:8} : {:6}, \
              ||Ax - b||_2 = {:.3}, ||Ax - b||_inf = {:.3}, ||x-x*||_A = {:.3}, \
-             for x = {:+.3}, residual = {:+.3}",
+             for x = {:+.3}",
             start_time.as_nanos(),
             duration.as_nanos(),
             euc,
             linf,
             a_dist,
-            result.x,
-            result.r
+            result.solution,
         );
     }
 }

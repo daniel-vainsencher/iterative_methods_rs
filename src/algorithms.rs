@@ -1,118 +1,50 @@
-pub mod cg_method {
-
-    use crate::inspect;
-    use crate::last;
-    use crate::utils::LinearSystem;
-    use ndarray::ArcArray1;
-    use ndarray::ArcArray2;
-    use ndarray::ArrayBase;
-    use streaming_iterator::*;
-    pub type S = f64;
-    pub type M = ArcArray2<S>;
-    pub type V = ArcArray1<S>;
-
-    /// The state of a conjugate gradient algorithm.
-    #[derive(Clone, Debug)]
-    pub struct CGIterable {
-        pub a: M,
-        pub b: V,
-        pub x: V,
-        pub alpha: S,
-        pub r: V,
-        pub rs: S,
-        pub rsprev: S,
-        pub p: V,
-        pub ap: V,
-    }
-
-    impl CGIterable {
-        /// Convert a LinearSystem problem into a StreamingIterator of conjugate gradient solutions.
-        pub fn conjugate_gradient(problem: LinearSystem) -> CGIterable {
-            let x = match problem.x0 {
-                None => ArrayBase::zeros(problem.a.shape()[1]),
-                Some(init_x) => init_x,
-            };
-            let r = problem.b.clone() - problem.a.dot(&x).view();
-            let p = r.clone();
-            let ap = problem.a.dot(&p).into_shared();
-            CGIterable {
-                a: problem.a,
-                b: problem.b,
-                x,
-                alpha: 1.,
-                r,
-                rs: 1.,
-                rsprev: 1.,
-                p,
-                ap,
-            }
-        }
-    }
-
-    impl StreamingIterator for CGIterable {
-        type Item = CGIterable;
-        /// Implementation of conjugate gradient iteration
-        fn advance(&mut self) {
-            self.rsprev = self.rs;
-            self.rs = self.r.dot(&self.r);
-            if self.rs.abs() <= std::f64::MIN_POSITIVE * 10. {
-                return;
-            }
-            self.p = (&self.r + &(&self.rs / self.rsprev * &self.p)).into_shared();
-            self.ap = self.a.dot(&self.p).into_shared();
-            self.alpha = self.rs / self.p.dot(&self.ap);
-            self.x += &(self.alpha * &self.p);
-            self.r -= &(self.alpha * &self.ap);
-        }
-        fn get(&self) -> Option<&Self::Item> {
-            if self.rsprev.abs() <= std::f64::MIN_POSITIVE * 10. {
-                None
-            } else {
-                Some(self)
-            }
-        }
-    }
-
-    pub fn solve_approximately(p: LinearSystem) -> V {
-        let solution = CGIterable::conjugate_gradient(p).take(200);
-        last(solution.map(|s| s.x.clone())).expect("CGIterable should always return a solution.")
-    }
-
-    pub fn show_progress(p: LinearSystem) {
-        let cg_iter = CGIterable::conjugate_gradient(p).take(50);
-        //.take_while(|cgi| cgi.rsprev.sqrt() > 1e-6);
-        let mut cg_print_iter = inspect(cg_iter, |result| {
-            let res = result.a.dot(&result.x) - &result.b;
-            let res_norm = res.dot(&res);
-            println!(
-                "rs = {:.10}, ||Ax - b ||_2^2 = {:.5}, for x = {:.4}, and Ax - b = {:.5}",
-                result.rs,
-                res_norm,
-                result.x,
-                result.a.dot(&result.x) - &result.b,
-            );
-        });
-        while let Some(_cgi) = cg_print_iter.next() {}
-    }
-}
+pub use crate::conjugate_gradient::conjugate_gradient;
+use ndarray::ArcArray1;
+use ndarray::ArcArray2;
+pub type S = f64;
+pub type M = ArcArray2<S>;
+pub type V = ArcArray1<S>;
 
 /// Unit Tests Module
 #[cfg(test)]
 mod tests {
 
-    use super::cg_method::*;
+    use crate::conjugate_gradient::conjugate_gradient;
+    use crate::inspect;
+    use crate::last;
     use crate::utils::make_3x3_pd_system_1;
     use crate::utils::make_3x3_psd_system;
-    use crate::utils::LinearSystem;
-
+    use crate::utils::{LinearSystem, M, V};
     extern crate nalgebra as na;
     use eigenvalues::algorithms::lanczos::HermitianLanczos;
     use eigenvalues::SpectrumTarget;
     use na::{DMatrix, DVector, Dynamic};
     use ndarray::rcarr1;
     use ndarray::rcarr2;
-
     use quickcheck::{quickcheck, TestResult};
+    use streaming_iterator::StreamingIterator;
+
+    pub fn solve_approximately(p: LinearSystem) -> V {
+        let solution = conjugate_gradient(&p).take(20);
+        last(solution.map(|s| s.x_k.clone())).expect("CGIterable should always return a solution.")
+    }
+
+    pub fn show_progress(p: LinearSystem) {
+        let cg_iter = conjugate_gradient(&p).take(20);
+        let mut cg_print_iter = inspect(cg_iter, |result| {
+            //println!("result: {:?}", result);
+            let res = result.a.dot(&result.solution) - &result.b;
+            let res_norm = res.dot(&res);
+            println!(
+                "r_k2 = {:.10}, ||Ax - b ||_2^2 = {:.5}, for x = {:.4}, and Ax - b = {:.5}",
+                res_norm,
+                res_norm,
+                result.solution,
+                result.a.dot(&result.solution) - &result.b,
+            );
+        });
+        while let Some(_cgi) = cg_print_iter.next() {}
+    }
 
     #[test]
     fn test_alt_eig() {
@@ -201,6 +133,7 @@ mod tests {
 
         println!("Problem is: {:?}", p);
         show_progress(p.clone());
+        println!("done showing");
         let x = solve_approximately(p.clone());
         let r = p.a.dot(&x) - p.b;
         println!("Residual is: {}", r);

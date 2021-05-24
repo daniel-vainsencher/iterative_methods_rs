@@ -1,6 +1,10 @@
-use crate::algorithms::cg_method::*;
 use crate::*;
+use ndarray::ArcArray1;
+use ndarray::ArcArray2;
 use ndarray::{rcarr1, rcarr2};
+pub type S = f64;
+pub type V = ArcArray1<S>;
+pub type M = ArcArray2<S>;
 use rand::thread_rng;
 use rand_distr::{Distribution, Normal};
 use std::collections::HashMap;
@@ -33,11 +37,7 @@ pub fn make_3x3_pd_system_2() -> LinearSystem {
 
 pub fn make_3x3_psd_system(m: M, b: V) -> LinearSystem {
     let a = (m.t().dot(&m)).into_shared();
-    LinearSystem {
-        a: a,
-        b: b,
-        x0: None,
-    }
+    LinearSystem { a, b, x0: None }
 }
 
 /// Utility Functions for Reservoir Sampling
@@ -58,8 +58,7 @@ pub fn generate_step_stream(
     }
     let final_iter = iter::repeat(final_value).take(stream_length - num_of_initial_values);
     let stream = initial_iter.chain(final_iter);
-    let stream = convert(stream);
-    stream
+    convert(stream)
 }
 
 /// A stream of 100 weighted datum is generated using generate_step_stream. The first
@@ -113,8 +112,7 @@ pub fn generate_enumerated_step_stream(
     let final_iter = iter::repeat(final_value).take(stream_length - capacity);
     let stream = initial_iter.chain(final_iter);
     let stream = convert(stream);
-    let stream = enumerate(stream);
-    stream
+    enumerate(stream)
 }
 
 // Produce a stream from a normal distribution.
