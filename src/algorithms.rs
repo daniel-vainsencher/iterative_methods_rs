@@ -30,7 +30,7 @@ mod tests {
     }
 
     pub fn show_progress(p: LinearSystem) {
-        let cg_iter = conjugate_gradient(&p).take(20);
+        let cg_iter = ConjugateGradient::for_problem(&p).take(20);
         let mut cg_print_iter = inspect(cg_iter, |result| {
             //println!("result: {:?}", result);
             let res = result.a.dot(&result.solution) - &result.b;

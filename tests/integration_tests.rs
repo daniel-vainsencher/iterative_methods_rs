@@ -1,7 +1,7 @@
 use crate::utils::{
     expose_w, generate_step_stream, make_3x3_pd_system_1, read_yaml_to_string, Counter,
 };
-use iterative_methods::algorithms::conjugate_gradient;
+use iterative_methods::algorithms::ConjugateGradient;
 use iterative_methods::*;
 extern crate streaming_iterator;
 use crate::streaming_iterator::*;
@@ -13,7 +13,7 @@ use rand_pcg::Pcg64;
 #[test]
 fn test_timed_iterable() {
     let p = make_3x3_pd_system_1();
-    let cg_iter = conjugate_gradient(&p).take(50);
+    let cg_iter = ConjugateGradient::for_problem(&p).take(50);
     let cg_timed_iter = time(cg_iter);
     let mut start_times = Vec::new();
     let mut durations = Vec::new();
