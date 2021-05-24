@@ -1,4 +1,4 @@
-pub use crate::conjugate_gradient::conjugate_gradient;
+pub use crate::conjugate_gradient::ConjugateGradient;
 use ndarray::ArcArray1;
 use ndarray::ArcArray2;
 pub type S = f64;
@@ -9,7 +9,7 @@ pub type V = ArcArray1<S>;
 #[cfg(test)]
 mod tests {
 
-    use crate::conjugate_gradient::conjugate_gradient;
+    use crate::conjugate_gradient::ConjugateGradient;
     use crate::inspect;
     use crate::last;
     use crate::utils::make_3x3_pd_system_1;
@@ -25,7 +25,7 @@ mod tests {
     use streaming_iterator::StreamingIterator;
 
     pub fn solve_approximately(p: LinearSystem) -> V {
-        let solution = conjugate_gradient(&p).take(20);
+        let solution = ConjugateGradient::for_problem(&p).take(20);
         last(solution.map(|s| s.x_k.clone())).expect("CGIterable should always return a solution.")
     }
 

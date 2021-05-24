@@ -75,35 +75,37 @@ pub struct ConjugateGradient {
     pub pap_km: S,
 }
 
-/// Initialize a conjugate gradient iterative solver
-pub fn conjugate_gradient(p: &LinearSystem) -> ConjugateGradient {
-    let x_0 = match &p.x0 {
-        Some(x) => x.clone(),
-        None => ArrayBase::zeros(p.a.shape()[0]),
-    };
+impl ConjugateGradient {
+    /// Initialize a conjugate gradient iterative solver to solve linear system `p`.
+    pub fn for_problem(p: &LinearSystem) -> ConjugateGradient {
+        let x_0 = match &p.x0 {
+            Some(x) => x.clone(),
+            None => ArrayBase::zeros(p.a.shape()[0]),
+        };
 
-    // Set r_0 = A*x_0 - b and p_0 =-r_0, k=0
-    let r_k = (&p.a.dot(&x_0) - &p.b).to_shared();
-    let r_k2 = r_k.dot(&r_k);
-    let r_km2 = NAN;
-    let p_k = -r_k.clone();
-    let ap_k = p.a.dot(&p_k).to_shared();
-    let pap_k = p_k.dot(&ap_k);
-    let pap_km = NAN;
-    ConjugateGradient {
-        x_k: x_0.clone(),
-        solution: x_0,
-        a: p.a.clone(),
-        b: p.b.clone(),
-        r_k,
-        r_k2,
-        r_km2,
-        p_k,
-        ap_k,
-        pap_k,
-        pap_km,
-        alpha_k: NAN,
-        beta_k: NAN,
+        // Set r_0 = A*x_0 - b and p_0 =-r_0, k=0
+        let r_k = (&p.a.dot(&x_0) - &p.b).to_shared();
+        let r_k2 = r_k.dot(&r_k);
+        let r_km2 = NAN;
+        let p_k = -r_k.clone();
+        let ap_k = p.a.dot(&p_k).to_shared();
+        let pap_k = p_k.dot(&ap_k);
+        let pap_km = NAN;
+        ConjugateGradient {
+            x_k: x_0.clone(),
+            solution: x_0,
+            a: p.a.clone(),
+            b: p.b.clone(),
+            r_k,
+            r_k2,
+            r_km2,
+            p_k,
+            ap_k,
+            pap_k,
+            pap_km,
+            alpha_k: NAN,
+            beta_k: NAN,
+        }
     }
 }
 
