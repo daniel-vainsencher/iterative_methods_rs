@@ -6,7 +6,7 @@ extern crate eigenvalues;
 extern crate nalgebra as na;
 use streaming_iterator::*;
 
-use iterative_methods::conjugate_gradient::{conjugate_gradient, ConjugateGradient};
+use iterative_methods::conjugate_gradient::ConjugateGradient;
 use iterative_methods::utils::make_3x3_pd_system_2;
 use iterative_methods::*;
 
@@ -21,7 +21,7 @@ fn cg_demo_pt1() {
     let p = make_3x3_pd_system_2();
 
     // Next convert it into an iterator
-    let mut cg_iter = conjugate_gradient(&p);
+    let mut cg_iter = ConjugateGradient::for_problem(&p);
 
     // and loop over intermediate solutions.
     // Note `next` is provided by the StreamingIterator trait using
@@ -40,11 +40,12 @@ fn cg_demo_pt1() {
         // || ... ||_2 is notation for euclidean length of what
         // lies between the vertical lines.
         println!(
-            "||Ax - b||_2 = {:.5}, for x = {:.4}, residual = {:.7}",
+            "||Ax - b||_2 = {:.5}, for x = {:+.3}, residual = {:+.3}",
             res_squared_length.sqrt(),
             result.solution,
             res
         );
+        // Stop if residual is small enough
         if res_squared_length < 1e-3 {
             break;
         }
@@ -61,7 +62,7 @@ fn residual_l2(result: &ConjugateGradient) -> f64 {
 /// https://daniel-vainsencher.github.io/book/iterative_methods_part_2.html
 fn cg_demo_pt2_1() {
     let p = make_3x3_pd_system_2();
-    let cg_iter = conjugate_gradient(&p);
+    let cg_iter = ConjugateGradient::for_problem(&p);
 
     // Annotate each approximate solution with its cost
     let cg_iter = assess(cg_iter, residual_l2);
@@ -97,14 +98,16 @@ fn cg_demo_pt2_2() {
     // Set up a problem for which we happen to know the solution
     let p = make_3x3_pd_system_2();
     let optimum = rcarr1(&[-4.0, 6., -4.]);
+    let cg_iter = ConjugateGradient::for_problem(&p);
 
-    let cg_iter = conjugate_gradient(&p);
     // Cap the number of iterations.
     let cg_iter = cg_iter.take(80);
+
     // Time each iteration, only of preceding steps (the method)
     // excluding downstream evaluation and I/O (tracking overhead), as
     // well as elapsed clocktime (combining both).
     let cg_iter = time(cg_iter);
+
     // Record multiple measures of quality
     let cg_iter = assess(cg_iter, |TimedResult { result, .. }| {
         (
@@ -113,11 +116,13 @@ fn cg_demo_pt2_2() {
             a_distance(result, optimum.clone()),
         )
     });
+
     // Stop if converged by both criteria
     fn small_residual((euc, linf, _): &(f64, f64, f64)) -> bool {
         euc < &1e-3 && linf < &1e-3
     }
     let mut cg_iter = take_until(cg_iter, |ar| small_residual(&ar.annotation));
+
     // Output progress
     while let Some(AnnotatedResult {
         annotation: (euc, linf, a_dist),

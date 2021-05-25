@@ -2,7 +2,7 @@ extern crate eigenvalues;
 extern crate nalgebra as na;
 use streaming_iterator::*;
 
-use iterative_methods::conjugate_gradient::{conjugate_gradient, ConjugateGradient};
+use iterative_methods::conjugate_gradient::ConjugateGradient;
 use iterative_methods::utils::make_3x3_pd_system_2;
 use iterative_methods::*;
 
@@ -35,7 +35,7 @@ fn cg_demo() {
     let optimum = rcarr1(&[-4.0, 6., -4.]);
 
     // Initialize the conjugate gradient solver on this problem
-    let cg_iter = conjugate_gradient(&p);
+    let cg_iter = ConjugateGradient::for_problem(&p);
 
     // Cap the number of iterations.
     let cg_iter = cg_iter.take(80);
