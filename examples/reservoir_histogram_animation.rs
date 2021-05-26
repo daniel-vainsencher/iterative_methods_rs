@@ -71,7 +71,7 @@ fn write_reservoir_visualizations_data_to_yaml(
     let stream = enumerate(stream);
     let stream = write_yaml_documents(stream, parameters["stream_file"].to_string())
         .expect("Create File and initialize yaml iter failed.");
-    let stream = reservoir_iterable(stream, capacity, None);
+    let stream = reservoir_sample(stream, capacity, None);
     let stream = write_yaml_documents(stream, parameters["reservoir_samples_file"].to_string())
         .expect("Create File and initialize yaml iter failed.");
 

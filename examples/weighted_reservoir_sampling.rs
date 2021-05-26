@@ -5,7 +5,7 @@ use streaming_iterator::*;
 
 /// Utility function to generate a sequence of (float, int as float)
 /// values wrapped in a WeightedDatum struct that will be used in tests
-/// of ReservoirIterable.
+/// of ReservoirSample.
 fn generate_seeded_values(num_values: usize, int_range_bound: usize) -> Vec<WeightedDatum<f64>> {
     let mut prng = Pcg64::seed_from_u64(1);
     let mut seeded_values: Vec<WeightedDatum<f64>> = Vec::new();
@@ -32,7 +32,7 @@ fn wrs_demo() {
     println!("Random Numbers for Alg: \n (The values are used as the probabilities and the weights as indices.) \n {:#?} \n ", probability_and_index);
 
     let stream = convert(stream);
-    let mut stream = weighted_reservoir_iterable(stream, 2, Some(Pcg64::seed_from_u64(1)));
+    let mut stream = weighted_reservoir_sample(stream, 2, Some(Pcg64::seed_from_u64(1)));
     println!("Reservoir - initially empty: \n {:#?} \n", stream.reservoir);
     let mut _index = 0usize;
     while let Some(reservoir) = stream.next() {

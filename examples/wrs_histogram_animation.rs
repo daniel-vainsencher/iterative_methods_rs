@@ -82,7 +82,7 @@ fn write_wrs_visualizations_data_to_yaml(
         .expect("Create File and initialize yaml iter failed.");
     // Add constant weights to all items
     let stream = wd_iterable(stream, |_x| 1.0f64);
-    let stream = weighted_reservoir_iterable(stream, capacity, None);
+    let stream = weighted_reservoir_sample(stream, capacity, None);
     // remove the weights, which were only needed for applying WRS.
     let stream = stream.map(|x| {
         let x: Vec<Numbered<f64>> = x.iter().map(|wd| wd.value.clone()).collect();

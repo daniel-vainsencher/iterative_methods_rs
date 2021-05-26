@@ -84,7 +84,7 @@ pub fn mean_of_means_of_step_stream() -> f64 {
             final_value,
         );
         let stream = wd_iterable(stream, |_x| 1f64);
-        let stream = weighted_reservoir_iterable(stream, capacity, None);
+        let stream = weighted_reservoir_sample(stream, capacity, None);
         let res = last(stream).unwrap();
         let res: Vec<i64> = res.iter().map(|x| x.value).collect();
         let mean = res.iter().sum::<i64>() as f64 / capacity as f64;
@@ -132,7 +132,7 @@ pub fn generate_stream_from_normal_distribution(
 
 /// Utility Functions for Weighted Reservoir Sampling
 
-/// utility function for testing ReservoirIterable
+/// utility function for testing ReservoirSample
 pub fn generate_stream_with_constant_probability(
     stream_length: usize,
     capacity: usize,

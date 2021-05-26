@@ -31,7 +31,7 @@ fn reservoir_sampling_mean_convergence() -> std::io::Result<()> {
 
     // Create another copy of the stream to perform reservoir sampling and write to yaml:
     let stream = utils::generate_enumerated_step_stream(stream_size, num_of_initial_values, 0, 1);
-    let res_iter = reservoir_iterable(stream, capacity, None);
+    let res_iter = reservoir_sample(stream, capacity, None);
     let reservoir_samples_file = "./target/debug/examples/reservoirs.yaml";
     // Write data to file for visualization.
     let mut res_to_yaml = write_yaml_documents(res_iter, reservoir_samples_file.to_string())
