@@ -1,17 +1,17 @@
 # Intent:
 
-- [ ] Explain here what the goal is, so reviewer can read the implementation and judge whether that goal is achieved.
+<Explain the goal of the PR for the implementation to be judged
+against. Link to relevant context including issues, papers, etc>
 
 # Validation:
 
-- [ ] Are changes covered by tests so we know existing functionality is not broken?
-- [ ] Is the new functionality covered by tests?
-- [ ] For functionality that is impractical to test
-  - [ ] is there a demo?
-  - [ ] does it look like you'd expect?
+<Survey coverage by existing or new tests, create a checklist for
+uncovered changes. For changes impractical to test, list them and
+consider a demo for human checking.>
   
 # State of PR
-- [ ] Ready to merge on master
-- [ ] CI passes
-- [ ] Code is documented via rustdoc commments for readers post-landing
-- [ ] Changes that need explanation pre-landing (why make the change) have self-review comments
+<Check boxes when done>
+- [ ] Rustdoc and implementation comments?
+- [ ] Self review comments on non-obvious changes?
+- [ ] It seems to you ready to merge on master?
+

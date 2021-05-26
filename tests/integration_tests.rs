@@ -35,7 +35,10 @@ fn test_timed_iterable() {
     let start_times = rcarr1(&start_times).map(|i| *i as f64);
     let st_diff = &start_times.slice(s![1..]) - &start_times.slice(s![..-1]);
     println!("start time diffs: {:?}", st_diff);
-    // Ensure times are within factor 10 of typical value observed in dev
+    // Ensure times are within factor 10 of typical value observed in
+    // dev.
+    // This is unfortunately not consistently true in CI envs, hence
+    // the test is ignored.
     assert!(durations.iter().all(|dur| 3000 < *dur && *dur < 300000));
     // Ensure that start times are strictly increasing.
     assert!(st_diff.iter().all(|diff| *diff >= 0.));

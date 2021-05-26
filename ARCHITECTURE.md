@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes the highest level architecture of the library iterative_methods_done_right_in_rust. As a tree structure, the code base looks like this:
+The high level architecture of the iterative_methods crate. As a tree structure, the code base looks like this:
 
 ```
 iterative_methods_done_right_in_rust
@@ -21,24 +21,30 @@ If you haven't already, please see the README.md document for an introduction to
 
 The remaining sections will address the contents and structure of each directory of the tree. 
 
+
 ## src
 
-In `src` the lib.rs file contains all of the code needed to use the tools in this library. Unit tests are included. Most of the code base consists of iterator adaptors. They currently include
-- ReservoirIterable
-- StepBy	
-- Tee
-- TimedIterable
-and their associated functions and structs.
-
-
+In `src`, `lib.rs` exports iterative methods (via algorithms.rs) and
+utilities consisting of iterator adaptors. They currently include
+- take_until
+- assess
+- inspect
+- last
+- time
+- step_by
+- write_yaml_documents
+- enumerate
+- {weighted_}reservoir_sample
+and their associated implementations. Unit tests are included. 
 
 ## examples
 
-Examples demonstrating the basic functionality are provided. Currently, the examples include
-- Fibonnacci
-- Conjugate Gradient Method (CGIterable)
+Examples demonstrating different functionality. Currently:
+
+- Conjugate Gradient Method (ConjugateGradient)
 - Weighted Reservoir Sampling
+- Output to yaml, e.g., for animations
 
 ## tests
 
-Integration tests are provided.
+Some integration tests.
