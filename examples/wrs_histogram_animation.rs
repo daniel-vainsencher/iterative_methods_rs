@@ -172,7 +172,13 @@ fn main() -> std::io::Result<()> {
     let (visualize, stream_size, capacity) = set_visualization_parameters();
     remove_yaml_files()?;
     write_wrs_visualizations_data_to_yaml(stream_size, capacity)?;
-    println!("Data is written to yaml files.");
+    println!(
+        "Animation data files saved at:
+        ./target/debug/examples/population_for_histogram.yaml   
+        ./target/debug/examples/reservoirs_for_histogram.yaml 
+        ./target/debug/examples/reservoir_means.yaml  
+        ./target/debug/examples/stream_for_histogram.yaml 
+        ");
     if visualize {
         make_visualization_in_python(
             "./visualizations_python/reservoir_histograms_initial_final.py",
@@ -186,15 +192,7 @@ fn main() -> std::io::Result<()> {
             "./visualizations_python/reservoir_histogram_animation.py",
             "Animation of reservoir and stream histograms",
         )?;
-    } else {
-        println!(
-            "The following .yaml files have been created:\n
-            ./target/debug/examples/population_for_histogram.yaml \n  
-            ./target/debug/examples/reservoirs_for_histogram.yaml \n
-            ./target/debug/examples/reservoir_means.yaml \n 
-            ./target/debug/examples/stream_for_histogram.yaml \n
-            "
-        );
+        println!("Animations saved at visualizations/*.html")
     }
     Ok(())
 }
