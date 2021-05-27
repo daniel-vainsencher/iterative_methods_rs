@@ -1,5 +1,8 @@
-//! # iterative-methods
-//! A demonstration of the use of StreamingIterators and their adapters to implement iterative algorithms.
+//! # Iterative methods
+//! Implements [iterative methods](https://en.wikipedia.org/wiki/Iterative_method) and utilities for using and developing them as [StreamingIterators](https://crates.io/crates/streaming-iterator).
+//! 
+//! We have a tutorial
+//! [introduction](https://daniel-vainsencher.github.io/book/iterative_methods_part_1.html). 
 #[cfg(test)]
 extern crate quickcheck;
 extern crate yaml_rust;
