@@ -6,6 +6,10 @@ edition = "2018"
 description = "Iterative methods and associated utilities as StreamingIterators."
 license = "MIT OR Apache-2.0"
 keywords = ["math","stream","machine-learning","algorithm","optimization"]
+repository = "https://github.com/daniel-vainsencher/iterative_methods_rs"
+readme = "README.md"
+exclude = ["/local", "/visualizations", "/p3", "/visualizations_python/__pycache__", "visualizations_python/parameters_for_histogram.yaml"]
+
 [lib]
 name = "iterative_methods"
 path = "src/lib.rs"

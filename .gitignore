@@ -3,3 +3,6 @@
 .DS_Store
 Cargo.lock
 /p3
+/visualizations
+/visualizations_python/__pycache__
+/visualizations_python/parameters_for_histogram.yaml

@@ -35,7 +35,10 @@ fn test_timed_iterable() {
     let start_times = rcarr1(&start_times).map(|i| *i as f64);
     let st_diff = &start_times.slice(s![1..]) - &start_times.slice(s![..-1]);
     println!("start time diffs: {:?}", st_diff);
-    // Ensure times are within factor 10 of typical value observed in dev
+    // Ensure times are within factor 10 of typical value observed in
+    // dev.
+    // This is unfortunately not consistently true in CI envs, hence
+    // the test is ignored.
     assert!(durations.iter().all(|dur| 3000 < *dur && *dur < 300000));
     // Ensure that start times are strictly increasing.
     assert!(st_diff.iter().all(|diff| *diff >= 0.));
@@ -67,7 +70,7 @@ fn wd_iterable_extract_value_test() {
     }
 }
 
-/// Test the integration of ReservoirIterable, Enumerate, and ToFileIterable.
+/// Test the integration of ReservoirSample, Enumerate, and ToFileIterable.
 ///
 /// A stream of 2 zeros and 8 ones subjected to reservoir sampling using a seeded rng.
 /// The stream of reservoirs is adapted with enumerate() and then write_yaml_documents(). After
@@ -80,7 +83,7 @@ fn enumerate_reservoirs_to_yaml_test() {
     let initial_value = 0i64;
     let final_value = 1i64;
     let stream = generate_step_stream(stream_length, capacity, initial_value, final_value);
-    let stream = reservoir_iterable(stream, capacity, Some(Pcg64::seed_from_u64(0)));
+    let stream = reservoir_sample(stream, capacity, Some(Pcg64::seed_from_u64(0)));
     let stream = enumerate(stream);
     let mut stream = write_yaml_documents(stream, String::from(test_file_path))
         .expect("Write scalar to Yaml: Create file and initialize Yaml iter failed.");
