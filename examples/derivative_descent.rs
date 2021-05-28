@@ -3,9 +3,7 @@ use iterative_methods::derivative_descent::*;
 use iterative_methods::*;
 use streaming_iterator::*;
 
-
 fn main() {
-
     // Problem: minimize the convex parabola f(x) = x^2 + x
     let function = |x| x * x + x;
 
@@ -25,7 +23,17 @@ fn main() {
     let dd = DerivativeDescent::new(function, derivative, step_size, x_0);
     let dd = enumerate(dd);
     let mut dd = dd.take(10);
-    while let Some(&Numbered{item: Some(ref curr), count}) = dd.next() {
-        println!("x_{} = {:.2}; f(x_{}) = {:.4}", count, curr.x, count, curr.value());
+    while let Some(&Numbered {
+        item: Some(ref curr),
+        count,
+    }) = dd.next()
+    {
+        println!(
+            "x_{} = {:.2}; f(x_{}) = {:.4}",
+            count,
+            curr.x,
+            count,
+            curr.value()
+        );
     }
 }

@@ -2,8 +2,8 @@
 
 use super::*;
 
-#[derive(Debug,Clone)]
-pub struct DerivativeDescent<V,D>
+#[derive(Debug, Clone)]
+pub struct DerivativeDescent<V, D>
 where
     V: Fn(f64) -> f64,
     D: Fn(f64) -> f64,
@@ -28,7 +28,7 @@ where
         }
     }
 
-    pub fn value(&self)->f64 {
+    pub fn value(&self) -> f64 {
         (&self.value)(self.x)
     }
 }
@@ -47,4 +47,3 @@ where
         Some(&self)
     }
 }
-

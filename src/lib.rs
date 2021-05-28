@@ -39,7 +39,7 @@
 //!    println!("x_{} = {:.2}; f(x_{}) = {:.4}", count, curr.x, count, curr.value());
 //!}
 //!```
-//! 
+//!
 //! Both produce the exact same output (below), and the first common
 //! approach is much easier to look at, the descent step is right
 //! there. The second separates the algorithm and every other concern
@@ -75,8 +75,8 @@ use yaml_rust::{Yaml, YamlEmitter};
 
 pub mod algorithms;
 pub mod conjugate_gradient;
-pub mod utils;
 pub mod derivative_descent;
+pub mod utils;
 
 /// Creates an iterator which returns initial elements until and
 /// including the first satisfying a predicate.
@@ -755,7 +755,7 @@ where
 }
 
 /// Wrapper for Weight.
-/// 
+///
 /// The WeightedDatum struct wraps the values of a data set to include
 /// a weight for each datum. Currently, the main motivation for this
 /// is to use it for Weighted Reservoir Sampling (WRS).
