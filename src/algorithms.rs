@@ -26,7 +26,7 @@ mod tests {
 
     pub fn solve_approximately(p: LinearSystem) -> V {
         let solution = ConjugateGradient::for_problem(&p).take(20);
-        last(solution.map(|s| s.x_k.clone())).expect("CGIterable should always return a solution.")
+        last(solution.map(|s| s.x_k.clone())).expect("ConjugateGradient should always return a solution.")
     }
 
     pub fn show_progress(p: LinearSystem) {
