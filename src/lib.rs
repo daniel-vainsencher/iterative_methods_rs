@@ -753,13 +753,11 @@ where
     }
 }
 
-/// Weighted Sampling
+/// Weighting wrapper
+/// 
 /// The WeightedDatum struct wraps the values of a data set to include
 /// a weight for each datum. Currently, the main motivation for this
 /// is to use it for Weighted Reservoir Sampling (WRS).
-///
-/// WRS is currently deprecated, but WeightedDatum and WdIterable are not.
-///
 #[derive(Debug, Clone, PartialEq)]
 pub struct WeightedDatum<U> {
     pub value: U,
@@ -779,13 +777,13 @@ where
 
 /// Adaptor wrapping items with a computed weight.
 ///
-/// WdIterable provides an easy conversion of any iterable to one whose items are WeightedDatum.
-/// WdIterable holds an iterator and a function. The function is defined by the user to extract
+/// Weight provides an easy conversion of any iterable to one whose items are WeightedDatum.
+/// Weight holds an iterator and a function. The function is defined by the user to extract
 /// weights from the iterable and package the old items and extracted weights into items as
 /// WeightedDatum
 
 #[derive(Debug, Clone)]
-pub struct WdIterable<I, T, F>
+pub struct Weight<I, T, F>
 where
     I: StreamingIterator<Item = T>,
 {
@@ -795,15 +793,15 @@ where
 }
 
 /// Annotates items of an iterable with a weight using a function `f`.
-pub fn wd_iterable<I, T, F>(it: I, f: F) -> WdIterable<I, T, F>
+pub fn wd_iterable<I, T, F>(it: I, f: F) -> Weight<I, T, F>
 where
     I: StreamingIterator<Item = T>,
     F: FnMut(&T) -> f64,
 {
-    WdIterable { it, wd: None, f }
+    Weight { it, wd: None, f }
 }
 
-impl<I, T, F> StreamingIterator for WdIterable<I, T, F>
+impl<I, T, F> StreamingIterator for Weight<I, T, F>
 where
     I: StreamingIterator<Item = T>,
     F: FnMut(&T) -> f64,
