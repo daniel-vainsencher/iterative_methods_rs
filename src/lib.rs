@@ -1,8 +1,59 @@
 //! # Iterative methods
-//! Implements [iterative methods](https://en.wikipedia.org/wiki/Iterative_method) and utilities for using and developing them as [StreamingIterators](https://crates.io/crates/streaming-iterator).
+//!
+//! Implements [iterative
+//! methods](https://en.wikipedia.org/wiki/Iterative_method) and
+//! utilities for using and developing them as
+//! [StreamingIterators](https://crates.io/crates/streaming-iterator). A
+//! series of [blog
+//! posts](https://daniel-vainsencher.github.io/book/iterative_methods_part_1.html)
+//! provide a gentle introduction.
+//!
+//!
+//! ... but ok fine, here is a really quick example:
+//!```
+//!// Problem: minimize the convex parabola f(x) = x^2 + x
+//!let function = |x| x * x + x;
+//!
+//!// An iterative solution by gradient descent
+//!let derivative = |x| 2.0 * x + 1.0;
+//!let step_size = 0.2;
+//!let x_0 = 2.0;
+//!
+//!// Au naturale:
+//!let mut x = x_0;
+//!for i in 0..10 {
+//!    x -= step_size * derivative(x);
+//!    println!("x_{} = {:.2}; f(x_{}) = {:.4}", i, x, i, x * x + x);
+//!}
+//!
+//!// Using replaceable components:
+//!let dd = DerivativeDescent::new(function, derivative, step_size, x_0);
+//!let dd = enumerate(dd);
+//!let mut dd = dd.take(10);
+//!while let Some(&Numbered{item: Some(ref curr), count}) = dd.next() {
+//!    println!("x_{} = {:.2}; f(x_{}) = {:.4}", count, curr.x, count, curr.value());
+//!}
+//!```
 //! 
-//! We have a tutorial
-//! [introduction](https://daniel-vainsencher.github.io/book/iterative_methods_part_1.html). 
+//! Both produce the exact same output (below), and the first common
+//! approach is much easier to look at, the descent step is right
+//! there. The second separates the algorithm and every other concern
+//! into an easily reusable and composable components. If that sounds
+//! useful, have fun exploring.
+//!
+//!```
+//! x_0 = 1.00; f(x_0) = 2.0000
+//! x_1 = 0.40; f(x_1) = 0.5600
+//! x_2 = 0.04; f(x_2) = 0.0416
+//! x_3 = -0.18; f(x_3) = -0.1450
+//! x_4 = -0.31; f(x_4) = -0.2122
+//! x_5 = -0.38; f(x_5) = -0.2364
+//! x_6 = -0.43; f(x_6) = -0.2451
+//! x_7 = -0.46; f(x_7) = -0.2482
+//! x_8 = -0.47; f(x_8) = -0.2494
+//! x_9 = -0.48; f(x_9) = -0.2498
+//!```
+
 #[cfg(test)]
 extern crate quickcheck;
 extern crate yaml_rust;
@@ -162,7 +213,7 @@ where
     AnnotatedIterable::new(it, f)
 }
 
-/// Apply `f` to every underlying item.
+/// Apply `f(_)->()` to every underlying item (for side-effects).
 pub fn inspect<I, F, T>(it: I, f: F) -> AnnotatedIterable<I, T, F, ()>
 where
     I: Sized + StreamingIterator<Item = T>,
@@ -605,7 +656,8 @@ where
     }
 }
 
-/// An optimal reservoir sampling algorithm is implemented.
+/// Adaptor to reservoir sample.
+///
 /// `ReservoirSample` wraps a `StreamingIterator`, `I` and
 /// produces a `StreamingIterator` whose items are samples of size `capacity`
 /// from the stream of `I`. (This is not the capacity of the `Vec` which holds the `reservoir`;
@@ -719,6 +771,8 @@ where
     WeightedDatum { value, weight }
 }
 
+/// Adaptor wrapping items with a computed weight.
+///
 /// WdIterable provides an easy conversion of any iterable to one whose items are WeightedDatum.
 /// WdIterable holds an iterator and a function. The function is defined by the user to extract
 /// weights from the iterable and package the old items and extracted weights into items as
@@ -807,7 +861,9 @@ where
     }
 }
 
-/// The weighted reservoir sampling algorithm of M. T. Chao is implemented.
+/// Adaptor that reservoir samples with weights
+///
+/// Uses the algorithm of M. T. Chao.
 /// `WeightedReservoirSample` wraps a `StreamingIterator`, `I`, whose items must be of type `WeightedDatum` and
 /// produces a `StreamingIterator` whose items are samples of size `capacity`
 /// from the stream of `I`. (This is not the capacity of the `Vec` which holds the `reservoir`;
