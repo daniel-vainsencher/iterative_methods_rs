@@ -152,7 +152,7 @@ pub struct AnnotatedResult<T, A> {
 
 /// An adaptor that annotates every underlying item `x` with `f(x)`.
 #[derive(Clone, Debug)]
-pub struct AnnotatedIterable<I, T, F, A>
+pub struct Annotate<I, T, F, A>
 where
     I: Sized + StreamingIterator<Item = T>,
     T: Clone,
@@ -163,15 +163,15 @@ where
     pub current: Option<AnnotatedResult<T, A>>,
 }
 
-impl<I, T, F, A> AnnotatedIterable<I, T, F, A>
+impl<I, T, F, A> Annotate<I, T, F, A>
 where
     I: StreamingIterator<Item = T>,
     T: Sized + Clone,
     F: FnMut(&T) -> A,
 {
     /// Annotate every underlying item with the result of applying `f` to it.
-    pub fn new(it: I, f: F) -> AnnotatedIterable<I, T, F, A> {
-        AnnotatedIterable {
+    pub fn new(it: I, f: F) -> Annotate<I, T, F, A> {
+        Annotate {
             it,
             f,
             current: None,
@@ -179,7 +179,7 @@ where
     }
 }
 
-impl<I, T, F, A> StreamingIterator for AnnotatedIterable<I, T, F, A>
+impl<I, T, F, A> StreamingIterator for Annotate<I, T, F, A>
 where
     I: StreamingIterator<Item = T>,
     T: Sized + Clone,
@@ -210,23 +210,23 @@ where
 }
 
 /// Annotate every underlying item with its score, as defined by `f`.
-pub fn assess<I, T, F, A>(it: I, f: F) -> AnnotatedIterable<I, T, F, A>
+pub fn assess<I, T, F, A>(it: I, f: F) -> Annotate<I, T, F, A>
 where
     T: Clone,
     F: FnMut(&T) -> A,
     I: StreamingIterator<Item = T>,
 {
-    AnnotatedIterable::new(it, f)
+    Annotate::new(it, f)
 }
 
 /// Apply `f(_)->()` to every underlying item (for side-effects).
-pub fn inspect<I, F, T>(it: I, f: F) -> AnnotatedIterable<I, T, F, ()>
+pub fn inspect<I, F, T>(it: I, f: F) -> Annotate<I, T, F, ()>
 where
     I: Sized + StreamingIterator<Item = T>,
     F: FnMut(&T),
     T: Clone,
 {
-    AnnotatedIterable::new(it, f)
+    Annotate::new(it, f)
 }
 
 /// Get the item before the first None, assuming any exist.
@@ -238,11 +238,10 @@ where
     it.fold(None, |_acc, i| Some((*i).clone()))
 }
 
-/// Times every call to `advance` on the underlying
-/// StreamingIterator. Stores both the time at which it starts, and
-/// the duration it took to run.
+/// Adaptor that times every call to `advance` on adaptee. Stores
+/// start time and duration.
 #[derive(Clone, Debug)]
-pub struct TimedIterable<I, T>
+pub struct Time<I, T>
 where
     I: StreamingIterator<Item = T>,
     T: Clone,
@@ -252,6 +251,8 @@ where
     timer: Instant,
 }
 
+/// Wrapper for Time.
+///
 /// TimedResult decorates with two duration fields: start_time is
 /// relative to the creation of the process generating results, and
 /// duration is relative to the start of the creation of the current
@@ -266,19 +267,19 @@ pub struct TimedResult<T> {
 /// Wrap each value of a streaming iterator with the durations:
 /// - between the call to this function and start of the value's computation
 /// - it took to calculate that value
-pub fn time<I, T>(it: I) -> TimedIterable<I, T>
+pub fn time<I, T>(it: I) -> Time<I, T>
 where
     I: Sized + StreamingIterator<Item = T>,
     T: Sized + Clone,
 {
-    TimedIterable {
+    Time {
         it,
         current: None,
         timer: Instant::now(),
     }
 }
 
-impl<I, T> StreamingIterator for TimedIterable<I, T>
+impl<I, T> StreamingIterator for Time<I, T>
 where
     I: Sized + StreamingIterator<Item = T>,
     T: Sized + Clone,
@@ -753,7 +754,7 @@ where
     }
 }
 
-/// Weighting wrapper
+/// Wrapper for Weight.
 /// 
 /// The WeightedDatum struct wraps the values of a data set to include
 /// a weight for each datum. Currently, the main motivation for this
@@ -1007,7 +1008,7 @@ mod tests {
         }
         let target_annotations = vec![0., 2., 4.];
         let mut annotations: Vec<f64> = Vec::with_capacity(3);
-        let mut ann_iter = AnnotatedIterable::new(iter, f);
+        let mut ann_iter = Annotate::new(iter, f);
         while let Some(n) = ann_iter.next() {
             annotations.push(n.annotation);
         }
