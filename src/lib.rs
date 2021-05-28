@@ -11,6 +11,11 @@
 //!
 //! ... but ok fine, here is a really quick example:
 //!```
+//!# extern crate iterative_methods;
+//!# use iterative_methods::derivative_descent::*;
+//!# use iterative_methods::*;
+//!# use streaming_iterator::*;
+//!#
 //!// Problem: minimize the convex parabola f(x) = x^2 + x
 //!let function = |x| x * x + x;
 //!
@@ -41,7 +46,7 @@
 //! into an easily reusable and composable components. If that sounds
 //! useful, have fun exploring.
 //!
-//!```
+//!```ignore
 //! x_0 = 1.00; f(x_0) = 2.0000
 //! x_1 = 0.40; f(x_1) = 0.5600
 //! x_2 = 0.04; f(x_2) = 0.0416
@@ -71,6 +76,7 @@ use yaml_rust::{Yaml, YamlEmitter};
 pub mod algorithms;
 pub mod conjugate_gradient;
 pub mod utils;
+pub mod derivative_descent;
 
 /// Creates an iterator which returns initial elements until and
 /// including the first satisfying a predicate.
