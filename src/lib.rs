@@ -364,18 +364,19 @@ where
 
 /// Write items of StreamingIterator to a file.
 #[derive(Debug)]
-pub struct ToFileIterable<I, F> {
+struct WriteToFile<I, F> {
     pub it: I,
     pub write_function: F,
     pub file_writer: File,
 }
 
-/// An adaptor that writes each item to a new line of a file.
-pub fn item_to_file<I, T, F>(
+/// An adaptor that calls a function to write each item to a file.
+#[allow(dead_code)]
+fn write_to_file<I, T, F>(
     it: I,
     write_function: F,
     file_path: String,
-) -> Result<ToFileIterable<I, F>, std::io::Error>
+) -> Result<WriteToFile<I, F>, std::io::Error>
 where
     I: Sized + StreamingIterator<Item = T>,
     T: std::fmt::Debug,
@@ -390,7 +391,7 @@ where
                 .append(true)
                 .create(true)
                 .open(file_path)?;
-            Ok(ToFileIterable {
+            Ok(WriteToFile {
                 it,
                 write_function,
                 file_writer,
@@ -400,7 +401,7 @@ where
     result
 }
 
-impl<I, T, F> StreamingIterator for ToFileIterable<I, F>
+impl<I, T, F> StreamingIterator for WriteToFile<I, F>
 where
     I: Sized + StreamingIterator<Item = T>,
     T: std::fmt::Debug,
@@ -412,7 +413,7 @@ where
     fn advance(&mut self) {
         if let Some(item) = self.it.next() {
             (self.write_function)(&item, &mut self.file_writer)
-                .expect("Write item to file in ToFileIterable advance failed.");
+                .expect("Write item to file in WriteToFile advance failed.");
         } else {
             self.file_writer.flush().expect("Flush of file failed.");
         }
@@ -505,7 +506,7 @@ where
 
 /// Write items of StreamingIterator to a Yaml file.
 #[derive(Debug)]
-pub struct ToYamlIterable<I> {
+pub struct WriteYamlDocuments<I> {
     pub it: I,
     pub file_writer: File,
 }
@@ -514,7 +515,7 @@ pub struct ToYamlIterable<I> {
 pub fn write_yaml_documents<I, T>(
     it: I,
     file_path: String,
-) -> Result<ToYamlIterable<I>, std::io::Error>
+) -> Result<WriteYamlDocuments<I>, std::io::Error>
 where
     I: Sized + StreamingIterator<Item = T>,
     T: std::fmt::Debug,
@@ -528,13 +529,13 @@ where
                 .append(true)
                 .create(true)
                 .open(file_path)?;
-            Ok(ToYamlIterable { it, file_writer })
+            Ok(WriteYamlDocuments { it, file_writer })
         }
     };
     result
 }
 
-/// Function used by ToYamlIterable to specify how to write each item to file.
+/// Function used by WriteYamlDocuments to specify how to write each item to file.
 ///
 pub fn write_yaml_object<T>(item: &T, file_writer: &mut std::fs::File) -> std::io::Result<()>
 where
@@ -553,7 +554,7 @@ where
     Ok(())
 }
 
-impl<I, T> StreamingIterator for ToYamlIterable<I>
+impl<I, T> StreamingIterator for WriteYamlDocuments<I>
 where
     I: Sized + StreamingIterator<Item = T>,
     T: std::fmt::Debug + YamlDataType,
@@ -563,8 +564,8 @@ where
     #[inline]
     fn advance(&mut self) {
         if let Some(item) = self.it.next() {
-            (write_yaml_object)(&item, &mut self.file_writer)
-                .expect("Write item to file in ToYamlIterable advance failed.");
+            write_yaml_object(&item, &mut self.file_writer)
+                .expect("Write item to file in WriteYamlDocuments advance failed.");
         } else {
             self.file_writer.flush().expect("Flush of file failed.");
         }
@@ -1015,9 +1016,9 @@ mod tests {
         assert_eq!(annotations, target_annotations);
     }
 
-    /// ToYamlIterable Test: Write stream of scalars to yaml
+    /// WriteYamlDocuments Test: Write stream of scalars to yaml
     ///
-    /// This writes a stream of scalars to a yaml file using ToYamlIterable iterable.
+    /// This writes a stream of scalars to a yaml file using WriteYamlDocuments iterable.
     /// It would fail if the file path used to write the data already existed
     /// due to the functionality of write_yaml_documents().
     #[test]
@@ -1043,11 +1044,11 @@ mod tests {
         assert_eq!("---\n0\n---\n1\n---\n2\n---\n3\n", &contents);
     }
 
-    /// ToYamlIterable Test: Write stream of vecs to yaml
+    /// WriteYamlDocuments Test: Write stream of vecs to yaml
     ///
-    /// This writes a stream of vecs to a yaml file using ToYamlIterable iterable.
+    /// This writes a stream of vecs to a yaml file using WriteYamlDocuments iterable.
     /// It would fail if the file path used to write the data already existed
-    /// due to the functionality of item_to_file().
+    /// due to the functionality of write_to_file().
     #[test]
     fn write_vec_to_yaml_test() {
         let test_file_path = "./vec_to_file_test.yaml";

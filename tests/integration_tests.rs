@@ -70,7 +70,7 @@ fn wd_iterable_extract_value_test() {
     }
 }
 
-/// Test the integration of ReservoirSample, Enumerate, and ToFileIterable.
+/// Test the integration of ReservoirSample, Enumerate, and WriteToFile.
 ///
 /// A stream of 2 zeros and 8 ones subjected to reservoir sampling using a seeded rng.
 /// The stream of reservoirs is adapted with enumerate() and then write_yaml_documents(). After
