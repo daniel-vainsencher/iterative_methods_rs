@@ -6,3 +6,4 @@ Cargo.lock
 /visualizations
 /visualizations_python/__pycache__
 /visualizations_python/parameters_for_histogram.yaml
+*~
