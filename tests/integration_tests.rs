@@ -44,9 +44,9 @@ fn test_timed_iterable() {
     assert!(st_diff.iter().all(|diff| *diff >= 0.));
 }
 
-/// Test that WdIterable followed by ExtractValue is a roundtrip.
+/// Test that Weight followed by ExtractValue is a roundtrip.
 ///
-/// WdIterable wraps the items of a simple Counter iterable as WeightedDatum
+/// Weight wraps the items of a simple Counter iterable as WeightedDatum
 /// with the square of the count as the weight. Then ExtractValue unwraps, leaving
 /// items with only the original value. The items of a clone of the original iterator
 /// and the wrapped/unwrapped iterator are checked to be equal.
@@ -55,7 +55,7 @@ fn test_timed_iterable() {
 fn wd_iterable_extract_value_test() {
     let mut counter_stream = Counter::new();
     let counter_stream_copy = counter_stream.clone();
-    let wd_iter = WdIterable {
+    let wd_iter = Weight {
         it: counter_stream_copy,
         f: expose_w,
         wd: Some(new_datum(0., 0.)),
@@ -70,7 +70,7 @@ fn wd_iterable_extract_value_test() {
     }
 }
 
-/// Test the integration of ReservoirSample, Enumerate, and ToFileIterable.
+/// Test the integration of ReservoirSample, Enumerate, and WriteToFile.
 ///
 /// A stream of 2 zeros and 8 ones subjected to reservoir sampling using a seeded rng.
 /// The stream of reservoirs is adapted with enumerate() and then write_yaml_documents(). After

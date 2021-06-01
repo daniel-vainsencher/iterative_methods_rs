@@ -1,5 +1,64 @@
-//! # iterative-methods
-//! A demonstration of the use of StreamingIterators and their adapters to implement iterative algorithms.
+//! # Iterative methods
+//!
+//! Implements [iterative
+//! methods](https://en.wikipedia.org/wiki/Iterative_method) and
+//! utilities for using and developing them as
+//! [StreamingIterators](https://crates.io/crates/streaming-iterator). A
+//! series of [blog
+//! posts](https://daniel-vainsencher.github.io/book/iterative_methods_part_1.html)
+//! provide a gentle introduction.
+//!
+//!
+//! ... but ok fine, here is a really quick example:
+//!```
+//!# extern crate iterative_methods;
+//!# use iterative_methods::derivative_descent::*;
+//!# use iterative_methods::*;
+//!# use streaming_iterator::*;
+//!#
+//!// Problem: minimize the convex parabola f(x) = x^2 + x
+//!let function = |x| x * x + x;
+//!
+//!// An iterative solution by gradient descent
+//!let derivative = |x| 2.0 * x + 1.0;
+//!let step_size = 0.2;
+//!let x_0 = 2.0;
+//!
+//!// Au naturale:
+//!let mut x = x_0;
+//!for i in 0..10 {
+//!    x -= step_size * derivative(x);
+//!    println!("x_{} = {:.2}; f(x_{}) = {:.4}", i, x, i, x * x + x);
+//!}
+//!
+//!// Using replaceable components:
+//!let dd = DerivativeDescent::new(function, derivative, step_size, x_0);
+//!let dd = enumerate(dd);
+//!let mut dd = dd.take(10);
+//!while let Some(&Numbered{item: Some(ref curr), count}) = dd.next() {
+//!    println!("x_{} = {:.2}; f(x_{}) = {:.4}", count, curr.x, count, curr.value());
+//!}
+//!```
+//!
+//! Both produce the exact same output (below), and the first common
+//! approach is much easier to look at, the descent step is right
+//! there. The second separates the algorithm and every other concern
+//! into an easily reusable and composable components. If that sounds
+//! useful, have fun exploring.
+//!
+//!```ignore
+//! x_0 = 1.00; f(x_0) = 2.0000
+//! x_1 = 0.40; f(x_1) = 0.5600
+//! x_2 = 0.04; f(x_2) = 0.0416
+//! x_3 = -0.18; f(x_3) = -0.1450
+//! x_4 = -0.31; f(x_4) = -0.2122
+//! x_5 = -0.38; f(x_5) = -0.2364
+//! x_6 = -0.43; f(x_6) = -0.2451
+//! x_7 = -0.46; f(x_7) = -0.2482
+//! x_8 = -0.47; f(x_8) = -0.2494
+//! x_9 = -0.48; f(x_9) = -0.2498
+//!```
+
 #[cfg(test)]
 extern crate quickcheck;
 extern crate yaml_rust;
@@ -16,6 +75,7 @@ use yaml_rust::{Yaml, YamlEmitter};
 
 pub mod algorithms;
 pub mod conjugate_gradient;
+pub mod derivative_descent;
 pub mod utils;
 
 /// Creates an iterator which returns initial elements until and
@@ -92,7 +152,7 @@ pub struct AnnotatedResult<T, A> {
 
 /// An adaptor that annotates every underlying item `x` with `f(x)`.
 #[derive(Clone, Debug)]
-pub struct AnnotatedIterable<I, T, F, A>
+pub struct Annotate<I, T, F, A>
 where
     I: Sized + StreamingIterator<Item = T>,
     T: Clone,
@@ -103,15 +163,15 @@ where
     pub current: Option<AnnotatedResult<T, A>>,
 }
 
-impl<I, T, F, A> AnnotatedIterable<I, T, F, A>
+impl<I, T, F, A> Annotate<I, T, F, A>
 where
     I: StreamingIterator<Item = T>,
     T: Sized + Clone,
     F: FnMut(&T) -> A,
 {
     /// Annotate every underlying item with the result of applying `f` to it.
-    pub fn new(it: I, f: F) -> AnnotatedIterable<I, T, F, A> {
-        AnnotatedIterable {
+    pub fn new(it: I, f: F) -> Annotate<I, T, F, A> {
+        Annotate {
             it,
             f,
             current: None,
@@ -119,7 +179,7 @@ where
     }
 }
 
-impl<I, T, F, A> StreamingIterator for AnnotatedIterable<I, T, F, A>
+impl<I, T, F, A> StreamingIterator for Annotate<I, T, F, A>
 where
     I: StreamingIterator<Item = T>,
     T: Sized + Clone,
@@ -150,23 +210,23 @@ where
 }
 
 /// Annotate every underlying item with its score, as defined by `f`.
-pub fn assess<I, T, F, A>(it: I, f: F) -> AnnotatedIterable<I, T, F, A>
+pub fn assess<I, T, F, A>(it: I, f: F) -> Annotate<I, T, F, A>
 where
     T: Clone,
     F: FnMut(&T) -> A,
     I: StreamingIterator<Item = T>,
 {
-    AnnotatedIterable::new(it, f)
+    Annotate::new(it, f)
 }
 
-/// Apply `f` to every underlying item.
-pub fn inspect<I, F, T>(it: I, f: F) -> AnnotatedIterable<I, T, F, ()>
+/// Apply `f(_)->()` to every underlying item (for side-effects).
+pub fn inspect<I, F, T>(it: I, f: F) -> Annotate<I, T, F, ()>
 where
     I: Sized + StreamingIterator<Item = T>,
     F: FnMut(&T),
     T: Clone,
 {
-    AnnotatedIterable::new(it, f)
+    Annotate::new(it, f)
 }
 
 /// Get the item before the first None, assuming any exist.
@@ -178,11 +238,10 @@ where
     it.fold(None, |_acc, i| Some((*i).clone()))
 }
 
-/// Times every call to `advance` on the underlying
-/// StreamingIterator. Stores both the time at which it starts, and
-/// the duration it took to run.
+/// Adaptor that times every call to `advance` on adaptee. Stores
+/// start time and duration.
 #[derive(Clone, Debug)]
-pub struct TimedIterable<I, T>
+pub struct Time<I, T>
 where
     I: StreamingIterator<Item = T>,
     T: Clone,
@@ -192,6 +251,8 @@ where
     timer: Instant,
 }
 
+/// Wrapper for Time.
+///
 /// TimedResult decorates with two duration fields: start_time is
 /// relative to the creation of the process generating results, and
 /// duration is relative to the start of the creation of the current
@@ -206,19 +267,19 @@ pub struct TimedResult<T> {
 /// Wrap each value of a streaming iterator with the durations:
 /// - between the call to this function and start of the value's computation
 /// - it took to calculate that value
-pub fn time<I, T>(it: I) -> TimedIterable<I, T>
+pub fn time<I, T>(it: I) -> Time<I, T>
 where
     I: Sized + StreamingIterator<Item = T>,
     T: Sized + Clone,
 {
-    TimedIterable {
+    Time {
         it,
         current: None,
         timer: Instant::now(),
     }
 }
 
-impl<I, T> StreamingIterator for TimedIterable<I, T>
+impl<I, T> StreamingIterator for Time<I, T>
 where
     I: Sized + StreamingIterator<Item = T>,
     T: Sized + Clone,
@@ -303,18 +364,19 @@ where
 
 /// Write items of StreamingIterator to a file.
 #[derive(Debug)]
-pub struct ToFileIterable<I, F> {
+struct WriteToFile<I, F> {
     pub it: I,
     pub write_function: F,
     pub file_writer: File,
 }
 
-/// An adaptor that writes each item to a new line of a file.
-pub fn item_to_file<I, T, F>(
+/// An adaptor that calls a function to write each item to a file.
+#[allow(dead_code)]
+fn write_to_file<I, T, F>(
     it: I,
     write_function: F,
     file_path: String,
-) -> Result<ToFileIterable<I, F>, std::io::Error>
+) -> Result<WriteToFile<I, F>, std::io::Error>
 where
     I: Sized + StreamingIterator<Item = T>,
     T: std::fmt::Debug,
@@ -329,7 +391,7 @@ where
                 .append(true)
                 .create(true)
                 .open(file_path)?;
-            Ok(ToFileIterable {
+            Ok(WriteToFile {
                 it,
                 write_function,
                 file_writer,
@@ -339,7 +401,7 @@ where
     result
 }
 
-impl<I, T, F> StreamingIterator for ToFileIterable<I, F>
+impl<I, T, F> StreamingIterator for WriteToFile<I, F>
 where
     I: Sized + StreamingIterator<Item = T>,
     T: std::fmt::Debug,
@@ -351,7 +413,7 @@ where
     fn advance(&mut self) {
         if let Some(item) = self.it.next() {
             (self.write_function)(&item, &mut self.file_writer)
-                .expect("Write item to file in ToFileIterable advance failed.");
+                .expect("Write item to file in WriteToFile advance failed.");
         } else {
             self.file_writer.flush().expect("Flush of file failed.");
         }
@@ -444,7 +506,7 @@ where
 
 /// Write items of StreamingIterator to a Yaml file.
 #[derive(Debug)]
-pub struct ToYamlIterable<I> {
+pub struct WriteYamlDocuments<I> {
     pub it: I,
     pub file_writer: File,
 }
@@ -453,7 +515,7 @@ pub struct ToYamlIterable<I> {
 pub fn write_yaml_documents<I, T>(
     it: I,
     file_path: String,
-) -> Result<ToYamlIterable<I>, std::io::Error>
+) -> Result<WriteYamlDocuments<I>, std::io::Error>
 where
     I: Sized + StreamingIterator<Item = T>,
     T: std::fmt::Debug,
@@ -467,13 +529,13 @@ where
                 .append(true)
                 .create(true)
                 .open(file_path)?;
-            Ok(ToYamlIterable { it, file_writer })
+            Ok(WriteYamlDocuments { it, file_writer })
         }
     };
     result
 }
 
-/// Function used by ToYamlIterable to specify how to write each item to file.
+/// Function used by WriteYamlDocuments to specify how to write each item to file.
 ///
 pub fn write_yaml_object<T>(item: &T, file_writer: &mut std::fs::File) -> std::io::Result<()>
 where
@@ -492,7 +554,7 @@ where
     Ok(())
 }
 
-impl<I, T> StreamingIterator for ToYamlIterable<I>
+impl<I, T> StreamingIterator for WriteYamlDocuments<I>
 where
     I: Sized + StreamingIterator<Item = T>,
     T: std::fmt::Debug + YamlDataType,
@@ -502,8 +564,8 @@ where
     #[inline]
     fn advance(&mut self) {
         if let Some(item) = self.it.next() {
-            (write_yaml_object)(&item, &mut self.file_writer)
-                .expect("Write item to file in ToYamlIterable advance failed.");
+            write_yaml_object(&item, &mut self.file_writer)
+                .expect("Write item to file in WriteYamlDocuments advance failed.");
         } else {
             self.file_writer.flush().expect("Flush of file failed.");
         }
@@ -602,7 +664,8 @@ where
     }
 }
 
-/// An optimal reservoir sampling algorithm is implemented.
+/// Adaptor to reservoir sample.
+///
 /// `ReservoirSample` wraps a `StreamingIterator`, `I` and
 /// produces a `StreamingIterator` whose items are samples of size `capacity`
 /// from the stream of `I`. (This is not the capacity of the `Vec` which holds the `reservoir`;
@@ -692,13 +755,11 @@ where
     }
 }
 
-/// Weighted Sampling
+/// Wrapper for Weight.
+///
 /// The WeightedDatum struct wraps the values of a data set to include
 /// a weight for each datum. Currently, the main motivation for this
 /// is to use it for Weighted Reservoir Sampling (WRS).
-///
-/// WRS is currently deprecated, but WeightedDatum and WdIterable are not.
-///
 #[derive(Debug, Clone, PartialEq)]
 pub struct WeightedDatum<U> {
     pub value: U,
@@ -716,13 +777,15 @@ where
     WeightedDatum { value, weight }
 }
 
-/// WdIterable provides an easy conversion of any iterable to one whose items are WeightedDatum.
-/// WdIterable holds an iterator and a function. The function is defined by the user to extract
+/// Adaptor wrapping items with a computed weight.
+///
+/// Weight provides an easy conversion of any iterable to one whose items are WeightedDatum.
+/// Weight holds an iterator and a function. The function is defined by the user to extract
 /// weights from the iterable and package the old items and extracted weights into items as
 /// WeightedDatum
 
 #[derive(Debug, Clone)]
-pub struct WdIterable<I, T, F>
+pub struct Weight<I, T, F>
 where
     I: StreamingIterator<Item = T>,
 {
@@ -732,15 +795,15 @@ where
 }
 
 /// Annotates items of an iterable with a weight using a function `f`.
-pub fn wd_iterable<I, T, F>(it: I, f: F) -> WdIterable<I, T, F>
+pub fn wd_iterable<I, T, F>(it: I, f: F) -> Weight<I, T, F>
 where
     I: StreamingIterator<Item = T>,
     F: FnMut(&T) -> f64,
 {
-    WdIterable { it, wd: None, f }
+    Weight { it, wd: None, f }
 }
 
-impl<I, T, F> StreamingIterator for WdIterable<I, T, F>
+impl<I, T, F> StreamingIterator for Weight<I, T, F>
 where
     I: StreamingIterator<Item = T>,
     F: FnMut(&T) -> f64,
@@ -804,7 +867,9 @@ where
     }
 }
 
-/// The weighted reservoir sampling algorithm of M. T. Chao is implemented.
+/// Adaptor that reservoir samples with weights
+///
+/// Uses the algorithm of M. T. Chao.
 /// `WeightedReservoirSample` wraps a `StreamingIterator`, `I`, whose items must be of type `WeightedDatum` and
 /// produces a `StreamingIterator` whose items are samples of size `capacity`
 /// from the stream of `I`. (This is not the capacity of the `Vec` which holds the `reservoir`;
@@ -944,16 +1009,16 @@ mod tests {
         }
         let target_annotations = vec![0., 2., 4.];
         let mut annotations: Vec<f64> = Vec::with_capacity(3);
-        let mut ann_iter = AnnotatedIterable::new(iter, f);
+        let mut ann_iter = Annotate::new(iter, f);
         while let Some(n) = ann_iter.next() {
             annotations.push(n.annotation);
         }
         assert_eq!(annotations, target_annotations);
     }
 
-    /// ToYamlIterable Test: Write stream of scalars to yaml
+    /// WriteYamlDocuments Test: Write stream of scalars to yaml
     ///
-    /// This writes a stream of scalars to a yaml file using ToYamlIterable iterable.
+    /// This writes a stream of scalars to a yaml file using WriteYamlDocuments iterable.
     /// It would fail if the file path used to write the data already existed
     /// due to the functionality of write_yaml_documents().
     #[test]
@@ -979,11 +1044,11 @@ mod tests {
         assert_eq!("---\n0\n---\n1\n---\n2\n---\n3\n", &contents);
     }
 
-    /// ToYamlIterable Test: Write stream of vecs to yaml
+    /// WriteYamlDocuments Test: Write stream of vecs to yaml
     ///
-    /// This writes a stream of vecs to a yaml file using ToYamlIterable iterable.
+    /// This writes a stream of vecs to a yaml file using WriteYamlDocuments iterable.
     /// It would fail if the file path used to write the data already existed
-    /// due to the functionality of item_to_file().
+    /// due to the functionality of write_to_file().
     #[test]
     fn write_vec_to_yaml_test() {
         let test_file_path = "./vec_to_file_test.yaml";

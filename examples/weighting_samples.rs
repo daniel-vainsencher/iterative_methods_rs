@@ -4,11 +4,11 @@ use streaming_iterator::*;
 use utils::*;
 
 fn wd_iterable_counter_demo() {
-    println!("\n\n -----WdIterable Counter Demo----- \n\n");
+    println!("\n\n -----Weight Counter Demo----- \n\n");
 
     let counter_stream = Counter::new();
     let mut counter_stream_copy = counter_stream.clone();
-    let mut wd_iter = WdIterable {
+    let mut wd_iter = Weight {
         it: counter_stream,
         f: expose_w,
         wd: Some(new_datum(0., 0.)),

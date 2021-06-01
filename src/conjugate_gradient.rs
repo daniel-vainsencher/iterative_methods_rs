@@ -1,24 +1,22 @@
+//! Implementation of conjugate gradient
+
+//! following [lecture notes](http://www.math.psu.edu/shen_w/524/CG_lecture.pdf)
+//! by Shen. Thanks Shen!
+//!
+//! Pseudo code:
+//! Set r_0 = A*x_0 - b and p_0 =-r_0, k=0
+//! while r_k != 0:
+//!   alpha_k = ||r_k||^2 / ||p_k||^2_A
+//!   x_{k+1} = x_k + alpha_k*p_k
+//!   r_{k+1} = r_K + alpha_k*A*p_k
+//!   beta_k = ||r_{k+1}||^2 / ||r_k||^2
+//!   p_{k+1} = -r_k + beta_k * p_k
+//!   k += 1
+
 use crate::utils::{LinearSystem, M, S, V};
 use ndarray::ArrayBase;
 use std::f64::{MIN_POSITIVE, NAN};
 use streaming_iterator::*;
-// Scalar, Vector and Matrix types:
-
-/// Implementation of conjugate gradient
-
-/// following
-/// http://www.math.psu.edu/shen_w/524/CG_lecture.pdf.
-/// Thanks Shen!
-
-// Pseudo code:
-// Set r_0 = A*x_0 - b and p_0 =-r_0, k=0
-// while r_k != 0:
-//   alpha_k = ||r_k||^2 / ||p_k||^2_A
-//   x_{k+1} = x_k + alpha_k*p_k
-//   r_{k+1} = r_K + alpha_k*A*p_k
-//   beta_k = ||r_{k+1}||^2 / ||r_k||^2
-//   p_{k+1} = -r_k + beta_k * p_k
-//   k += 1
 
 // A few notes:
 //
@@ -38,7 +36,7 @@ use streaming_iterator::*;
 
 /// Store the state of a conjugate gradient computation.
 ///
-/// This implementation deviates from the psuedo code given in this
+/// This implementation deviates from the pseudocode given in this
 /// module slightly: the prelude to the loop is run in initialization,
 /// and advance implements the loop. Since advance is always called
 /// before get, the currently calculated quantities (suffixed by `_k`)
