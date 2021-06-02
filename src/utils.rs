@@ -21,15 +21,14 @@ pub struct LinearSystem {
 }
 
 /// Given a Nx3 matrix m, the matrix a = m.t().dot(m) will be [p.s.d](https://en.wikipedia.org/wiki/Definite_matrix)
-/// 
+///
 /// if N=3 and the rows are linearly indepndent, a is p.d.
-/// in which case a.dot(x) = b has a unique solution and CG will find 
+/// in which case a.dot(x) = b has a unique solution and CG will find
 /// find it in 3 steps.
 pub fn make_3x3_psd_system(m: M, b: V) -> LinearSystem {
     let a = (m.t().dot(&m)).into_shared();
     LinearSystem { a, b, x0: None }
 }
-
 
 /// Create a p.d. system with two equal eigen values and one larger
 pub fn make_3x3_pd_system_1() -> LinearSystem {
