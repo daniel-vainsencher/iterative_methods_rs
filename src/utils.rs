@@ -10,7 +10,7 @@ use rand_distr::{Distribution, Normal};
 use std::collections::HashMap;
 use std::io::Read;
 use std::iter;
-/// Utility Functions for the Conjugate Gradient Method
+// Utility Functions for the Conjugate Gradient Method
 
 /// A linear system, ax-b=0, to be solved iteratively, with an optional initial solution.
 #[derive(Clone, PartialEq, Debug, Default)]
@@ -20,6 +20,18 @@ pub struct LinearSystem {
     pub x0: Option<V>,
 }
 
+/// Given a Nx3 matrix m, the matrix a = m.t().dot(m) will be [p.s.d](https://en.wikipedia.org/wiki/Definite_matrix)
+///
+/// if N=3 and the rows are linearly indepndent, a is p.d.
+/// in which case a.dot(x) = b has a unique solution and CG will find
+/// find it in 3 steps.
+pub fn make_3x3_psd_system(m: M, b: V) -> LinearSystem {
+    let a = (m.t().dot(&m)).into_shared();
+    LinearSystem { a, b, x0: None }
+}
+
+/// Create a [`LinearSystem`] whose `a` is p.d. with two equal eigen
+/// values and one larger
 pub fn make_3x3_pd_system_1() -> LinearSystem {
     make_3x3_psd_system(
         rcarr2(&[[1., 2., -1.], [0., 1., 0.], [0., 0., 1.]]),
@@ -27,6 +39,7 @@ pub fn make_3x3_pd_system_1() -> LinearSystem {
     )
 }
 
+/// Create a different p.d. system.
 pub fn make_3x3_pd_system_2() -> LinearSystem {
     make_3x3_psd_system(
         rcarr2(&[[1.0, 0.5, 0.0], [0.5, 1.0, 0.5], [0.0, 0.5, 1.0]]),
@@ -34,12 +47,7 @@ pub fn make_3x3_pd_system_2() -> LinearSystem {
     )
 }
 
-pub fn make_3x3_psd_system(m: M, b: V) -> LinearSystem {
-    let a = (m.t().dot(&m)).into_shared();
-    LinearSystem { a, b, x0: None }
-}
-
-/// Utility Functions for Reservoir Sampling
+// Utility Functions for Reservoir Sampling
 
 /// Produce a stream like [a, ..., a, b, ..., b] with `num_of_initial_values` copies of "a"
 /// (aka `initial_value`s) and `stream_length` total values.
@@ -114,9 +122,9 @@ pub fn generate_enumerated_step_stream(
     enumerate(stream)
 }
 
-// Produce a stream from a normal distribution.
-// Utility function used in examples of reservoir sampling
-// histogram animation.
+/// Produce a stream from a normal distribution.
+/// Utility function used in examples of reservoir sampling
+/// histogram animation.
 pub fn generate_stream_from_normal_distribution(
     stream_length: usize,
     mean: f64,
@@ -130,7 +138,7 @@ pub fn generate_stream_from_normal_distribution(
     stream.into_iter()
 }
 
-/// Utility Functions for Weighted Reservoir Sampling
+// Utility Functions for Weighted Reservoir Sampling
 
 /// utility function for testing ReservoirSample
 pub fn generate_stream_with_constant_probability(
@@ -165,8 +173,8 @@ pub fn expose_w(count: &f64) -> f64 {
     count * count
 }
 
-/// Utility functions for writing data to yaml, including for visualizations
-///
+// Utility functions for writing data to yaml, including for visualizations
+
 /// The order of the parameters is not controlled.
 pub fn write_parameters_to_yaml<T>(
     params: HashMap<String, T>,
