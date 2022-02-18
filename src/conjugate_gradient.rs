@@ -14,6 +14,7 @@
 //!   k += 1
 
 use crate::utils::{LinearSystem, M, S, V};
+use crate::IterativeMethod; 
 use ndarray::ArrayBase;
 use std::f64::{MIN_POSITIVE, NAN};
 use streaming_iterator::*;
@@ -152,5 +153,14 @@ impl StreamingIterator for ConjugateGradient {
         } else {
             None
         }
+    }
+}
+
+impl IterativeMethod<ConjugateGradient, V> for ConjugateGradient {
+    fn solution(&self) -> &V {
+        &self.solution
+    }
+    fn cost(&self) -> f64 {
+        self.r_km2
     }
 }

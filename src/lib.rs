@@ -78,6 +78,18 @@ pub mod conjugate_gradient;
 pub mod derivative_descent;
 pub mod utils;
 
+/// A StreamingIterator M is an IterativeMethod w.r.t. functions cost
+/// and solution iff cost(solution(x)) converges from above for x read
+/// from M.
+pub trait IterativeMethod<M, S>
+where
+    M: StreamingIterator,
+    S: Clone,
+{
+    fn solution(&self) -> &S;
+    fn cost(&self) -> f64;
+}
+
 /// Creates an iterator which returns initial elements until and
 /// including the first satisfying a predicate.
 #[inline]
