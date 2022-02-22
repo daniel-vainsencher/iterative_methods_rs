@@ -14,7 +14,7 @@
 //!   k += 1
 
 use crate::utils::{LinearSystem, M, S, V};
-use crate::IterativeMethod; 
+use crate::IterativeMethod;
 use ndarray::ArrayBase;
 use std::f64::{MIN_POSITIVE, NAN};
 use streaming_iterator::*;
