@@ -80,7 +80,8 @@ pub mod utils;
 
 /// A StreamingIterator M is an IterativeMethod w.r.t. functions cost
 /// and solution iff cost(solution(x)) converges from above for x read
-/// from M.
+/// from M. Convergence might be in different senses for different
+/// methods, including in expectation if the cost measure is noisy.
 pub trait IterativeMethod<M, S>
 where
     M: StreamingIterator,
