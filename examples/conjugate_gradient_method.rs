@@ -11,8 +11,7 @@ pub type V = ArcArray1<f64>;
 
 /// The usual euclidean length of the residual
 fn residual_l2(result: &ConjugateGradient) -> f64 {
-    let res = result.a.dot(&result.solution) - &result.b;
-    res.dot(&res).sqrt()
+    result.cost().sqrt()
 }
 
 /// The euclidean distance induced by A, between current solution and
@@ -86,7 +85,7 @@ fn cg_demo() {
         println!(
             "{:8} : {:6} | ||Ax - b||_2 = {:.3}, ||Ax - b||_inf = {:.3}, ||x-x*||_A = {:.3}, for x = {:.4}",
             start_time.as_nanos(), duration.as_nanos(),
-            euc, linf, a_dist, result.solution
+            euc, linf, a_dist, result.solution()
         );
     }
 }
