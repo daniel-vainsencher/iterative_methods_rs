@@ -178,7 +178,7 @@ where
 {
     let mut file = File::create(file_path)?;
     for (key, value) in params.iter() {
-        let line: String = [&key.to_string(), ":", " ", &value.to_string(), "\n"].join("");
+        let line: String = [key, ":", " ", &value.to_string(), "\n"].join("");
         file.write_all(line.as_bytes())?;
     }
     Ok(())

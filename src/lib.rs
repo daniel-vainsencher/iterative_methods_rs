@@ -688,8 +688,8 @@ where
 /// The random rng is of type `Pcg64` by default, which allows seeded rng. This should be
 /// extended to generic type bound by traits for implementing seeding.
 
-/// See Algorithm L in https://en.wikipedia.org/wiki/Reservoir_sampling#An_optimal_algorithm and
-/// https://dl.acm.org/doi/abs/10.1145/198429.198435
+/// See Algorithm L in <https://en.wikipedia.org/wiki/Reservoir_sampling#An_optimal_algorithm> and
+/// <https://dl.acm.org/doi/abs/10.1145/198429.198435>
 
 #[derive(Debug, Clone)]
 pub struct ReservoirSample<I, T> {
@@ -891,12 +891,12 @@ where
 
 /// The random rng is of type `Pcg64` by default, which allows seeded rng.
 
-/// See https://en.wikipedia.org/wiki/Reservoir_sampling#Weighted_random_sampling,
-/// https://arxiv.org/abs/1910.11069, or for the original paper,
-/// https://doi.org/10.1093/biomet/69.3.653.
+/// See <https://en.wikipedia.org/wiki/Reservoir_sampling#Weighted_random_sampling>,
+/// <https://arxiv.org/abs/1910.11069>, or for the original paper,
+/// <https://doi.org/10.1093/biomet/69.3.653>.
 
 /// Future work might include implementing parallellized batch processing:
-/// https://dl.acm.org/doi/10.1145/3350755.3400287
+/// <https://dl.acm.org/doi/10.1145/3350755.3400287>
 
 #[derive(Debug, Clone)]
 pub struct WeightedReservoirSample<I, T> {
@@ -1326,7 +1326,7 @@ mod tests {
         let probability = 0.999999999;
         let initial_weight = 1.0;
         // We create a stream with constant probability for all elements:
-        let mut stream = generate_stream_with_constant_probability(
+        let stream = generate_stream_with_constant_probability(
             stream_length,
             capacity,
             probability,
