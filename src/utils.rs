@@ -117,6 +117,7 @@ pub fn generate_enumerated_step_stream(
 // Produce a stream from a normal distribution.
 // Utility function used in examples of reservoir sampling
 // histogram animation.
+#[allow(clippy::needless_collect)]
 pub fn generate_stream_from_normal_distribution(
     stream_length: usize,
     mean: f64,
