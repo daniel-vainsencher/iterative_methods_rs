@@ -52,7 +52,7 @@ mod tests {
         let dm = DMatrix::from_row_slice(3, 3, &[3.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 2.0]);
         println!("dm: {}", dm);
 
-        let high = HermitianLanczos::new(dm.clone(), 3, SpectrumTarget::Highest)
+        let high = HermitianLanczos::new(dm, 3, SpectrumTarget::Highest)
             .unwrap()
             .eigenvalues[(0, 0)];
         println!("high: {}", &high);
@@ -66,11 +66,7 @@ mod tests {
         assert_eq!(h, w);
         let elems = m.reshape(h * w).to_vec();
         let dm = na::DMatrix::from_vec_generic(Dynamic::new(h), Dynamic::new(w), elems);
-        Ok(
-            HermitianLanczos::new(dm.clone(), 3, SpectrumTarget::Highest)?
-                .eigenvalues
-                .clone(),
-        )
+        Ok(HermitianLanczos::new(dm, 3, SpectrumTarget::Highest)?.eigenvalues)
     }
 
     fn test_arbitrary_3x3_psd(vs: Vec<u16>, b: Vec<u16>) -> TestResult {
@@ -83,7 +79,8 @@ mod tests {
         let p = make_3x3_psd_system(vs, b);
         // Decomposition should always succeed as p.a is p.s.d. by
         // construction; if not this is a bug in the test.
-        let eigvals = eigvals(&p.a).expect(&format!("Failed to compute eigenvalues for {}", &p.a));
+        let eigvals =
+            eigvals(&p.a).unwrap_or_else(|_| panic!("Failed to compute eigenvalues for {}", &p.a));
 
         // Ensure A is positive definite with no extreme eigenvalues.
         if !eigvals.iter().all(|ev| &1e-8 < ev && ev < &1e9) {
@@ -98,7 +95,7 @@ mod tests {
         let res = p.a.dot(&x) - &p.b;
         let res_square_norm = res.dot(&res);
         println!("x: {}", x);
-        show_progress(p.clone());
+        show_progress(p);
         //
         TestResult::from_bool(res_square_norm < 1e-40)
     }

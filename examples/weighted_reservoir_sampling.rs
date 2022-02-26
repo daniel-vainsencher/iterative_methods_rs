@@ -44,7 +44,7 @@ fn wrs_demo() {
         } else {
             println!("Reservoir: {:#?} \n", reservoir);
         }
-        _index = _index + 1;
+        _index += 1;
     }
 }
 

@@ -216,7 +216,7 @@ where
 
     fn get(&self) -> Option<&Self::Item> {
         match &self.current {
-            Some(tr) => Some(&tr),
+            Some(tr) => Some(tr),
             None => None,
         }
     }
@@ -303,19 +303,16 @@ where
         let start_time = self.timer.elapsed();
         let before = Instant::now();
         self.it.advance();
-        self.current = match self.it.get() {
-            Some(n) => Some(TimedResult {
-                start_time,
-                duration: before.elapsed(),
-                result: n.clone(),
-            }),
-            None => None,
-        }
+        self.current = self.it.get().map(|n| TimedResult {
+            start_time,
+            duration: before.elapsed(),
+            result: n.clone(),
+        })
     }
 
     fn get(&self) -> Option<&Self::Item> {
         match &self.current {
-            Some(tr) => Some(&tr),
+            Some(tr) => Some(tr),
             None => None,
         }
     }
@@ -425,7 +422,7 @@ where
     #[inline]
     fn advance(&mut self) {
         if let Some(item) = self.it.next() {
-            (self.write_function)(&item, &mut self.file_writer)
+            (self.write_function)(item, &mut self.file_writer)
                 .expect("Write item to file in WriteToFile advance failed.");
         } else {
             self.file_writer.flush().expect("Flush of file failed.");
@@ -671,7 +668,7 @@ where
 
     fn get(&self) -> Option<&Self::Item> {
         match &self.current {
-            Some(t) => Some(&t),
+            Some(t) => Some(t),
             None => None,
         }
     }
@@ -838,7 +835,7 @@ where
 
     fn get(&self) -> Option<&Self::Item> {
         match &self.wd {
-            Some(wdatum) => Some(&wdatum),
+            Some(wdatum) => Some(wdatum),
             None => None,
         }
     }
@@ -991,14 +988,14 @@ mod tests {
     #[test]
     fn test_last() {
         let v = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-        let iter = convert(v.clone());
+        let iter = convert(v);
         assert!(last(iter) == Some(9));
     }
 
     #[test]
     fn test_last_none() {
         let v: Vec<u32> = vec![];
-        assert!(last(convert(v.clone())) == None);
+        assert!(last(convert(v)) == None);
     }
 
     #[test]
@@ -1009,7 +1006,7 @@ mod tests {
         let mut _index = 0i64;
         while let Some(element) = iter.next() {
             assert_eq!(*element, _index * 3);
-            _index = _index + 1;
+            _index += 1;
         }
     }
 
@@ -1038,10 +1035,10 @@ mod tests {
     fn write_yaml_documents_test() {
         let test_file_path = "./write_yaml_documents_test.yaml";
         let v: Vec<i64> = vec![0, 1, 2, 3];
-        let v_iter = convert(v.clone());
+        let v_iter = convert(v);
         let mut yaml_iter = write_yaml_documents(v_iter, String::from(test_file_path))
             .expect("Create File and initialize yaml_iter failed.");
-        while let Some(_) = yaml_iter.next() {}
+        while yaml_iter.next().is_some() {}
         let mut read_file =
             File::open(test_file_path).expect("Could not open file with test data to asserteq.");
         let mut contents = String::new();
@@ -1067,12 +1064,12 @@ mod tests {
         let test_file_path = "./vec_to_file_test.yaml";
         let v: Vec<Vec<i64>> = vec![vec![0, 1], vec![2, 3]];
         // println!("{:#?}", v);
-        let vc = v.clone();
+        let vc = v;
         let vc = vc.iter();
         let vc = convert(vc);
         let mut vc = write_yaml_documents(vc, String::from(test_file_path))
             .expect("Vec to Yaml: Create File and initialize yaml_iter failed.");
-        while let Some(_) = vc.next() {}
+        while vc.next().is_some() {}
         let mut read_file =
             File::open(test_file_path).expect("Could not open file with test data to asserteq.");
         let mut contents = String::new();
@@ -1098,9 +1095,9 @@ mod tests {
             .open(test_file_path)
             .expect("Could not open test file.");
         write_yaml_object(&ann, &mut file)
-            .expect(&format!("write_yaml_object Failed for {}", test_file_path));
+            .unwrap_or_else(|_| panic!("write_yaml_object Failed for {}", test_file_path));
         let contents = utils::read_yaml_to_string(test_file_path)
-            .expect(&format!("Could not read {}", test_file_path));
+            .unwrap_or_else(|_| panic!("Could not read {}", test_file_path));
         assert_eq!("---\n- 0\n- zero\n", &contents);
     }
 
@@ -1136,7 +1133,7 @@ mod tests {
             assert_eq!(
                 *item,
                 Numbered {
-                    count: count,
+                    count,
                     item: Some(&count)
                 }
             );
@@ -1222,7 +1219,7 @@ mod tests {
         let mut res_iter = reservoir_sample(stream, capacity, None);
         if let Some(reservoir) = res_iter.next() {
             println!("Initial reservoir: \n {:#?} \n", reservoir);
-            assert!(reservoir.into_iter().all(|x| *x == 0));
+            assert!(reservoir.iter().all(|x| *x == 0));
         } else {
             panic!("The initial reservoir was None.");
         };
@@ -1311,7 +1308,7 @@ mod tests {
         // Cue the stream to the first "final value" element:
         stream.nth(capacity - 1);
         // Check that the probabilities are approximately correct.
-        while let Some(item) = stream.next() {
+        for item in stream {
             weight_sum += item.weight;
             let p = capacity as f64 * item.weight / weight_sum;
             assert!((p - probability).abs() < 0.01 * probability);
@@ -1337,9 +1334,7 @@ mod tests {
             0,
             1,
         );
-        while let Some(_item) = stream.next() {
-            ()
-        }
+        for _item in stream {}
     }
 
     #[test]
@@ -1373,7 +1368,7 @@ mod tests {
                     item.value, _index
                 ),
             }
-            _index = _index + 1;
+            _index += 1;
         }
     }
 
@@ -1396,11 +1391,11 @@ mod tests {
         let stream = convert(stream);
         let mut wrs_iter = weighted_reservoir_sample(stream, capacity, None);
         if let Some(reservoir) = wrs_iter.next() {
-            assert!(reservoir.into_iter().all(|wd| wd.value == 0));
+            assert!(reservoir.iter().all(|wd| wd.value == 0));
         };
 
         if let Some(reservoir) = wrs_iter.nth(stream_length - capacity - 1) {
-            assert!(reservoir.into_iter().all(|wd| wd.value == 0));
+            assert!(reservoir.iter().all(|wd| wd.value == 0));
         } else {
             panic!("The final reservoir was None.");
         };
@@ -1439,11 +1434,11 @@ mod tests {
         let stream = convert(stream);
         let mut wrs_iter = weighted_reservoir_sample(stream, capacity, None);
         if let Some(reservoir) = wrs_iter.next() {
-            assert!(reservoir.into_iter().all(|wd| wd.value == 0));
+            assert!(reservoir.iter().all(|wd| wd.value == 0));
         };
 
         if let Some(reservoir) = wrs_iter.nth(stream_length - capacity - 1) {
-            assert!(reservoir.into_iter().all(|wd| wd.value == 1));
+            assert!(reservoir.iter().all(|wd| wd.value == 1));
         } else {
             panic!("The final reservoir was None.");
         };
