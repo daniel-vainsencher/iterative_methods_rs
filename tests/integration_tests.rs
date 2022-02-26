@@ -54,7 +54,7 @@ fn test_timed_iterable() {
 #[test]
 fn wd_iterable_extract_value_test() {
     let mut counter_stream = Counter::new();
-    let counter_stream_copy = counter_stream.clone();
+    let counter_stream_copy = counter_stream;
     let wd_iter = Weight {
         it: counter_stream_copy,
         f: expose_w,

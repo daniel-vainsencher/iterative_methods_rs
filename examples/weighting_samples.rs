@@ -7,7 +7,7 @@ fn wd_iterable_counter_demo() {
     println!("\n\n -----Weight Counter Demo----- \n\n");
 
     let counter_stream = Counter::new();
-    let mut counter_stream_copy = counter_stream.clone();
+    let mut counter_stream_copy = counter_stream;
     let mut wd_iter = Weight {
         it: counter_stream,
         f: expose_w,
@@ -17,13 +17,13 @@ fn wd_iterable_counter_demo() {
     println!("A stream of values:\n");
     for _ in 0..6 {
         if let Some(val) = counter_stream_copy.next() {
-            print!("{}\n", val);
+            println!("{}", val);
         }
     }
     println!("\n\nThe stream with weights added that are the square of the value.\n\n");
     for _ in 0..6 {
         if let Some(wd) = wd_iter.next() {
-            print!("{:#?}\n", wd);
+            println!("{:#?}", wd);
         }
     }
 }

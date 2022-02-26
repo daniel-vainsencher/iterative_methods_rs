@@ -44,6 +44,6 @@ where
     }
 
     fn get(&self) -> Option<&Self::Item> {
-        Some(&self)
+        Some(self)
     }
 }
