@@ -304,10 +304,10 @@ where
         let before = Instant::now();
         self.it.advance();
         self.current = self.it.get().map(|n| TimedResult {
-                start_time,
-                duration: before.elapsed(),
-                result: n.clone(),
-            })
+            start_time,
+            duration: before.elapsed(),
+            result: n.clone(),
+        })
     }
 
     fn get(&self) -> Option<&Self::Item> {
@@ -1334,9 +1334,7 @@ mod tests {
             0,
             1,
         );
-        for _item in stream {
-            
-        }
+        for _item in stream {}
     }
 
     #[test]
