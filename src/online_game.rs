@@ -87,7 +87,7 @@ impl OnlineGame<(),> for RockPaperScissorsGame {
     }
 }
 */
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Coin {
     Tails,
     Heads,
@@ -168,15 +168,30 @@ impl Player<(), Coin, Coin> for DumbCoinPlayer {
     fn update(&self, _a: &Coin, _f: &Coin) {}
 }
 
-pub fn bla() -> Box<dyn CoinGame> {
-    Box::new(FixedCoin::new(0.5))
-}
-pub fn bla2() -> Box<dyn OnlineGame<(), Coin, f64, Coin>> {
-    Box::new(FixedCoin::new(0.5))
-}
-
 pub fn dumb_coin_game() -> OnlineGameTrace<FixedCoin, DumbCoinPlayer, (), Coin, f64, Coin> {
-    let game = FixedCoin::new(0.5);
+    let game = FixedCoin::new(0.1);
     let player = DumbCoinPlayer {};
     OnlineGameTrace::new(game, player)
+}
+
+pub fn play_dumb_coin_game() {
+    let game_trace = dumb_coin_game();
+    let mut game_trace = game_trace.take(20);
+
+    while let Some(OnlineGameTrace {
+        last_record:
+            Some(GameRecord {
+                action,
+                feedback,
+                loss,
+                ..
+            }),
+        ..
+    }) = game_trace.next()
+    {
+        println!(
+            "Action: {:?}, feedback: {:?}, loss: {:3}",
+            action, feedback, loss
+        );
+    }
 }
