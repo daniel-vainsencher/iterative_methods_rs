@@ -76,6 +76,7 @@ use yaml_rust::{Yaml, YamlEmitter};
 pub mod algorithms;
 pub mod conjugate_gradient;
 pub mod derivative_descent;
+pub mod online_game;
 pub mod utils;
 
 /// A StreamingIterator M is an IterativeMethod w.r.t. functions cost
