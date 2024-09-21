@@ -29,7 +29,7 @@ where
     }
 
     pub fn value(&self) -> f64 {
-        (&self.value)(self.x)
+        (self.value)(self.x)
     }
 }
 

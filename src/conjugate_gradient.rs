@@ -16,7 +16,6 @@
 use crate::utils::{LinearSystem, M, S, V};
 use crate::IterativeMethod;
 use ndarray::ArrayBase;
-use std::f64::{MIN_POSITIVE, NAN};
 use streaming_iterator::*;
 
 // A few notes:
@@ -85,11 +84,11 @@ impl ConjugateGradient {
         // Set r_0 = A*x_0 - b and p_0 =-r_0, k=0
         let r_k = (&p.a.dot(&x_0) - &p.b).to_shared();
         let r_k2 = r_k.dot(&r_k);
-        let r_km2 = NAN;
+        let r_km2 = f64::NAN;
         let p_k = -r_k.clone();
         let ap_k = p.a.dot(&p_k).to_shared();
         let pap_k = p_k.dot(&ap_k);
-        let pap_km = NAN;
+        let pap_km = f64::NAN;
         ConjugateGradient {
             x_k: x_0.clone(),
             solution: x_0,
@@ -102,8 +101,8 @@ impl ConjugateGradient {
             ap_k,
             pap_k,
             pap_km,
-            alpha_k: NAN,
-            beta_k: NAN,
+            alpha_k: f64::NAN,
+            beta_k: f64::NAN,
         }
     }
 }
@@ -111,7 +110,7 @@ impl ConjugateGradient {
 /// A threshold below which we do not reduce denominators further to
 /// avoid solution instability.
 fn too_small(v: S) -> bool {
-    v < 10. * MIN_POSITIVE
+    v < 10. * f64::MIN_POSITIVE
 }
 
 impl StreamingIterator for ConjugateGradient {

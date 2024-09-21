@@ -39,7 +39,7 @@
 //!    println!("x_{} = {:.2}; f(x_{}) = {:.4}", count, curr.x, count, curr.value());
 //!}
 //!```
-	//!
+//!
 //! Both produce the exact same output (below), and the first common
 //! approach is much easier to look at, the descent step is right
 //! there. The second separates the algorithm and every other concern
@@ -393,7 +393,7 @@ where
     T: std::fmt::Debug,
     F: FnMut(&T, &mut std::fs::File) -> std::io::Result<()>,
 {
-    let result = match std::fs::metadata(&file_path) {
+    match std::fs::metadata(&file_path) {
         Ok(_) => {
             panic!("File to which you want to write already exists or permission does not exist. Please rename or remove the file or gain permission.")
         }
@@ -408,8 +408,7 @@ where
                 file_writer,
             })
         }
-    };
-    result
+    }
 }
 
 impl<I, T, F> StreamingIterator for WriteToFile<I, F>
@@ -531,7 +530,7 @@ where
     I: Sized + StreamingIterator<Item = T>,
     T: std::fmt::Debug,
 {
-    let result = match std::fs::metadata(&file_path) {
+    match std::fs::metadata(&file_path) {
         Ok(_) => {
             panic!("Failed to create or gain permission of {}, please delete it or gain permission before running this demo. If the demo runs completely, it will delete the file upon completion.", file_path)
         }
@@ -542,8 +541,7 @@ where
                 .open(file_path)?;
             Ok(WriteYamlDocuments { it, file_writer })
         }
-    };
-    result
+    }
 }
 
 /// Function used by WriteYamlDocuments to specify how to write each item to file.
@@ -724,7 +722,7 @@ where
         reservoir: res,
         capacity,
         w: w_initial,
-        skip: ((rng.gen::<f64>() as f64).ln() / (1. - w_initial).ln()).floor() as usize,
+        skip: ((rng.gen::<f64>()).ln() / (1. - w_initial).ln()).floor() as usize,
         rng,
     }
 }
@@ -748,11 +746,11 @@ where
                 }
             }
         } else if let Some(datum) = self.it.nth(self.skip) {
-            let h = self.rng.gen_range(0..self.capacity) as usize;
+            let h = self.rng.gen_range(0..self.capacity);
             let datum_struct = datum.clone();
             self.reservoir[h] = datum_struct;
             self.w *= (self.rng.gen::<f64>().ln() / (self.capacity as f64)).exp();
-            self.skip = ((self.rng.gen::<f64>() as f64).ln() / (1. - self.w).ln()).floor() as usize;
+            self.skip = ((self.rng.gen::<f64>()).ln() / (1. - self.w).ln()).floor() as usize;
         }
     }
 
@@ -947,7 +945,7 @@ where
                 let p = &(self.capacity as f64 * datum.weight / self.weight_sum);
                 let j: f64 = self.rng.gen();
                 if j < *p {
-                    let h = self.rng.gen_range(0..self.capacity) as usize;
+                    let h = self.rng.gen_range(0..self.capacity);
                     let datum_struct = datum.clone();
                     self.reservoir[h] = datum_struct;
                 };

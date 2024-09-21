@@ -1,7 +1,7 @@
+use crate::{enumerate, Numbered};
 use rand::{Rng, SeedableRng};
 use rand_pcg::Pcg64;
 use streaming_iterator::*;
-use crate::{enumerate,Numbered};
 pub trait OnlineGame<C, A, L, F> {
     fn advance(&mut self);
     fn context(&self) -> C;
@@ -199,16 +199,18 @@ pub fn play_dumb_coin_game() {
     println!("Action,Feedback,Loss,AverageLoss");
     while let Some(Numbered {
         count: t,
-        item: Some(OnlineGameTrace {
-        last_record:
-            Some(GameRecord {
-                action,
-                feedback,
-                loss,
+        item:
+            Some(OnlineGameTrace {
+                last_record:
+                    Some(GameRecord {
+                        action,
+                        feedback,
+                        loss,
+                        ..
+                    }),
                 ..
             }),
-        ..
-        })}) = game_trace.next()
+    }) = game_trace.next()
     {
         total_loss += loss;
         /*println!(
@@ -218,7 +220,10 @@ pub fn play_dumb_coin_game() {
         // Print results as CSV
         println!(
             "{:?},{:?},{:},{:1.3}",
-            action, feedback, loss, total_loss / (*t as f64 + 1.0)
+            action,
+            feedback,
+            loss,
+            total_loss / (*t as f64 + 1.0)
         );
     }
 }
