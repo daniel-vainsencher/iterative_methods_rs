@@ -1,7 +1,7 @@
 use rand::{Rng, SeedableRng};
 use rand_pcg::Pcg64;
 use streaming_iterator::*;
-
+use crate::{enumerate,Numbered};
 pub trait OnlineGame<C, A, L, F> {
     fn advance(&mut self);
     fn context(&self) -> C;
@@ -13,6 +13,7 @@ pub trait Player<C, F, A> {
     fn update(&self, a: &A, f: &F);
 }
 
+#[derive(Clone)]
 pub struct OnlineGameTrace<G, P, C, A, L, F>
 where
     G: OnlineGame<C, A, L, F>,
@@ -23,6 +24,7 @@ where
     last_record: Option<GameRecord<C, A, L, F>>,
 }
 
+#[derive(Clone)]
 pub struct GameRecord<C, A, L, F> {
     pub context: C,
     pub action: A,
@@ -131,6 +133,7 @@ where
     }
 }
 
+#[derive(Clone)]
 pub struct FixedCoin {
     probability: f64,
     last_coin: Coin,
@@ -159,6 +162,7 @@ impl CoinGame for FixedCoin {
     }
 }
 
+#[derive(Clone)]
 pub struct DumbCoinPlayer {}
 
 impl Player<(), Coin, Coin> for DumbCoinPlayer {
@@ -176,9 +180,26 @@ pub fn dumb_coin_game() -> OnlineGameTrace<FixedCoin, DumbCoinPlayer, (), Coin, 
 
 pub fn play_dumb_coin_game() {
     let game_trace = dumb_coin_game();
+    let game_trace = enumerate(game_trace);
     let mut game_trace = game_trace.take(20);
 
-    while let Some(OnlineGameTrace {
+    let mut total_loss = 0.;
+    fn extract(trace: Numbered<T>)
+    where
+        T: OnlineGameTrace<G, P, (), A, L, F>,
+        G: CoinGame,
+        P: DumbCoinPlayer,
+    A: Coin, L: f64, F: Coin
+    {}
+    //  G: OnlineGame<C,  A,    L,   F>,
+    //                (), Coin, f64, Coin
+    //  P: Player<C, F, A>,
+
+    // CSV header
+    println!("Action,Feedback,Loss,AverageLoss");
+    while let Some(Numbered {
+        count: t,
+        item: Some(OnlineGameTrace {
         last_record:
             Some(GameRecord {
                 action,
@@ -187,11 +208,17 @@ pub fn play_dumb_coin_game() {
                 ..
             }),
         ..
-    }) = game_trace.next()
+        })}) = game_trace.next()
     {
+        total_loss += loss;
+        /*println!(
+        "Action: {:?}, feedback: {:?}, loss: {:3}, average loss: {:3}",
+        action, feedback, loss, total_loss / (*t as f64 + 1.0));*/
+
+        // Print results as CSV
         println!(
-            "Action: {:?}, feedback: {:?}, loss: {:3}",
-            action, feedback, loss
+            "{:?},{:?},{:},{:1.3}",
+            action, feedback, loss, total_loss / (*t as f64 + 1.0)
         );
     }
 }

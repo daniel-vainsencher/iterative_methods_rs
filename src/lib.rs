@@ -39,7 +39,7 @@
 //!    println!("x_{} = {:.2}; f(x_{}) = {:.4}", count, curr.x, count, curr.value());
 //!}
 //!```
-//!
+	//!
 //! Both produce the exact same output (below), and the first common
 //! approach is much easier to look at, the descent step is right
 //! there. The second separates the algorithm and every other concern
