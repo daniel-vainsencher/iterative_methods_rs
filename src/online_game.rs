@@ -184,13 +184,13 @@ pub fn play_dumb_coin_game() {
     let mut game_trace = game_trace.take(20);
 
     let mut total_loss = 0.;
-    fn extract(trace: Numbered<T>)
-    where
-        T: OnlineGameTrace<G, P, (), A, L, F>,
-        G: CoinGame,
-        P: DumbCoinPlayer,
-    A: Coin, L: f64, F: Coin
-    {}
+    //fn extract(trace: Numbered<T>)
+    //where
+    //    T: OnlineGameTrace<G, P, (), A, L, F>,
+    //    G: CoinGame,
+    //    P: DumbCoinPlayer,
+    //A: Coin, L: f64, F: Coin
+    //{}
     //  G: OnlineGame<C,  A,    L,   F>,
     //                (), Coin, f64, Coin
     //  P: Player<C, F, A>,
