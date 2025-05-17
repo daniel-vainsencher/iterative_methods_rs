@@ -1,3 +1,4 @@
+use crate::step_by;
 use crate::{enumerate, Numbered};
 use rand::{Rng, SeedableRng};
 use rand_pcg::Pcg64;
@@ -178,10 +179,11 @@ pub fn dumb_coin_game() -> OnlineGameTrace<FixedCoin, DumbCoinPlayer, (), Coin, 
     OnlineGameTrace::new(game, player)
 }
 
-pub fn play_dumb_coin_game() {
+pub fn play_dumb_coin_game(rounds: usize) {
     let game_trace = dumb_coin_game();
     let game_trace = enumerate(game_trace);
-    let mut game_trace = game_trace.take(20);
+    let game_trace = game_trace.take(rounds);
+    let mut game_trace = step_by(game_trace, 1_000_000);
 
     let mut total_loss = 0.;
     //fn extract(trace: Numbered<T>)

@@ -31,3 +31,6 @@ default-features = false
 
 [dev-dependencies]
 quickcheck = "= 1.0.1"
+
+[profile.release]
+debug = true
