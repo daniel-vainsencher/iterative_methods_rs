@@ -1,0 +1,33 @@
+language = "rust"
+
+#tavily_api_key = "env:TAVILY_API_KEY"
+github_api_key = "file:../github_kwaak_iterative-methods-rd_token.txt"
+openai_api_key = "env:OPENAI_API_KEY"
+
+tool_executor = "docker"
+otel_enabled = true
+
+[commands]
+test = "RUST_BACKTRACE=1 cargo test --color=never"
+coverage = "cargo llvm-cov --no-clean --summary-only"
+# lint_and_fix = "cargo clippy --fix --allow-dirty --allow-staged; cargo fmt"
+
+[git]
+owner = "daniel-vainsencher"
+repository = "iterative_methods_rs"
+main_branch = "main"
+
+[llm.indexing]
+provider = "OpenAI"
+prompt_model = "gpt-4o-mini"
+
+[llm.query]
+provider = "OpenAI"
+prompt_model = "gpt-4o"
+
+[llm.embedding]
+provider = "OpenAI"
+embedding_model = "text-embedding-3-large"
+
+[docker]
+dockerfile = "Dockerfile"
