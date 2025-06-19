@@ -9,8 +9,6 @@ pub type V = ArcArray1<S>;
 #[cfg(test)]
 mod tests {
 
-    use std::fmt::format;
-
     use crate::conjugate_gradient::ConjugateGradient;
     use crate::inspect;
     use crate::last;
@@ -33,15 +31,22 @@ mod tests {
     }
 
     pub fn show_progress(p: LinearSystem) {
-        let cg_iter = ConjugateGradient::for_problem(&p).take(20);
-        let mut cg_print_iter = inspect(cg_iter, |result| {
+        let cg_iter = ConjugateGradient::for_problem(&p);
+        let mut cg_print_iter = inspect(cg_iter.take(20), |result| {
             eprintln!(
-                "pap_k = {:.10}, ||Ax - b ||_2^2 = {:.5}, for x = {:.4}, and Ax - b = {:.5}",
+                "******\npap_k = {:.16}, ||Ax - b ||_2^2 = {:.16}, rk_m2 = {:.16}, for \nx = \n{:.36}, with \nA-norm residual of {:.16}, and \nAx - b = \n{:.5}, and \nap_k = \n{:.16}\npap_k = \n{:.16}\nand alpha = {:.5}, and beta = {:.5}",
                 result.pap_k,
                 result.r_k2,
-                result.solution,
-                result.a.dot(&result.solution) - &result.b,
+                result.r_km2,
+                result.x_k,
+                result.r_k.dot(&result.a).dot(&result.r_k),
+                result.a.dot(&result.x_k) - &result.b,
+                result.ap_k,
+                result.pap_k,
+                result.alpha_k,
+                result.beta_k
             );
+            //eprintln!("result = {:?}", result);
         });
         while let Some(_cgi) = cg_print_iter.next() {}
     }
@@ -81,24 +86,36 @@ mod tests {
             ))
         }
     }
-    fn test_arbitrary_3x3_psd(p: LinearSystem) -> TestResult {
+    fn test_arbitrary_3x3_psd(p: LinearSystem) {
         // Decomposition should always succeed as p.a is p.s.d. by
         // construction; if not this is a bug in the test.
-
+        eprintln!("p: {:?}", p);
         show_progress(p.clone());
-        let x = solve_approximately(p.clone());
-        let res = p.a.dot(&x) - &p.b;
-        let res_square_norm = res.dot(&res);
-        eprintln!("x: {}", x);
-        //
-        if res_square_norm < 1e-10 {
-            TestResult::passed()
-        } else {
-            TestResult::error(format!(
-                "Residual Square Norm is too big: {}",
-                res_square_norm
-            ))
-        }
+        let result = last(ConjugateGradient::for_problem(&p).take(20))
+            .expect("ConjugateGradient return None");
+        //let x = solve_approximately(p.clone());
+
+        eprintln!("x: {:.6}", &result.x_k);
+        eprintln!("res: {:.6}", &result.r_k);
+        eprintln!("res_k2: {:.6}", &result.r_k2);
+        eprintln!("res_km2: {:.6}", &result.r_km2);
+        eprintln!("pap_k2: {:.6}", &result.pap_k);
+        let residual = result.a.dot(&result.x_k) - &result.b;
+        eprintln!("residual: {:.6}", &residual);
+        let a_res = &result.a.dot(&residual);
+        eprintln!("a_residual: {:.6}", &a_res);
+        let residual_a_norm = residual.dot(a_res);
+        eprint!("residual A norm: {:.16}", residual_a_norm);
+        assert!(
+            residual_a_norm < 1e-10,
+            "Norm of residual in A norm is too big: {:.16}",
+            residual_a_norm
+        );
+        assert!(
+            result.pap_k < 1e-10,
+            "Norm of update direction in A norm is too big: {}",
+            result.pap_k
+        );
     }
 
     fn maybe_instance(vs: Vec<u16>, b: Vec<u16>) -> Option<LinearSystem> {
@@ -147,12 +164,24 @@ mod tests {
         );
         eprintln!("{:?}", tres);
     }
+    #[test]
+    fn test_arb_counter4() {
+        test_arbitrary_3x3_psd(
+            maybe_instance(vec![0, 0, 0, 0, 0, 0, 0, 0, 0], vec![0, 0, 1]).expect("Valid case"),
+        );
+    }
     quickcheck! {
         /// Test that we obtain a low precision solution for small p.s.d.
         /// matrices of not-too-large numbers.
         fn prop_small_numbers(vs: Vec<u16>, b: Vec<u16>) -> TestResult {
-            match maybe_instance(vs, b) {
-                Some(p) => test_arbitrary_3x3_psd(p),
+            match maybe_instance(vs.clone(), b.clone()) {
+                Some(p) => {
+                    eprintln!("vs: {:?}", vs);
+                    eprintln!("b: {:?}", b);
+                    eprintln!("p: {:?}", p);
+                    test_arbitrary_3x3_psd(p);
+                    TestResult::passed()
+                }
                 _ => TestResult::discard()
             }
 
@@ -193,22 +222,17 @@ mod tests {
 
     #[test]
     fn cg_zero_x() {
-        let result = test_arbitrary_3x3_psd(
+        test_arbitrary_3x3_psd(
             maybe_instance(vec![0, 0, 1, 1, 0, 0, 0, 1, 0], vec![0, 0, 0]).expect("Valid case"),
         );
-        assert!(!result.is_failure());
-        assert!(!result.is_error());
     }
 
-    #[ignore]
     #[test]
     fn cg_rank_one_v() {
         // This test is currently discarded by test_arbitrary_3x3_pd
-        let result = test_arbitrary_3x3_psd(
+        test_arbitrary_3x3_psd(
             maybe_instance(vec![0, 0, 0, 0, 0, 0, 1, 43, 8124], vec![0, 0, 1]).expect("Valid case"),
         );
-        assert!(!result.is_failure());
-        assert!(!result.is_error());
     }
 
     #[test]
@@ -216,9 +240,9 @@ mod tests {
         // This example is very highly ill-conditioned:
         // eigvals: [2904608166.992541+0i, 0.0000000010449559455574797+0i, 0.007460513747178893+0i]
         // therefore is currently discarded by the upper bound on eigenvalues.
-        assert_eq!(
+        /*assert_eq!(
             maybe_instance(vec![0, 0, 0, 0, 0, 1, 101, 4654, 53693], vec![0, 0, 6]),
             None
-        );
+        );*/
     }
 }

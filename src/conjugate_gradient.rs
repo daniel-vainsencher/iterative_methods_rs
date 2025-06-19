@@ -75,26 +75,26 @@ pub struct ConjugateGradient {
 }
 
 impl ConjugateGradient {
-    /// Initialize a conjugate gradient iterative solver to solve linear system `p`.
-    pub fn for_problem(p: &LinearSystem) -> ConjugateGradient {
-        let x_0 = match &p.x0 {
+    /// Initialize a conjugate gradient iterative solver to solve linear system `prob`.
+    pub fn for_problem(prob: &LinearSystem) -> ConjugateGradient {
+        let x_0 = match &prob.x0 {
             Some(x) => x.clone(),
-            None => ArrayBase::zeros(p.a.shape()[0]),
+            None => ArrayBase::zeros(prob.a.shape()[0]),
         };
 
         // Set r_0 = A*x_0 - b and p_0 =-r_0, k=0
-        let r_k = (&p.a.dot(&x_0) - &p.b).to_shared();
+        let r_k = (&prob.a.dot(&x_0) - &prob.b).to_shared();
         let r_k2 = r_k.dot(&r_k);
         let r_km2 = NAN;
         let p_k = -r_k.clone();
-        let ap_k = p.a.dot(&p_k).to_shared();
+        let ap_k = prob.a.dot(&p_k).to_shared();
         let pap_k = p_k.dot(&ap_k);
         let pap_km = NAN;
         ConjugateGradient {
             x_k: x_0.clone(),
             solution: x_0,
-            a: p.a.clone(),
-            b: p.b.clone(),
+            a: prob.a.clone(),
+            b: prob.b.clone(),
             r_k,
             r_k2,
             r_km2,
@@ -103,25 +103,36 @@ impl ConjugateGradient {
             pap_k,
             pap_km,
             alpha_k: NAN,
-            beta_k: NAN,
+            beta_k: 0.0,
         }
+    }
+
+    /// A threshold below which we do not reduce denominators further to
+    /// avoid solution instability.
+    fn can_make_progress(&self) -> bool {
+        !too_small(self.pap_k)
     }
 }
 
-/// A threshold below which we do not reduce denominators further to
-/// avoid solution instability.
 fn too_small(v: S) -> bool {
     v < 10. * MIN_POSITIVE
 }
 
 impl StreamingIterator for ConjugateGradient {
     type Item = Self;
+
     fn advance(&mut self) {
         // while r_k != 0:
-        //   alpha_k = ||r_k||^2 / ||p_k||^2_A
 
-        self.alpha_k = self.r_k2 / self.pap_k;
-        if (!too_small(self.r_k2)) && (!too_small(self.pap_k)) {
+        if self.alpha_k.is_nan() {
+            // StreamingIterator starts BEFORE the its first element.
+            // Since ConjugateGradient's initial solution should be
+            // the first, in the first advance we do nothing except
+            // mark it done:
+            self.alpha_k = 0.;
+        } else if self.can_make_progress() {
+            //   alpha_k = ||r_k||^2 / ||p_k||^2_A
+            self.alpha_k = self.r_k2 / self.pap_k;
             //   x_{k+1} = x_k + alpha_k*p_k
             self.solution = self.x_k.clone();
             self.x_k = (self.x_k.clone() + &self.p_k * self.alpha_k).to_shared();
@@ -142,25 +153,28 @@ impl StreamingIterator for ConjugateGradient {
             //   k += 1 is implicit in this implementation since the
             //   counter is not maintained.
         } else {
+            // Since we won't make further progress, this marks the end.
             self.r_km2 = self.r_k2;
             self.pap_km = self.pap_k;
+            self.beta_k = NAN;
         }
     }
 
     fn get(&self) -> Option<&Self::Item> {
-        if !too_small(self.r_km2) && (!too_small(self.pap_km)) {
-            Some(self)
-        } else {
+        if self.beta_k.is_nan() {
+            // The algorithm has shown at least the initial solution and given up on progress.
             None
+        } else {
+            Some(self)
         }
     }
 }
 
 impl IterativeMethod<ConjugateGradient, V> for ConjugateGradient {
     fn solution(&self) -> &V {
-        &self.solution
+        &self.x_k
     }
     fn cost(&self) -> f64 {
-        self.r_km2
+        self.r_k2
     }
 }
